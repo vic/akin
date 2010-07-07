@@ -10,9 +10,10 @@ Akin Message do(
     @position = position
   )
   
-  literal? = method( !literal nil? )
-  activation? = method( !activation nil? )
-  terminator? = method( name == :(";") || name == :("\n") )
+  space? = method(name == :(""))
+  literal? = method(literal nil? not)
+  activation? = method(activation nil? not)
+  terminator? = method(name == :(";") || name == :("\n"))
 
   head = method(
     m = self

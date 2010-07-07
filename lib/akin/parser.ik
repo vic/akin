@@ -8,10 +8,10 @@ use("akin/parser/string")
 
 Akin Parser do(
 
-  parseText = method(text, filename: "<Text:#{text hash}>" , line: 1, col: 1, char: 1,
+  parseText = method(text, filename: "<Text:#{text hash}>" , line: 1, col: 1, pos: 1,
     sr = java:io:StringReader new(text)
-    pos = Akin Parser Position mimic(filename, line, col, char)
-    at = Akin Parser At mimic(sr, pos)
+    position = Akin Parser Position mimic(filename, line, col, pos)
+    at = Akin Parser At mimic(sr, position)
     Akin Parser MessageReader mimic(at) readMessageChain
   )
 
@@ -35,9 +35,8 @@ Akin Parser Position do(
   )
   
   asText = method("#{file} @[ln:#{line},col:#{column},pos:#{pos}]")
-
-  next = method(n 0,Akin Parser Position mimic(file, line, column + n, pos + n))
-
-  nextLine = method(n 0, Akin Parser Position mimic(file, line + n, 1, pos + n))
+  next = method(n 1,Akin Parser Position mimic(file, line, column + n, pos + n))
+  nextLine = method(n 1, Akin Parser Position mimic(file, line + n, 1, pos + n))
+  asList = method(list(file, line, column, pos))
 
 )

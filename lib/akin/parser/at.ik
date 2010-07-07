@@ -3,19 +3,19 @@ Akin Parser At = Origin mimic
 Akin Parser At do(
 
   initialize = method(reader, position, char nil,
-    @reader = reader. @position = position
+    @reader = reader. @position = position.
     if(char, @char = char)
   )
 
   asText = method("character "+ Akin Parser String desc(char) + " at " +position)
 
   char = method(@char = reader read asRational)
+  text = method(Akin Parser String txt(char))
 
   next = method(
-    nextChar = reader read asRational
     nextPosition = position next
-    if(match?(nextChar, eol), nextPosition = nextLine)
-    @next = Akin Parser At mimic(reader, nextPosition, nextChar)
+    if(match?(char, eol), nextPosition = position nextLine)
+    @next = Akin Parser At mimic(reader, nextPosition)
   )
   
   ? = method(+items, 
@@ -36,20 +36,22 @@ Akin Parser At do(
   
   hexadecimal? = method(?("0".."9", "a".."f", "A".."F"))
 
-  eol? = method(?(eol_chars))
+  eol? = method(?(eol))
   eol = list("\n", "\r")
 
   eof? = method(?(-1))
 
-  space? = method(?(" ","\u0009","\u000b","\u000c"))
+  space? = method(?(" ", "\t", "\u0009","\u000b","\u000c"))
 
   blank? = method(space? || eol?)
 
-  terminator? = method(?(".", ",", ";", "\n", "\r"))
+  terminator? = method(?(".", "\n", "\r"))
+  enumerator? = method(?(","))
+  separator? = method(?(";"))
 
   alpha? = method(?("a".."z", "A".."Z"))
 
-  identifier? = method(alpha? || decimal? || sub? || ?(":", "$"))
+  identifier? = method(alpha? || decimal? || sub? || ?("_", ":", "?", "!", "$"))
 
   leftBracket? = method(?(brackets map(first)))
 

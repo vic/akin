@@ -2,7 +2,7 @@
 Akin Parser MessageReader = Origin mimic
 Akin Parser MessageReader do(
 
-  initialize = method(at, @at = at)
+  initialize = method(at, @savedPosition = nil. @at = at)
 
   read = method(
     txt = Akin Parser String txt(at char)
@@ -12,8 +12,15 @@ Akin Parser MessageReader do(
 
   fwd = method(at next)
 
+  savePosition! = method(
+    @savedPosition = at position
+  )
+
   newMsg = method(+rest, +:krest,
-    krest[:position] = at position
+    pos = at position
+    if(savedPosition, pos = savedPosition)
+    @savedPosition = nil
+    krest[:position] = pos
     Akin Message mimic(*rest, *krest)
   )
 
@@ -32,36 +39,69 @@ Akin Parser MessageReader do(
   )
 
   readMessage = method(
-    if(at space?, readSpaces)
+    msg = nil    
+
     if(at rightBracket?, return)
     if(at eof?, read. return)
-    if(at terminator?, return newMsg(read))
+
+    if(at enumerator?,
+      savePosition!
+      name = at text
+      read. readBlank.
+      return newMsg(name))
+
+    if(at terminator?, 
+      return newMsg(read))
+
     if(at decimal?, return readNumber)
-    msg = nil
-    if(at alpha?, msg = readIdentifier)
+
+    if(msg nil? && at ?(":"),
+      msg = newMsg(read)
+      if(at space?,
+        readSpaces
+        return msg,
+        if(at identifier?,
+          id = readIdentifier
+          text = id name asText
+          msg name = :(":"+text)
+          msg literal = Akin Message Literal mimic(:textSymbol, text: text)
+          return msg,
+          error!("Unexpected "+at)
+      ))
+    )
+
+    if(msg nil? && at alpha?, msg = readIdentifier)
+    if(msg nil? && at space?, msg = readSpaceMessage)
+
+    readSpaces
+
     if(at leftBracket?,
       unless(msg, msg = newMsg(""))
       brackets = at brackets assoc(read)
       body = readMessageChain
       readChar(brackets second)
+      readSpaces
       msg activation = Akin Message Activation mimic(body, brackets))
-    unless(msg, error!("Unexpected "+at desc))
+    unless(msg, error!("Unexpected character - got "+at))
+
     msg
   )
 
   readChar = method(expected,
     unless(at ?(expected),
-      error!("Expected char "+expected inspect+" got "+at desc))
+      error!("Expected char "+expected inspect+" got "+at))
     read
   )
 
   readIdentifier = method(
+    savePosition!
     sb = Akin Parser StringBuilder mimic
     while(at identifier?, sb << read)
     newMsg(sb asText)
   )
 
   readNumber = method(
+    savePosition!
     if(at ?("0"),
       if(fwd ?("x", "X"),
         read.read.
@@ -79,8 +119,7 @@ Akin Parser MessageReader do(
 
   readHexadecimalNumber = method(
     unless(at hexadecimal?,
-      error!("Invalid char in hexadecimal number literal "+
-        at position+" got: "+at desc))
+      error!("Invalid char in hexadecimal number literal - got "+at))
     sb = Akin Parser StringBuilder mimic
     while(at hexadecimal? || (at sub? || fwd hexadecimal?),
       if(at sub?, read)
@@ -91,8 +130,7 @@ Akin Parser MessageReader do(
 
   readOctalNumber = method(
     unless(at octal?,
-      error!("Invalid char in octal number literal "+
-        at position+" got: "+at desc))
+      error!("Invalid char in octal number literal - got "+at))
     sb = Akin Parser StringBuilder mimic
     while(at octal? || (at sub? || fwd octal?),
       if(at sub?, read)
@@ -103,8 +141,7 @@ Akin Parser MessageReader do(
 
   readBinaryNumber = method(
     unless(at binary?,
-      error!("Invalid char in binary number literal "+
-        at position+" got: "+at desc))
+      error!("Invalid char in binary number literal - got "+at))
     sb = Akin Parser StringBuilder mimic
     while(at binary? || (at sub? || fwd binary?),
       if(at sub?, read)
@@ -137,8 +174,7 @@ Akin Parser MessageReader do(
 
   readDecimalInteger = method(
     unless(at decimal?,
-      error!("Invalid char in decimal number literal "+
-        at position+" got: "+at))
+      error!("Invalid char in decimal number literal - got "+at))
     sb = Akin Parser StringBuilder mimic
     sb << read
     while(at decimal? || (at sub? && fwd decimal?),
@@ -150,8 +186,7 @@ Akin Parser MessageReader do(
 
   readDecimalExponent = method(
     unless(at decimal? || at adition?,
-      error!("Invalid char in decimal exponent literal "+
-        at position+" got: "+at desc))
+      error!("Invalid char in decimal exponent literal - got "+at))
     sign = "+"
     if(at adition?, sign = read)
     exp = readDecimalInteger
@@ -160,7 +195,17 @@ Akin Parser MessageReader do(
     newMsg(literal: lit)
   )
 
+  readSpaceMessage = method(
+    savePosition!
+    sb = Akin Parser StringBuilder mimic
+    while(at space?, sb << read)
+    msg = newMsg("")
+    lit = Akin Message Literal mimic(:space, text: sb asText)
+    msg
+  )
+
   readSpaces = method(while(at space?, read))
+
   readBlank = method(while(at blank?, read))
 
 )
