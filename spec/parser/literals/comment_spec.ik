@@ -15,25 +15,25 @@ describe("Akin Parser parseText for comments",
     msg next next next next name should == :upto
   )
 
-  it("should treat c-like comments as literals",
+  it("should treat documentation starting with /* as docs for developers",
     msg = parse("/* This is a comment */")
     msg should be literal
-    msg literal parts first should == "This is a comment "
+    msg literal text should == "/* This is a comment */"
+    msg literal type should == :doc4dev
   )
 
-  it("should allow code evaluateion",
-    msg = parse("/***
-      * \#{ foo }
-      *
-      * This is a \#{nice} comment
-      * boy 
-      * 
-      * @author \#{ bla }
-      **/")
+  it("should treat documentation starting with /** as docs for api users",
+    msg = parse("/** This is a comment */")
     msg should be literal
-    msg literal parts inspect println
+    msg literal text should == "/** This is a comment */"
+    msg literal type should == :doc4api
   )
 
-
+  it("should treat documentation starting with /*** as docs for app users",
+    msg = parse("/*** This is a comment */")
+    msg should be literal
+    msg literal text should == "/*** This is a comment */"
+    msg literal type should == :doc4usr
+  )
 
 )

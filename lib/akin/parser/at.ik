@@ -45,7 +45,11 @@ Akin Parser At do(
   lineComment? = method( ?("#") && next ?("!") )
 
   docStart? = method( ?("/") && next ?("*"))
+  docStart2? = method( ?("/") && next ?("*") && next next ?("*"))
+  docStart3? = method( ?("/") && next ?("*") && next next ?("*") && next next next ?("*"))
   docEnd? = method(?("*") && next ?("/"))
+  docStar? = method(?("*") && next ?("/") not)
+  docBlank? = method(blank? || docStar?)
 
   white? = method(?(" ", "\t", "\u0009","\u000b","\u000c"))
   blank? = method(white? || eol?)
@@ -53,8 +57,14 @@ Akin Parser At do(
   terminator? = method(?(".", "\n", "\r"))
   enumerator? = method(?(","))
   separator? = method(?(";"))
+  colon? = method(?(":"))
+
+  backslash? = method(?("\\"))
 
   alpha? = method(?("a".."z", "A".."Z"))
+
+  dblquote? = method(?("\""))
+  quote? = method(?("'"))
 
   identifier? = method(alpha? || decimal? || sub? || ?("_", ":", "?", "!", "$", "="))
 

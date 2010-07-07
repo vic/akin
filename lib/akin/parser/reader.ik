@@ -55,16 +55,16 @@ Akin Parser MessageReader do(
     if(at terminator?, 
       return newMsg(read))
 
-    if(at ?("\""), return readText)
+    if(at dblquote?, return readText)
 
     if(at decimal?, return readNumber)
 
-    if(msg nil? && at ?(":"),
+    if(msg nil? && at colon?,
       msg = newMsg(read)
       if(at space?,
         readSpace
         return msg,
-        if(at ?("\""),
+        if(at dblquote?,
           txt = readText
           msg name = :(":")
           msg literal = txt literal
@@ -128,7 +128,7 @@ Akin Parser MessageReader do(
       if(at eof?,
         error!("Expected end of text, found EOF")
         break)
-      if(at ?("\\"),
+      if(at backslash?,
         unless(sb, sb = Akin Parser StringBuilder mimic)
         if(fwd eol?,
           read. read,
@@ -163,7 +163,7 @@ Akin Parser MessageReader do(
       )      
       if(at ?(right),
         read. readSpace.
-        if(sb, parts << sb asText)n
+        if(sb, parts << sb asText)
         break
       )
       unless(sb, sb = Akin Parser StringBuilder mimic)
@@ -286,36 +286,72 @@ Akin Parser MessageReader do(
   )
 
   readDocumentation = method(
-    sb = nil
-    parts = list
+    if(at docStart3?,
+      readDocumentationForUsr,
+      if(at docStart2?,
+        readDocumentationForApi,
+        if(at docStart?,
+          readDocumentationForDev,
+          error!("Invalid start of documentation literal - got "+at))))
+  )
+
+  readDocumentationForDev = method(
+    sb = Akin Parser StringBuilder mimic
     docs = 0
     loop(
-      if(at eof?, error!("Expected end of documentation got EOF "+at). break)
-      if(at docStart?, docs ++. read. read. 
-        while(at blank? || (at ?("*") && at docEnd? not), read))
-      if(at docEnd?, docs --. read. read)
-      if(docs == 0, 
-        read. readSpace.
-        if(sb, parts << sb asText)
-        break)
-      if(at eol?, 
-        sb << read
-        while(at blank? || (at ?("*") && at docEnd? not), read))
-      if(at ?("#") && fwd ?("{"),
-        parts << sb asText
-        sb = nil
-        read. read. readSpace.
-        body = readMessageChain
-        parts << body
-        readSpace
-        readChar("}")
-      )      
-      unless(sb, sb = Akin Parser StringBuilder mimic)
+      if(at eof?, error!("Expected end of documentation - got "+at). break)
+      if(at docStart?, 
+        sb << read << read
+        docs++)
+      if(at docEnd?,
+        sb << read << read
+        docs--)
+      if(docs == 0, break)
       sb << read
     )
-    
+    txt = sb asText
     msg = newMsg("")
-    msg literal = Akin Message Literal mimic(:documentation, parts: parts)
+    msg literal = Akin Message Literal mimic(:doc4dev, text: txt)
+    msg
+  )
+
+  readDocumentationForUsr = method(
+    sb = Akin Parser StringBuilder mimic
+    docs = 0
+    loop(
+      if(at eof?, error!("Expected end of documentation - got "+at). break)
+      if(at docStart?,
+        sb << read << read
+        docs++)
+      if(at docEnd?,
+        sb << read << read
+        docs--)
+      if(docs == 0, break)
+      sb << read
+    )
+    txt = sb asText
+    msg = newMsg("")
+    msg literal = Akin Message Literal mimic(:doc4usr, text: txt)
+    msg
+  )
+
+  readDocumentationForApi = method(
+    sb = Akin Parser StringBuilder mimic
+    docs = 0
+    loop(
+      if(at eof?, error!("Expected end of documentation - got "+at). break)
+      if(at docStart?, 
+        sb << read << read
+        docs++)
+      if(at docEnd?,
+        sb << read << read
+        docs--)
+      if(docs == 0, break)
+      sb << read
+    )
+    txt = sb asText
+    msg = newMsg("")
+    msg literal = Akin Message Literal mimic(:doc4api, text: txt)
     msg
   )
 
