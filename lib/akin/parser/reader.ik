@@ -53,6 +53,8 @@ Akin Parser MessageReader do(
     if(at terminator?, 
       return newMsg(read))
 
+    if(at ?("\""), return readText)
+
     if(at decimal?, return readNumber)
 
     if(msg nil? && at ?(":"),
@@ -60,16 +62,23 @@ Akin Parser MessageReader do(
       if(at space?,
         readSpaces
         return msg,
+        if(at ?("\""),
+          txt = readText
+          msg name = :(":")
+          msg literal = txt literal
+          msg literal type = :symbolText
+          return msg,
         if(at identifier?,
           id = readIdentifier
           text = id name asText
           msg name = :(":"+text)
-          msg literal = Akin Message Literal mimic(:textSymbol, text: text)
+          msg literal = Akin Message Literal mimic(:symbolIdentifier, text: text)
           return msg,
-          error!("Unexpected "+at)
-      ))
+        error!("Unexpected char while parsing text symbol - "+at)
+      )))
     )
 
+    if(msg nil? && at operator?, msg = readOperator)
     if(msg nil? && at alpha?, msg = readIdentifier)
     if(msg nil? && at space?, msg = readSpaceMessage)
 
@@ -82,7 +91,8 @@ Akin Parser MessageReader do(
       readChar(brackets second)
       readSpaces
       msg activation = Akin Message Activation mimic(body, brackets))
-    unless(msg, error!("Unexpected character - got "+at))
+    
+    unless(msg, error!("Unexpected char while parsing message - got "+at))
 
     msg
   )
@@ -93,11 +103,72 @@ Akin Parser MessageReader do(
     read
   )
 
+  readOperator = method(
+    savePosition!
+    sb = Akin Parser StringBuilder mimic
+    while(at operator?, sb << read)
+    newMsg(sb asText)
+  )
+
   readIdentifier = method(
     savePosition!
     sb = Akin Parser StringBuilder mimic
     while(at identifier?, sb << read)
     newMsg(sb asText)
+  )
+
+  readText = method(left "\"", right left,
+    savePosition!
+    readChar(left)
+    parts = list
+    sb = nil
+    loop(
+      if(at eof?,
+        error!("Expected end of text, found EOF")
+        break)
+      if(at ?("\\"),
+        unless(sb, sb = Akin Parser StringBuilder mimic)
+        if(fwd eol?,
+          read. read,
+        if(fwd ?("u", "U"),
+          read. read.
+          hex = readHexadecimalNumber(4) literal text
+          sb << "\\u" << hex,
+        if(fwd octal?,
+          sb << read << fwd char
+          if(at ?("0".."3"),
+            if(fwd octal?,
+              sb << read
+              if(fwd octal?,
+                sb << read
+            )),
+            if(fwd octal?,
+              sb << read
+            )
+          )),
+        if(fwd ?("b", "t", "n", "f", "r", "\\", "\n", "#", "e", right),
+          sb << read << read,
+        error!("Undefined text escape "+at)
+      ))))
+      if(at ?("#") && fwd ?("{"),
+        parts << sb asText
+        sb = nil
+        read. read. readSpaces.
+        body = readMessageChain
+        parts << body
+        readSpaces
+        readChar("}")
+      )      
+      if(at ?(right),
+        read. readSpaces.
+        if(sb, parts << sb asText)
+        break
+      )
+      unless(sb, sb = Akin Parser StringBuilder mimic)
+      sb << read
+    )
+    lit = Akin Message Literal mimic(:text, parts: parts)
+    msg = newMsg(left, literal: lit)
   )
 
   readNumber = method(
@@ -117,13 +188,18 @@ Akin Parser MessageReader do(
     readDecimalNumber
   )
 
-  readHexadecimalNumber = method(
+  readHexadecimalNumber = method(howManyChars nil,
     unless(at hexadecimal?,
       error!("Invalid char in hexadecimal number literal - got "+at))
     sb = Akin Parser StringBuilder mimic
-    while(at hexadecimal? || (at sub? || fwd hexadecimal?),
+    many = howManyChars
+    seek = unless(many, true)
+    while(seek && (at hexadecimal? || (at sub? || fwd hexadecimal?)),
+      if(many, seek = (many--) > 0)
       if(at sub?, read)
       sb << read)
+    if(howManyChars && many > 0, 
+      error!("Expected #{many} more hexadecimal character(s)"))
     lit = Akin Message Literal mimic(:hexNumber, text: sb asText)
     newMsg(literal: lit)
   )

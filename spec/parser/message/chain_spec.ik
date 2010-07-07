@@ -62,12 +62,6 @@ describe("Akin Parser parseText",
     msg next next activation should be square
   )
 
-  it("should parse as two messages is : has spaces",
-    msg = parse("hello : world")
-    msg should not be nil
-    msg name should == :hello
-    msg next name should == :(":")
-    msg next next name should == :world
-  )
+  
   
 )
