@@ -44,6 +44,8 @@ Akin Parser MessageReader do(
     if(at rightBracket?, return)
     if(at eof?, read. return)
 
+    if(at docStart?, return readDocumentation)
+
     if(at enumerator?,
       savePosition!
       name = at text
@@ -60,7 +62,7 @@ Akin Parser MessageReader do(
     if(msg nil? && at ?(":"),
       msg = newMsg(read)
       if(at space?,
-        readSpaces
+        readSpace
         return msg,
         if(at ?("\""),
           txt = readText
@@ -80,16 +82,16 @@ Akin Parser MessageReader do(
 
     if(msg nil? && at operator?, msg = readOperator)
     if(msg nil? && at alpha?, msg = readIdentifier)
-    if(msg nil? && at space?, msg = readSpaceMessage)
+    if(msg nil? && at space?, msg = readSpace)
 
-    readSpaces
+    readSpace
 
     if(at leftBracket?,
       unless(msg, msg = newMsg(""))
       brackets = at brackets assoc(read)
       body = readMessageChain
       readChar(brackets second)
-      readSpaces
+      readSpace
       msg activation = Akin Message Activation mimic(body, brackets))
     
     unless(msg, error!("Unexpected char while parsing message - got "+at))
@@ -153,15 +155,15 @@ Akin Parser MessageReader do(
       if(at ?("#") && fwd ?("{"),
         parts << sb asText
         sb = nil
-        read. read. readSpaces.
+        read. read. readSpace.
         body = readMessageChain
         parts << body
-        readSpaces
+        readSpace
         readChar("}")
       )      
       if(at ?(right),
-        read. readSpaces.
-        if(sb, parts << sb asText)
+        read. readSpace.
+        if(sb, parts << sb asText)n
         break
       )
       unless(sb, sb = Akin Parser StringBuilder mimic)
@@ -271,17 +273,53 @@ Akin Parser MessageReader do(
     newMsg(literal: lit)
   )
 
-  readSpaceMessage = method(
+  readSpace = method(
     savePosition!
     sb = Akin Parser StringBuilder mimic
-    while(at space?, sb << read)
+    while(at space?, 
+      if(at lineComment?, 
+        until(at eol?, read),
+        sb << read))
     msg = newMsg("")
     lit = Akin Message Literal mimic(:space, text: sb asText)
     msg
   )
 
-  readSpaces = method(while(at space?, read))
+  readDocumentation = method(
+    sb = nil
+    parts = list
+    docs = 0
+    loop(
+      if(at eof?, error!("Expected end of documentation got EOF "+at). break)
+      if(at docStart?, docs ++. read. read. 
+        while(at blank? || (at ?("*") && at docEnd? not), read))
+      if(at docEnd?, docs --. read. read)
+      if(docs == 0, 
+        read. readSpace.
+        if(sb, parts << sb asText)
+        break)
+      if(at eol?, 
+        sb << read
+        while(at blank? || (at ?("*") && at docEnd? not), read))
+      if(at ?("#") && fwd ?("{"),
+        parts << sb asText
+        sb = nil
+        read. read. readSpace.
+        body = readMessageChain
+        parts << body
+        readSpace
+        readChar("}")
+      )      
+      unless(sb, sb = Akin Parser StringBuilder mimic)
+      sb << read
+    )
+    
+    msg = newMsg("")
+    msg literal = Akin Message Literal mimic(:documentation, parts: parts)
+    msg
+  )
 
+  readWhite = method(while(at white?, read))
   readBlank = method(while(at blank?, read))
 
 )

@@ -13,7 +13,7 @@ Akin Message do(
   space? = method(name == :(""))
   literal? = method(literal nil? not)
   activation? = method(activation nil? not)
-  terminator? = method(name == :(";") || name == :("\n"))
+  terminator? = method(name == :(".") || name == :("\n") || name == :("\r"))
 
   head = method(
     m = self

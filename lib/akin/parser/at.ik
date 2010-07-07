@@ -36,14 +36,19 @@ Akin Parser At do(
   
   hexadecimal? = method(?("0".."9", "a".."f", "A".."F"))
 
-  eol? = method(?(eol))
+  eol? = method(eof? || ?(eol))
   eol = list("\n", "\r")
 
   eof? = method(?(-1))
 
-  space? = method(?(" ", "\t", "\u0009","\u000b","\u000c"))
+  space? = method(white? || lineComment?)
+  lineComment? = method( ?("#") && next ?("!") )
 
-  blank? = method(space? || eol?)
+  docStart? = method( ?("/") && next ?("*"))
+  docEnd? = method(?("*") && next ?("/"))
+
+  white? = method(?(" ", "\t", "\u0009","\u000b","\u000c"))
+  blank? = method(white? || eol?)
 
   terminator? = method(?(".", "\n", "\r"))
   enumerator? = method(?(","))
