@@ -10,7 +10,7 @@ describe("Akin Parser parseText on message bodys",
     msg = parse("hello()") 
     msg name should == :hello
     msg should be body
-    msg body body should be nil
+    msg body message should be nil
   )
 
   it("should parse round-bracketed empty message",
@@ -18,7 +18,7 @@ describe("Akin Parser parseText on message bodys",
     msg name should == :("")
     msg should be body
     msg body should be round
-    msg body body name should == :hello
+    msg body message name should == :hello
   )
 
   it("should parse square-bracketed empty message",
@@ -26,7 +26,7 @@ describe("Akin Parser parseText on message bodys",
     msg name should == :("")
     msg should be body
     msg body should be square
-    msg body body name should == :hello
+    msg body message name should == :hello
   )
 
   it("should parse curly-bracketed empty message",
@@ -34,7 +34,7 @@ describe("Akin Parser parseText on message bodys",
     msg name should == :("")
     msg should be body
     msg body should be curly
-    msg body body name should == :hello
+    msg body message name should == :hello
   )
 
   it("should parse chevron-bracketed empty message",
@@ -42,7 +42,7 @@ describe("Akin Parser parseText on message bodys",
     msg name should == :("")
     msg should be body
     msg body should be chevron
-    msg body body name should == :hello
+    msg body message name should == :hello
   )
 
 )

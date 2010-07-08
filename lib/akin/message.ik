@@ -49,8 +49,8 @@ Akin Message do(
 Akin Message Body = Origin mimic
 Akin Message Body do(
 
-  initialize = method(body, brackets nil,
-    @body = body
+  initialize = method(message, brackets nil,
+    @message = message
     @brackets = brackets
   )
 

@@ -11,10 +11,10 @@ describe("Akin Parser parseText",
     msg should not be nil
     msg name should == :foo
     msg should be body
-    msg body body name should == :bar
-    msg body body next name should == :(",")
-    msg body body next next name should == :baz
-    msg body body next next next should be nil
+    msg body message name should == :bar
+    msg body message next name should == :(",")
+    msg body message next next name should == :baz
+    msg body message next next next should be nil
     msg next name should == :bat
     msg next should not be body
   )
@@ -43,7 +43,7 @@ describe("Akin Parser parseText",
     msg name should == :hello
     msg should be body
     msg body should be round
-    msg body body name should == :world
+    msg body message name should == :world
     msg next name should == :""
     msg next body should be curly
     msg next next name should == :""
@@ -55,7 +55,7 @@ describe("Akin Parser parseText",
     msg name should == :hello
     msg should be body
     msg body should be round
-    msg body body name should == :world
+    msg body message name should == :world
     msg next name should == :""
     msg next body should be curly
     msg next next name should == :""
