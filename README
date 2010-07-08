@@ -1,0 +1,12 @@
+/*** The Akin programming language.
+
+inspirations:
+ lisp, self, smalltalk, ruby, python, ioke, newspeak
+
+license: 
+ Apache License
+
+copyright:
+ Victor Hugo Borja <vborja@apache.org>
+
+*/
