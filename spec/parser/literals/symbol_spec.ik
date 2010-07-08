@@ -9,7 +9,7 @@ describe("Akin Parser parseText for symbol literals",
   it("should parse simple symbol",
     msg = parse(":hello")
     msg name should be :(":hello")
-    msg should not be activation
+    msg should not be body
     msg should be literal
     msg literal type should == :symbolIdentifier
     msg literal text should == "hello"
@@ -18,7 +18,7 @@ describe("Akin Parser parseText for symbol literals",
   it("should parse simple symbol from string",
     msg = parse(":\"hello\"")
     msg name should be :(":")
-    msg should not be activation
+    msg should not be body
     msg should be literal
     msg literal type should == :symbolText
     msg literal parts first should == "hello"

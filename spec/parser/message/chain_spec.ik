@@ -10,13 +10,13 @@ describe("Akin Parser parseText",
     msg = parse("foo(bar, baz) bat") 
     msg should not be nil
     msg name should == :foo
-    msg should be activation
-    msg activation body name should == :bar
-    msg activation body next name should == :(",")
-    msg activation body next next name should == :baz
-    msg activation body next next next should be nil
+    msg should be body
+    msg body body name should == :bar
+    msg body body next name should == :(",")
+    msg body body next next name should == :baz
+    msg body body next next next should be nil
     msg next name should == :bat
-    msg next should not be activation
+    msg next should not be body
   )
 
   it("should parse message enumeration", 
@@ -41,25 +41,25 @@ describe("Akin Parser parseText",
   it("should correctly parse chained invocations",
     msg = parse("hello(world) {good} [bye]") 
     msg name should == :hello
-    msg should be activation
-    msg activation should be round
-    msg activation body name should == :world
+    msg should be body
+    msg body should be round
+    msg body body name should == :world
     msg next name should == :""
-    msg next activation should be curly
+    msg next body should be curly
     msg next next name should == :""
-    msg next next activation should be square
+    msg next next body should be square
   )
 
   it("should correctly parse chained invocations without inner spaces",
     msg = parse("hello(world){good}[bye]") 
     msg name should == :hello
-    msg should be activation
-    msg activation should be round
-    msg activation body name should == :world
+    msg should be body
+    msg body should be round
+    msg body body name should == :world
     msg next name should == :""
-    msg next activation should be curly
+    msg next body should be curly
     msg next next name should == :""
-    msg next next activation should be square
+    msg next next body should be square
   )
 
   

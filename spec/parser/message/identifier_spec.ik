@@ -10,42 +10,42 @@ describe("Akin Parser parseText message identifiers",
     msg = parse("hello")
     msg should not be nil
     msg name should == :hello
-    msg should not be activation
+    msg should not be body
   )
 
   it("should parse simple identifier including $",
     msg = parse("hel$lo")
     msg should not be nil
     msg name should == :"hel$lo"
-    msg should not be activation
+    msg should not be body
   )
 
   it("should parse simple identifier ending in ?",
     msg = parse("hello?")
     msg should not be nil
     msg name should == :"hello?"
-    msg should not be activation
+    msg should not be body
   )
 
   it("should parse simple identifier ending in ?",
     msg = parse("hello?world?")
     msg should not be nil
     msg name should == :"hello?world?"
-    msg should not be activation
+    msg should not be body
   )
 
   it("should parse simple identifier including :",
     msg = parse("hel:lo::there")
     msg should not be nil
     msg name should == :"hel:lo::there"
-    msg should not be activation
+    msg should not be body
   )
 
   it("should parse identifier including : at end",
     msg = parse("hello:")
     msg should not be nil
     msg name should == :"hello:"
-    msg should not be activation
+    msg should not be body
   )
   
 

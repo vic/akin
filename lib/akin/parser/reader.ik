@@ -44,7 +44,7 @@ Akin Parser MessageReader do(
     if(at rightBracket?, return)
     if(at eof?, read. return)
 
-    if(at docStart?, return readDocumentation)
+    if(at docStart?, return readDocument)
 
     if(at enumerator?,
       savePosition!
@@ -92,7 +92,7 @@ Akin Parser MessageReader do(
       body = readMessageChain
       readChar(brackets second)
       readSpace
-      msg activation = Akin Message Activation mimic(body, brackets))
+      msg body = Akin Message Body mimic(body, brackets))
     
     unless(msg, error!("Unexpected char while parsing message - got "+at))
 
@@ -285,21 +285,11 @@ Akin Parser MessageReader do(
     msg
   )
 
-  readDocumentation = method(
-    if(at docStart3?,
-      readDocumentationForUsr,
-      if(at docStart2?,
-        readDocumentationForApi,
-        if(at docStart?,
-          readDocumentationForDev,
-          error!("Invalid start of documentation literal - got "+at))))
-  )
-
-  readDocumentationForDev = method(
+  readDocument = method(
     sb = Akin Parser StringBuilder mimic
     docs = 0
     loop(
-      if(at eof?, error!("Expected end of documentation - got "+at). break)
+      if(at eof?, error!("Expected end of document - got "+at). break)
       if(at docStart?, 
         sb << read << read
         docs++)
@@ -310,49 +300,7 @@ Akin Parser MessageReader do(
       sb << read
     )
     txt = sb asText
-    msg = newMsg("")
-    msg literal = Akin Message Literal mimic(:doc4dev, text: txt)
-    msg
-  )
-
-  readDocumentationForUsr = method(
-    sb = Akin Parser StringBuilder mimic
-    docs = 0
-    loop(
-      if(at eof?, error!("Expected end of documentation - got "+at). break)
-      if(at docStart?,
-        sb << read << read
-        docs++)
-      if(at docEnd?,
-        sb << read << read
-        docs--)
-      if(docs == 0, break)
-      sb << read
-    )
-    txt = sb asText
-    msg = newMsg("")
-    msg literal = Akin Message Literal mimic(:doc4usr, text: txt)
-    msg
-  )
-
-  readDocumentationForApi = method(
-    sb = Akin Parser StringBuilder mimic
-    docs = 0
-    loop(
-      if(at eof?, error!("Expected end of documentation - got "+at). break)
-      if(at docStart?, 
-        sb << read << read
-        docs++)
-      if(at docEnd?,
-        sb << read << read
-        docs--)
-      if(docs == 0, break)
-      sb << read
-    )
-    txt = sb asText
-    msg = newMsg("")
-    msg literal = Akin Message Literal mimic(:doc4api, text: txt)
-    msg
+    newMsg(literal: Akin Message Literal mimic(:document, text: txt))
   )
 
   readWhite = method(while(at white?, read))

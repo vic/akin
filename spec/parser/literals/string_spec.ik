@@ -9,7 +9,7 @@ describe("Akin Parser parseText for text literals",
   it("should parse simple text",
     msg = parse(#["hello"])
     msg name should be :("\"")
-    msg should not be activation
+    msg should not be body
     msg should be literal
     msg literal type should == :text
     msg literal parts first should == "hello"
@@ -18,7 +18,7 @@ describe("Akin Parser parseText for text literals",
   it("should parse interpolating text",
     msg = parse(#["hel \#{lo wo} rld"])
     msg name should be :("\"")
-    msg should not be activation
+    msg should not be body
     msg should be literal
     msg literal type should == :text
     msg literal parts[0] should == "hel "
@@ -31,7 +31,7 @@ describe("Akin Parser parseText for text literals",
   it("should parse interpolating text with inner text",
     msg = parse(#["hel \#{lo "you" wo} rld"])
     msg name should be :("\"")
-    msg should not be activation
+    msg should not be body
     msg should be literal
     msg literal type should == :text
     msg literal parts[0] should == "hel "

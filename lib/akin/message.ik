@@ -1,9 +1,9 @@
 Akin Message = Origin mimic
 Akin Message do(
 
-  initialize = method(name nil, activation nil, literal: nil, position: nil,
+  initialize = method(name nil, body nil, literal: nil, position: nil,
     @name = if(name, :(name), nil)
-    @activation = activation
+    @body = body
     @literal = literal
     @next = nil
     @previous = nil
@@ -12,7 +12,7 @@ Akin Message do(
   
   space? = method(name == :(""))
   literal? = method(literal nil? not)
-  activation? = method(activation nil? not)
+  body? = method(body nil? not)
   terminator? = method(name == :(".") || name == :("\n") || name == :("\r"))
 
   head = method(
@@ -46,8 +46,8 @@ Akin Message do(
 
 )
 
-Akin Message Activation = Origin mimic
-Akin Message Activation do(
+Akin Message Body = Origin mimic
+Akin Message Body do(
 
   initialize = method(body, brackets nil,
     @body = body
