@@ -117,6 +117,32 @@ describe("Akin Tokenizer parseText",
     msg next next body message name should == :bye
   )
 
+  it("should have indentation level per line",
+    
+    msg = parse("
+    #! akin python indentation
+      if foo
+        yes
+    #! line comments are invisible
+      else
+        no
+      outsider 
+    ")
+    
+    msg visible(0) name should == :if
+    msg visible(0) indentLevel should == 6
+    msg visible(1) name should == :foo
+    msg visible(1) indentLevel should == 6
+    msg visible(2) name should == :yes
+    msg visible(2) indentLevel should == 8
+    msg visible(3) name should == :else
+    msg visible(3) indentLevel should == 6
+    msg visible(4) name should == :no
+    msg visible(4) indentLevel should == 8
+    msg visible(5) name should == :outsider
+    msg visible(5) indentLevel should == 6
+  )
+
   
   
 )

@@ -73,7 +73,6 @@ Akin Tokenizer MessageReader do(
           at separator?  ||
           at bracket?,
           break)
-        
         if(at identifier?,
           sb << read,
           if(at ?(":", "$", "?"),
