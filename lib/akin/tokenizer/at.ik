@@ -72,7 +72,7 @@ Akin Tokenizer At do(
   doubleQuote? = method(?("\""))
   singleQuote? = method(?("'"))
 
-  textStart? = method(doubleQuote?)
+  textStart? = method(doubleQuote? || (?("$") && next ?("[")))
 
   identifier? = method(alpha? || decimal? || sub?)
 

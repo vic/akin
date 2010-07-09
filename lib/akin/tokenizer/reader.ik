@@ -138,10 +138,14 @@ Akin Tokenizer MessageReader do(
 
   readText = method(left nil, right left,
     savePosition(
-      unless(left, 
-        left = read
-        right = left,
-        read)
+      if(left nil?,
+        if(at ?("$") && fwd ?("["),
+          left = read + read
+          right = "]",
+          left = read
+          right = left
+        ),
+      read)
       interpolate? = left != "'"
       parts = list
       sb = nil
@@ -190,7 +194,7 @@ Akin Tokenizer MessageReader do(
         unless(sb, sb = newSb)
         sb << read
       )
-      lit = newLit(:text, parts: parts)
+      lit = newLit(:text, parts: parts, left: left, right: right)
       msg = newMsg(literal: lit)
     )
   )

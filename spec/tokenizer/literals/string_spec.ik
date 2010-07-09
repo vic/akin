@@ -47,5 +47,13 @@ describe("Akin Tokenizer parseText for text literals",
     msg literal parts[2] should == " rld"
   )
 
+  it("should parse simple text enclosed between $[ and  ]",
+    msg = parse("$[hello]")
+    msg name should be nil
+    msg should not be body
+    msg should be literal
+    msg literal type should == :text
+    msg literal parts first should == "hello"
+  )
 
 )
