@@ -1,7 +1,7 @@
 
 
-Akin Parser String = Origin mimic
-Akin Parser String do(
+Akin Tokenizer String = Origin mimic
+Akin Tokenizer String do(
 
   chr = method(text,
     java:io:StringReader new(text) read asRational
@@ -40,8 +40,8 @@ Akin Parser String do(
 
 )
 
-Akin Parser StringBuilder = Origin mimic
-Akin Parser StringBuilder do(
+Akin Tokenizer StringBuilder = Origin mimic
+Akin Tokenizer StringBuilder do(
   initialize = method(
     @builder = java:lang:StringBuilder new
   )

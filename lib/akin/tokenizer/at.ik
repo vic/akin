@@ -1,47 +1,46 @@
 
-Akin Parser At = Origin mimic
-Akin Parser At do(
+Akin Tokenizer At = Origin mimic
+Akin Tokenizer At do(
 
   initialize = method(reader, position, char nil,
     @reader = reader. @position = position.
     if(char, @char = char)
   )
 
-  asText = method("character "+ Akin Parser String desc(char) + " at " +position)
+  asText = method("character "+ Akin Tokenizer String desc(char) + " at " +position)
 
   char = method(@char = reader read asRational)
-  text = method(Akin Parser String txt(char))
+  text = method(Akin Tokenizer String txt(char))
 
   next = method(
     nextPosition = position next
     if(match?(char, eol), nextPosition = position nextLine)
-    @next = Akin Parser At mimic(reader, nextPosition)
+    @next = Akin Tokenizer At mimic(reader, nextPosition)
   )
   
   ? = method(+items, 
-    items flatten any?(i, Akin Parser String charMatch?(char, i)))
+    items flatten any?(i, Akin Tokenizer String charMatch?(char, i)))
 
   match? = method(char, +items, 
-    items flatten any?(i, Akin Parser String charMatch?(char, i)))
+    items flatten any?(i, Akin Tokenizer String charMatch?(char, i)))
 
   adition? = method(?("+", "-"))
 
   sub? = method(?("_"))
 
   binary? = method(?("0", "1"))
-
+  
   decimal? = method(?("0".."9"))
 
   octal? = method(?("0".."7"))
   
   hexadecimal? = method(?("0".."9", "a".."f", "A".."F"))
 
-  eol? = method(eof? || ?(eol))
+  eof? = method(?(-1))
+  tab? = method(?("\t"))
+  eol? = method(?(eol))
   eol = list("\n", "\r")
 
-  eof? = method(?(-1))
-
-  space? = method(white? || lineComment?)
   lineComment? = method( ?("#") && next ?("!") )
 
   docStart? = method( ?("/") && next ?("*"))
@@ -51,22 +50,31 @@ Akin Parser At do(
   docStar? = method(?("*") && next ?("/") not)
   docBlank? = method(blank? || docStar?)
 
-  white? = method(?(" ", "\t", "\u0009","\u000b","\u000c"))
-  blank? = method(white? || eol?)
+  space? = method(?(" ", "\t", "\u0009","\u000b","\u000c"))
+  blank? = method(space? || lineComment?)
 
-  terminator? = method(?(".", "\n", "\r"))
-  enumerator? = method(?(","))
-  separator? = method(?(";"))
-  colon? = method(?(":"))
+  terminator? = method(eol? || (?(".") && next ?(".") not))
+  enumerator? = method(?(",") && next ?(",") not)
+  separator? = method(?(";") && next ?(";") not)
+  colon? = method(?(":") && next ?(":") not)
+
+  single? = method(terminator? || enumerator? || separator?)
+
+  symbolStart? = method(colon? && !next blank?)
+  
+  symbol? = method(identifier?)
 
   backslash? = method(?("\\"))
 
   alpha? = method(?("a".."z", "A".."Z"))
 
-  dblquote? = method(?("\""))
-  quote? = method(?("'"))
+  quote? = method(doubleQuote? || singleQuote?)
+  doubleQuote? = method(?("\""))
+  singleQuote? = method(?("'"))
 
-  identifier? = method(alpha? || decimal? || sub? || ?("_", ":", "?", "!", "$", "="))
+  textStart? = method(doubleQuote?)
+
+  identifier? = method(alpha? || decimal? || sub?)
 
   operator? = method(?(
       "°","!","\"","#","$",
@@ -79,17 +87,13 @@ Akin Parser At do(
       "“","”","n","µ","¬",
       "|","·","½","\\","¿",
       "'","+","*","^","`",
-      "̣̣¸","_","-"))
+      "̣̣¸","_","-", ":", 
+      ",", "."))
 
-  leftBracket? = method(?(brackets map(first)))
+  bracket? = method(leftBracket? || rightBracket?)
 
-  rightBracket? = method(?(brackets map(second)))
+  leftBracket? = method(?(Akin Tokenizer Message Body brackets map(first)))
 
-  brackets = list(
-    list("(", ")"),
-    list("[", "]"),
-    list("{", "}"),
-    list("⟨", "⟩")
-  )
-  
+  rightBracket? = method(?(Akin Tokenizer Message Body brackets map(second)))
+
 )

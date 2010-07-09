@@ -1,10 +1,10 @@
 use("ispec")
 use("akin")
-use("akin/parser")
+use("akin/tokenizer")
 
-describe("Akin Parser parseText for numeric literals", 
+describe("Akin Tokenizer parseText for numeric literals", 
 
-  parse = fn(txt, Akin Parser parseText(txt))
+  parse = fn(txt, Akin Tokenizer parseText(txt))
 
   it("should parse hexadecimal literal",
     msg = parse("0xCAFEBABE")
