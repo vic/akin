@@ -92,9 +92,8 @@ Akin Tokenizer Message do(
   
   indentLevel = method(
     first = firstInLine
-    if(first == self, return 0)
-    if(first && first next space?, 
-      first next literal text length)
+    if(self != first && first next space?,
+      first next literal text length, 0)
   )
  
   attach = method(msg,
