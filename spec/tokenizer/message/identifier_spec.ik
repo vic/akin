@@ -41,11 +41,12 @@ describe("Akin Tokenizer parseText message identifiers",
     msg should not be body
   )
 
-  it("should parse identifier including : at end",
+  it("should parse identifier with : at end as two messages",
     msg = parse("hello:")
     msg should not be nil
-    msg name should == :"hello:"
+    msg name should == :hello
     msg should not be body
+    msg next name should == :(":")
   )
   
 

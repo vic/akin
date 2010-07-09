@@ -105,9 +105,8 @@ Akin Tokenizer At do(
 
   single? = method(terminator? || enumerator? || separator?)
 
-  symbolStart? = method(colon? && !next blank?)
-  
-  symbol? = method(identifier?)
+  symbolStart? = method(colon? && (next ?("\"") || next symbol?))
+  symbol? = method(alpha? || decimal? || sub? || ?("?", "$"))
 
   backslash? = method(?("\\"))
 
@@ -133,7 +132,7 @@ Akin Tokenizer At do(
   regexpFlags? = method(?(regexpFlags))
   regexpFlags = list("u", "m", "i", "x", "s")
 
-  identifier? = method(alpha? || decimal? || sub?)
+  identifier? = method(alpha? || decimal? || sub? || ?(":", "?", "$"))
 
   operator? = method(?(
       "°","!","\"","#","$",
@@ -146,7 +145,7 @@ Akin Tokenizer At do(
       "“","”","µ","¬",
       "|","·","½","\\","¿",
       "'","+","*","^","`",
-      "̣̣¸","_","-", ":", 
+      "̣̣¸","_","-", ":",";",
       ",", "."))
 
   bracket? = method(leftBracket? || rightBracket?)

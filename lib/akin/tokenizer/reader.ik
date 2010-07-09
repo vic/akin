@@ -66,6 +66,22 @@ Akin Tokenizer MessageReader do(
   )
 
   readIdentifier = method(
+    msg = newMsg
+    sb = newSb
+    loop(
+      if(at ?(":"), 
+        if(fwd identifier?, 
+          sb << read << read,
+          break))
+      if(at identifier?,
+        sb << read,
+        break)
+    )
+    msg name = :(sb asText)
+    msg
+  )
+
+  readIdentifier2 = method(
     savePosition(
       sb = newSb
       loop(
