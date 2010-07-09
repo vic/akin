@@ -14,8 +14,8 @@ describe("Akin Parser",
     msg = parse("hello :(bar) baz")
     msg visible(0) name should == :hello
     msg visible(1) name should == :(":")
-    msg visible(1) arg(0) name should == :baz
-    msg visible(2) name should == :bar
+    msg visible(1) arg(0) name should == :bar
+    msg visible(2) name should == :baz
   )
 
   it("should do nothing if : starts a symbol",
@@ -23,7 +23,7 @@ describe("Akin Parser",
     msg visible(0) name should == :hello
     msg visible(1) should be literal
     msg visible(1) literal type should == :symbolIdentifier
-    msg visible(2) should == :baz
+    msg visible(2) name should == :baz
   )
 
 
