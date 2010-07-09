@@ -34,5 +34,10 @@ describe("Akin Tokenizer parseText",
     msg visible(1) name should == :("=")
     msg visible(2) name should == :world
   )
+
+  it("should parse operators starting with #",
+    msg = parse("#$!")
+    msg name should == :("#$!")
+  )
   
 )
