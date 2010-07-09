@@ -14,6 +14,13 @@ describe("Akin Tokenizer parseText for comments",
     msg literal type should == :document
   )
 
+  it("should parse a # followed by space as a whole line comment",
+    msg = parse("# hey")
+    msg should be literal
+    msg literal type should == :comment
+    msg literal text should == "# hey"
+  )
+
   it("should treat comments as whitespace, starting from #! to end of line",
     msg = parse("  #! A comment in akin\n is upto #! the end of line")
     msg should be space

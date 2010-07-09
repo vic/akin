@@ -41,7 +41,7 @@ Akin Tokenizer At do(
   eol? = method(?(eol))
   eol = list("\n", "\r")
 
-  lineComment? = method( ?("#") && next ?("!") )
+  lineComment? = method( ?("#") && (next ?("!") || next space?) )
 
   docStart? = method( ?("/") && next ?("*"))
   docStart2? = method( ?("/") && next ?("*") && next next ?("*"))
