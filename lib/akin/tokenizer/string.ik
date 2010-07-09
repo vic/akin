@@ -26,8 +26,13 @@ Akin Tokenizer String do(
           if(from is?(Text), from = chr(from))
           if(to is?(Text), to = chr(to))
           from <= char && char <= to,
-          error!("Dont know how to match char "+desc(char)+" against "+thing inspect)
-    )))
+          if(thing == true,
+            true,
+            if(thing == false,
+              false,
+              error!("Dont know how to match char "+desc(char)+
+                " against "+thing inspect)
+    )))))
   )
 
   desc = method(char,

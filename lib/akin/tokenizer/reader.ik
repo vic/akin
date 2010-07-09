@@ -57,6 +57,7 @@ Akin Tokenizer MessageReader do(
     if(at docStart?, return readDocument)
     if(at symbolStart?, return readSymbol)
     if(at textStart?, return readText)
+    if(at regexpStart?, return readRegexp)
     if(at decimal?, return readNumber)
     if(at operator?, return readOperator)
     readIdentifier
@@ -136,12 +137,12 @@ Akin Tokenizer MessageReader do(
     read
   )
 
-  readText = method(left nil, right left,
+  readText = method(left nil, right left, escapes: nil,
     savePosition(
       if(left nil?,
-        if(at ?("$") && fwd ?("["),
+        if(at textStartLit?,
           left = read + read
-          right = "]",
+          right = at textEnd,
           left = read
           right = left
         ),
@@ -151,7 +152,7 @@ Akin Tokenizer MessageReader do(
       sb = nil
       loop(
         if(at eof?,
-          error!("Expected end of text, found EOF")
+          error!("Expected end of text, found "+at)
           break)
         if(at backslash?,
           unless(sb, sb = newSb)
@@ -173,18 +174,19 @@ Akin Tokenizer MessageReader do(
                     sb << read
                   )
                   )),
-              if(fwd ?("b", "t", "n", "f", "r", "\\", "\n", "#", "e", right),
+              if(fwd ?(at textEscapes, right),
                 sb << read << read,
-                error!("Undefined text escape "+at)
+                if(escapes && fwd?(escapes, right),
+                  sb << read << read,
+                  error!("Undefined text escape "+at))
         ))))
-        if(interpolate? && at ?("#") && fwd ?("{"),
+        if(interpolate? && at interpolateStart?,
           parts << sb asText
           sb = nil
-          read. read. readBlank.
+          read. read.
           body = readMessageChain
           parts << body
-          readBlank
-          readChar("}")
+          readChar(at interpolateEnd)
         )
         if(at ?(right),
           read.
@@ -197,6 +199,26 @@ Akin Tokenizer MessageReader do(
       lit = newLit(:text, parts: parts, left: left, right: right)
       msg = newMsg(literal: lit)
     )
+  )
+
+  readRegexp = method(
+    unless(at regexpStart?,
+      error!("Expected char "+expected inspect+" got "+at))
+    read
+    msg = readText("/", "/", escapes: true)
+    flags = nil
+    while(at regexpFlags?, 
+      unless(flags, flags = newSb)
+      flags << read)
+    if(flags, flags = flags asText)
+    engine = nil
+    if(at colon?,
+      read
+      engine = :(readIdentifier name asText))
+    msg literal type = :regexp
+    msg literal flags = flags
+    msg literal engine = engine
+    msg
   )
 
   readNumber = method(

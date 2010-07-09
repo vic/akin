@@ -2,6 +2,7 @@
 use(System currentDirectory +"/tokenizer/literals/symbol_spec.ik")
 use(System currentDirectory +"/tokenizer/literals/number_spec.ik")
 use(System currentDirectory +"/tokenizer/literals/string_spec.ik")
+use(System currentDirectory +"/tokenizer/literals/regexp_spec.ik")
 use(System currentDirectory +"/tokenizer/literals/comment_spec.ik")
 use(System currentDirectory +"/tokenizer/message/body_spec.ik")
 use(System currentDirectory +"/tokenizer/message/chain_spec.ik")

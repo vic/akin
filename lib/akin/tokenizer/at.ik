@@ -19,7 +19,20 @@ Akin Tokenizer At do(
   )
   
   ? = method(+items, 
-    items flatten any?(i, Akin Tokenizer String charMatch?(char, i)))
+    items flatten any?(i, 
+      if(i is?(Text) && i length > 1,
+        m = self
+        i chars all?(c,
+          if(Akin Tokenizer String charMatch?(m char, c),
+            m = m next
+            true,
+            false
+          )
+        )
+        ,
+        Akin Tokenizer String charMatch?(char, i)
+    ))
+  )
 
   match? = method(char, +items, 
     items flatten any?(i, Akin Tokenizer String charMatch?(char, i)))
@@ -72,7 +85,21 @@ Akin Tokenizer At do(
   doubleQuote? = method(?("\""))
   singleQuote? = method(?("'"))
 
-  textStart? = method(doubleQuote? || (?("$") && next ?("[")))
+  textStart? = method(doubleQuote? || textStartLit?)
+  textStartLit? = method(?(textStartLit))
+  textStartLit = "$["
+  textEnd = "]"
+  textEscapes = list("b", "t", "n", "f", "r", "\\", "\n", "#", "e")
+
+  interpolateStart? = method(?(interpolateStart))
+  interpolateStart = "$("
+  interpolateEnd = ")"
+
+  regexpStart? = method(?(regexpStart))
+  regexpStart = "$/"
+  regexpEnd = "/"
+  regexpFlags? = method(?(regexpFlags))
+  regexpFlags = list("u", "m", "i", "x", "s")
 
   identifier? = method(alpha? || decimal? || sub?)
 

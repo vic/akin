@@ -16,7 +16,7 @@ describe("Akin Tokenizer parseText for text literals",
   )
 
   it("should parse interpolating text",
-    msg = parse(#["hel \#{lo wo} rld"])
+    msg = parse(#["hel $(lo wo) rld"])
     msg name should be nil
     msg should not be body
     msg should be literal
@@ -30,7 +30,7 @@ describe("Akin Tokenizer parseText for text literals",
   )
 
   it("should parse interpolating text with inner text",
-    msg = parse(#["hel \#{lo "you" wo} rld"])
+    msg = parse(#["hel $(lo "you" wo) rld"])
     msg name should be nil
     msg should not be body
     msg should be literal
