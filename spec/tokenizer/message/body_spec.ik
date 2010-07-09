@@ -48,4 +48,11 @@ describe("Akin Tokenizer parseText on message bodys",
     msg body should be chevron
   )
 
+  it("should parse $() as a regular message",
+    msg = parse("$(hello)")
+    msg name should == :("$")
+    msg body message name should == :hello
+    msg body should be round
+  )
+
 )
