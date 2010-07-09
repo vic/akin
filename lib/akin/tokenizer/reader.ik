@@ -81,33 +81,6 @@ Akin Tokenizer MessageReader do(
     msg
   )
 
-  readIdentifier2 = method(
-    savePosition(
-      sb = newSb
-      loop(
-        if(at eof? || 
-          at blank? ||
-          at terminator? ||
-          at enumerator? ||
-          at separator?  ||
-          at bracket?,
-          break)
-        if(at identifier?,
-          sb << read,
-          if(at ?(":", "$", "?"),
-            if(fwd identifier? || fwd ?(":", "$", "?"),
-              sb << read
-              sb << read
-              ,
-              sb << read
-              break)
-            ,
-            break)
-        )
-      )
-      newMsg(sb asText))
-  )
-
   readOperator = method(
     savePosition(
       sb = newSb
