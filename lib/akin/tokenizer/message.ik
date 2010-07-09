@@ -67,17 +67,16 @@ Akin Tokenizer Message do(
     nil
   )
 
-  enumerated? = method((space? || terminator? || separator? || enumerator?) not)
   enumerated = method(n 0,
     n = n abs + 1
     m = self
-    while(n > 0,
+    while(m && n > 0,
       n--
-      m = m find(enumerated?)
+      m = m find(visible?)
+      if(m && m enumerator?, m = nil)
       if(n == 0, return m)
-      unless(m, return)
-      m = m find(enumerator?)
-      unless(m, return)
+      if(m, m = m find(enumerator?), return)
+      if(m, m = m next, return)
     )
     nil
   )
