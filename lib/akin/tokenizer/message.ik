@@ -16,8 +16,7 @@ Akin Tokenizer Message do(
   comment? = method(literal && literal type == :comment)
   
   space? = method(name == :(""))
-  terminator? = method(name == :(".") || linefeed?)
-  linefeed? = method(name == :("\n") || name == :("\r"))
+  terminator? = method(name == :(".") || name == :("\n") || name == :("\r"))
   separator? = method(name == :(","))
   enumerator? = method(name == :(","))
 
@@ -82,13 +81,20 @@ Akin Tokenizer Message do(
     nil
   )
 
+  firstInLine = method(
+    unless(position, return self)
+    m = self
+    while(m && m previous && 
+      m previous position line == position line,
+      m = m previous)
+    m
+  )
+  
   indentLevel = method(
-    m = previous
-    while(m && !m linefeed?, m = m previous)
-    if(m && m next space?,
-      return m next literal text length
-    )
-    0
+    first = firstInLine
+    if(first == self, return 0)
+    if(first && first next space?, 
+      first next literal text length)
   )
  
   attach = method(msg,
