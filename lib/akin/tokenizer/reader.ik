@@ -2,7 +2,7 @@
 Akin Tokenizer MessageReader = Origin mimic
 Akin Tokenizer MessageReader do(
 
-  initialize = method(at, @savedPosition = nil. @at = at)
+  initialize = method(at, @phyPos = nil. @logPos = nil. @at = at)
 
   read = method(
     txt = Akin Tokenizer String txt(at char)
@@ -13,19 +13,20 @@ Akin Tokenizer MessageReader do(
   fwd = method(at next)
 
   savePosition = macro(
-    old = savedPosition
+    phyOld = @phyPos
+    logOld = @logPos
     ensure(
-      @savedPosition = at position
+      @phyPos = at phyPos
+      @logPos = at logPos
       call arguments first evaluateOn(call ground, self),
-      @savedPosition = old
+      @phyPos = phyOld
+      @logPos = logOld
     )
   )
 
   newMsg = method(+rest, +:krest,
-    pos = at position
-    if(savedPosition, pos = savedPosition)
-    @savedPosition = nil
-    krest[:position] = pos
+    krest[:phyPos] = phyPos || at phyPos
+    krest[:logPos] = logPos || at logPos
     Akin Tokenizer Message mimic(*rest, *krest)
   )
   newLit = method(+rest, +:krest,
@@ -50,9 +51,10 @@ Akin Tokenizer MessageReader do(
   readMessage = method(
     if(at eof?, read. return)
     if(at rightBracket?, return)
-    if(at leftBracket?, return readBrackets)
-    if(at single?, return newMsg(read))
+    if(at eol?, read. return newMsg("\n"))
     if(at space?, return readSpace)
+    if(at single?, return newMsg(read))
+    if(at leftBracket?, return readBrackets)
     if(at lineComment?, return readLineComment)
     if(at docStart?, return readDocument)
     if(at symbolStart?, return readSymbol)
@@ -317,18 +319,20 @@ Akin Tokenizer MessageReader do(
     sign = "+"
     if(at adition?, sign = read)
     exp = readDecimalInteger
-    lit = newLit(:decExponent, sign: sign,
-      exp: exp literal text)
+    lit = newLit(:decExponent, sign: sign, exp: exp literal text)
     newMsg(literal: lit)
   )
 
   readSpace = method(
     msg = newMsg(:(""))
     sb = newSb
-    while(at space?,
-      if(at lineComment?,
-        until(at eol?, read),
-        sb << read))
+    while(at space? || at escapedEol?,
+      if(at escapedEol?,
+        read
+        sb << " ",
+        if(at lineComment?,
+          until(at eol?, read),
+          sb << read)))
     msg literal = newLit(:space, text: sb asText)
     msg
   )
@@ -349,13 +353,6 @@ Akin Tokenizer MessageReader do(
     )
     txt = sb asText
     newMsg(literal: newLit(:document, text: txt))
-  )
-
-  readBlank = method(
-    while(at blank?,
-      if(at lineComment?, 
-        until(at eol?, read),
-        read))
   )
 
 )

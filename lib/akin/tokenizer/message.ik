@@ -1,13 +1,15 @@
 Akin Tokenizer Message = Origin mimic
 Akin Tokenizer Message do(
 
-  initialize = method(name nil, body nil, literal: nil, position: nil,
+  initialize = method(name nil, body nil, 
+    literal: nil, phyPos: nil, logPos: nil,
     @name = if(name, :(name), nil)
     @body = body
     @literal = literal
     @next = nil
     @previous = nil
-    @position = position
+    @phyPos = phyPos
+    @logPos = logPos || phyPos
   )
 
   body? = method(body nil? not)
@@ -82,10 +84,10 @@ Akin Tokenizer Message do(
   )
 
   firstInLine = method(
-    unless(position, return self)
+    unless(logPos, return self)
     m = self
     while(m && m previous && 
-      m previous position line == position line,
+      m previous logPos line == logPos line,
       m = m previous)
     m
   )

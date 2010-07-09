@@ -2,20 +2,54 @@
 Akin Tokenizer At = Origin mimic
 Akin Tokenizer At do(
 
-  initialize = method(reader, position, char nil,
-    @reader = reader. @position = position.
+  initialize = method(reader, phyPos, logPos phyPos, char nil,
+    @reader = reader. @phyPos = phyPos. @logPos = logPos.
+    @cached:n = nil
     if(char, @char = char)
   )
 
-  asText = method("character "+ Akin Tokenizer String desc(char) + " at " +position)
+  reader:read = method(reader read asRational)
 
-  char = method(@char = reader read asRational)
+  char = method(@char = reader:read)
   text = method(Akin Tokenizer String txt(char))
 
+  asText = method("character "+ Akin Tokenizer String desc(char) + " at " +phyPos)
+
+  eol? = method(
+    if(match?(char, "\n", "\u000C", "\u0085", "\u2028", "\u2029"),
+      return true)
+    if(match?(char, "\r"),
+      @cached:n = cached:n || reader:read
+      if(match?(cached:n, "\n"), @cached:n = reader:read)
+      return true)
+    false
+  )
+
+  escapedEol? = method(
+    if(match?(char, "\\"),
+      @cached:n = cached:n || reader:read
+      if(match?(cached:n, "\n", "\u000C", "\u0085", "\u2028", "\u2029"),
+        return true)
+      if(match?(cached:n, "\r"),
+        @cached:n = reader:read
+        if(match?(cached:n, "\n"), @cached:n = reader:read)
+        return true)
+    )
+    false
+  )
+
   next = method(
-    nextPosition = position next
-    if(match?(char, eol), nextPosition = position nextLine)
-    @next = Akin Tokenizer At mimic(reader, nextPosition)
+    newPhyPos = phyPos next
+    newLogPos = logPos next
+    if(escapedEol?,
+      @cached:n = reader:read
+      newPhyPos = phyPos next nextLine
+      newLogPos = logPos next,
+      if(eol?, 
+        newPhyPos = phyPos nextLine
+        newLogPos = logPos nextLine)
+    )
+    @next = Akin Tokenizer At mimic(reader, newPhyPos, newLogPos, cached:n)
   )
   
   ? = method(+items, 
@@ -51,8 +85,6 @@ Akin Tokenizer At do(
 
   eof? = method(?(-1))
   tab? = method(?("\t"))
-  eol? = method(?(eol))
-  eol = list("\n", "\r")
 
   lineComment? = method( ?("#") && (next ?("!") || next space?) )
 
@@ -63,7 +95,7 @@ Akin Tokenizer At do(
   docStar? = method(?("*") && next ?("/") not)
   docBlank? = method(blank? || docStar?)
 
-  space? = method(?(" ", "\t", "\u0009","\u000b","\u000c"))
+  space? = method(?(" ", "\t", "\u0009","\u000b","\u000c") || escapedEol?)
   blank? = method(space? || lineComment?)
 
   terminator? = method(eol? || (?(".") && next ?(".") not))
