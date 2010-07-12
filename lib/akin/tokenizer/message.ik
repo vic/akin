@@ -18,9 +18,22 @@ Akin Tokenizer Message do(
   comment? = method(literal && literal type == :comment)
   
   space? = method(name == :(""))
-  terminator? = method(name == :(".") || name == :("\n") || name == :("\r"))
-  separator? = method(name == :(","))
+  dot? = method(name == :("."))
+  colon? = method(name == :(":"))
+  semicolon? = method(name == :(";"))
+  
+  comma? = method(name == :(","))
+  
+  end? = method(dot? || semicolon?)
+  eol? = method(name == :("\n") || name == :("\r"))
+  
+  terminator? = method(end? || eol?)
+  separator? = method(name == :(";"))
   enumerator? = method(name == :(","))
+
+  punctuation? = method(terminator? || separator? || enumerator?)
+
+  colonArgOp? = method(colon? && body nil?)
 
   cell("[]") = method(index, at(index))
 
@@ -42,19 +55,21 @@ Akin Tokenizer Message do(
     body argAt(index)
   )
   
-  head = method(
+  first = method(
     m = self
     while(m previous, m = m previous)
     m
   )
 
-  tail = method(
+  last = method(
     m = self
     while(m next, m = m next)
     m
   )
 
-  visible? = method((space? || terminator? || comment?) not)
+  white? = method(space? || comment? || eol?)
+
+  visible? = method((space? || comment? || punctuation?) not)
   visible = method(n 0,
     n = n abs + 1
     m = self
@@ -97,6 +112,14 @@ Akin Tokenizer Message do(
     if(self != first && first next space?,
       first next literal text length, 0)
   )
+
+  sameLine? = method(msg, 
+    logPos && msg logPos && logPos line == msg logPos line
+  )
+
+  sameColumn? = method(msg,
+    logPos && msg logPos && logPos column == msg logPos column
+  )
  
   attach = method(msg,
     if(body nil? && msg name nil? && msg body && msg literal nil?,
@@ -109,6 +132,15 @@ Akin Tokenizer Message do(
     msg
   )
 
+  detach = method(newNext: nil, newPrev: nil,
+    edges = list(previous, next)
+    if(previous, previous next = next)
+    if(next, next previous = previous)
+    @previous = newNext
+    @next = newPrev
+    edges
+  )
+
   insert = method(msg,
     old = next
     if(old, old previous = msg)
@@ -117,7 +149,35 @@ Akin Tokenizer Message do(
     msg
   )
 
+  cell("+") = method(msg,
+    if(msg previous, msg previous = nil)
+    msg previous = self
+    if(next && next previous, next previous = nil)
+    @next = msg
+    msg
+  )
+
   notice = method(super + "["+name+"]")
+
+  code = method(
+    sb = Akin Tokenizer StringBuilder mimic
+    cond(
+      literal && literal type == :space,
+      sb << literal text,
+
+      literal && literal type == :symbolIdentifier,
+      sb << ":" << literal text,
+
+      if(name, sb << name asText)
+      if(body, 
+        sb << body brackets first
+        if(body message, sb << body message code)
+        sb << body brackets last
+      )
+    )
+    if(next, sb << next code)
+    sb asText
+  )
 
 )
 

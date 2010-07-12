@@ -38,4 +38,6 @@ Akin Tokenizer Position do(
   nextLine = method(n 1, Akin Tokenizer Position mimic(file, line + n, 1, pos + n))
   asList = method(list(file, line, column, pos))
 
+  notice = method(asText)
+
 )
