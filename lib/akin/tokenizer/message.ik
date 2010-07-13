@@ -72,7 +72,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m previous)
+      m = m next)
     nil,
 
     [name, code]
@@ -80,7 +80,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m previous)
+      m = m next)
     nil
   )
 
