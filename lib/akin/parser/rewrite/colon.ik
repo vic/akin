@@ -14,36 +14,36 @@ Akin Parser Rewrite Colon do(
   process = method(colon,
     first = colon firstInLine
     into = colon previous
-    body = colon
-    end = nil
     sb = Akin Tokenizer StringBuilder mimic
     sb << into name
-    while(body = body next,
-      end = body
-      if(body end?, break)
-      if((body sameColumn?(first) || body sameColumn?(colon)) &&
-        body next && body next colonArgOp?,
-        if(body body nil?,
-          sb << ":" << body name
-          body name = :(",")
-          body next detach,
+    end = nil
+    msg = colon
+    while(msg = msg next,
+      end = msg
+      if(msg end?, break)
+      if((msg sameColumn?(first) || msg sameColumn?(into)) &&
+        msg next && msg next colonArgOp?,
+        if(msg body nil?,
+          sb << ":" << msg name
+          msg name = :(",")
+          msg next detach,
 
-          body previous 
+          msg previous 
           comma = newMsg(:",")
-          comma previous = body previous
-          comma next = body
-          body previous next = comma
-          body next name = :(",")
+          comma previous = msg previous
+          comma next = msg
+          msg previous next = comma
+          msg next name = :(",")
         )
         continue
       )
-      if(body next && body next colonArgOp?,
-        process(body next)
-        if(body body && body body message,
-          rewrite(body body message))
+      if(msg next && msg next colonArgOp?,
+        process(msg next)
+        if(msg body && msg body message,
+          rewrite(msg body message))
       )
-      if(!body white? && body logPos column <= first logPos column,
-        end = body firstInLine previous
+      if(!msg white? && msg logPos column <= first logPos column,
+        end = msg firstInLine previous
         break)
     )
     into next = end next

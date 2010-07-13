@@ -70,7 +70,6 @@ describe("Akin Parser",
   )
 
   it("should add arguments until colon is found at same column",
-    
     msg = parse("hello: foo\n bar\n,\n baz\n bat\n. quxx")
     msg code should == "hello( foo\n bar\n,\n baz\n bat\n.) quxx"
   )
@@ -78,6 +77,11 @@ describe("Akin Parser",
   it("should rewrite the message name",
     msg = parse("if: true,\n  hello\nelse:\n bye")
     msg code should == "if:else( true,\n  hello\n,\n bye)"
+  )
+
+  it("should rewrite the message name",
+    msg = parse("foo if: true,\n      hello\n    else:\n      bye")
+    msg code should == "foo if:else( true,\n      hello\n    ,\n      bye)"
   )
 
   it("should rewrite the message name until colon",
