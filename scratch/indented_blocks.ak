@@ -11,7 +11,7 @@
 #  statements still improves readability :) 
 
 5 times(i):
-  lang = if i % 2 == 0:
+  lang = if: i % 2 == 0
             "python"
          else:
             "akin"
