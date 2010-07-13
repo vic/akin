@@ -21,7 +21,8 @@ Akin Tokenizer Message do(
   dot? = method(name == :("."))
   colon? = method(name == :(":"))
   semicolon? = method(name == :(";"))
-  
+  dcolon? = method(name == :("::"))
+
   comma? = method(name == :(","))
   
   end? = method(dot? || semicolon?)
@@ -34,6 +35,7 @@ Akin Tokenizer Message do(
   punctuation? = method(terminator? || separator? || enumerator?)
 
   colonArgOp? = method(colon? && body nil?)
+  dcolonArgOp? = method(dcolon? && body nil?)
 
   cell("[]") = method(index, at(index))
 
