@@ -86,7 +86,7 @@ Akin Tokenizer At do(
   eof? = method(?(-1))
   tab? = method(?("\t"))
 
-  lineComment? = method( ?("#") && (next ?("!") || next space?) )
+  lineComment? = method( ?("#") && (next ?("!", "#") || next space?) )
 
   docStart? = method( ?("/") && next ?("*"))
   docStart2? = method( ?("/") && next ?("*") && next next ?("*"))
