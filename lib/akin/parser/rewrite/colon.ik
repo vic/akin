@@ -21,12 +21,13 @@ Akin Parser Rewrite Colon do(
     while(body = body next,
       end = body
       if(body end?, break)
-      if(body sameColumn?(first) &&
+      if((body sameColumn?(first) || body sameColumn?(colon)) &&
         body next && body next colonArgOp?,
         if(body body nil?,
           sb << ":" << body name
           body name = :(",")
           body next detach,
+
           body previous 
           comma = newMsg(:",")
           comma previous = body previous
@@ -51,16 +52,8 @@ Akin Parser Rewrite Colon do(
     body previous = nil
     end next = nil
     into name = :(sb asText)
-    if(into body,
-      if(into body message,
-        into body message last + newMsg(:",") + body,
-        into body message = body),
-      into body = newBody(body))
+    into appendArgument(body)
     into
-  )
-
-  newBody = method(msg,
-    Akin Tokenizer Message Body mimic(msg, list("(", ")"))
   )
 
   newMsg = method(+args, +:kargs,

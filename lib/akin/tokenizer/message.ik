@@ -67,6 +67,40 @@ Akin Tokenizer Message do(
     m
   )
 
+  findForward = dmacro(
+    [code]
+    m = self
+    while(m, 
+      if(code evaluateOn(call ground, m), return m)
+      m = m previous)
+    nil,
+
+    [name, code]
+    lexicalCode = LexicalBlock createFrom(list(name, code), call ground)
+    m = self
+    while(m, 
+      if(lexicalCode call(m), return m)
+      m = m previous)
+    nil
+  )
+
+  findBackward = dmacro(
+    [code]
+    m = self
+    while(m, 
+      if(code evaluateOn(call ground, m), return m)
+      m = m previous)
+    nil,
+
+    [name, code]
+    lexicalCode = LexicalBlock createFrom(list(name, code), call ground)
+    m = self
+    while(m, 
+      if(lexicalCode call(m), return m)
+      m = m previous)
+    nil
+  )
+
   white? = method(space? || comment? || eol?)
 
   visible? = method((space? || comment? || punctuation?) not)
@@ -155,6 +189,20 @@ Akin Tokenizer Message do(
     if(next && next previous, next previous = nil)
     @next = msg
     msg
+  )
+
+  appendArgument = method(arg, 
+    if(body, 
+      if(body message, 
+        last = body message last findBackward(white? not)
+        if(last comma?, 
+          last + arg,
+          last + Akin Tokenizer Message mimic(:",") + arg
+        ),
+        body message = arg),
+      @body = Akin Tokenizer Message Body mimic(arg, list("(", ")"))
+    )
+    self
   )
 
   notice = method(super + "["+name+"]")

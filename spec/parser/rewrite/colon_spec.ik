@@ -95,6 +95,11 @@ describe("Akin Parser",
     msg code should == "foo( bar( baz.) .)bat"
   )
 
+  it("should not add comma if already have one",
+    msg = parse("foo(bar, baz,): bat")
+    msg code should == "foo(bar, baz, bat)"
+  )
+
   it("should should not rewrite the message name if has parens", 
     {pending: true},
     msg = parse("case(n):\nmatch(a):\n hello\nis(b):\n bye")
