@@ -11,8 +11,8 @@
 #  statements still improves readability :) 
 
 5 times(i):
-  lang = if: i % 2 == 0
-            "python"
+  lang = if(i % 2 == 0):
+            "smalltalk", "python" :: if(i == 2)
          else:
             "akin"
   lang println
@@ -21,6 +21,6 @@
 #
 # python
 # akin
-# python
+# smalltalk
 # akin
 # python
