@@ -197,9 +197,9 @@ Akin Tokenizer Message do(
         last = body message last findBackward(white? not)
         if(last comma?, 
           last + arg,
+          last + Akin Tokenizer Message mimic(:",") + arg
           if(arg findForward(white? not) comma?,
-            last + arg,
-            last + Akin Tokenizer Message mimic(:",") + arg
+            arg findForward(white? not) detach
           )
         ),
         body message = arg),
