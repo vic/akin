@@ -28,7 +28,6 @@ Akin Parser Rewrite Colon do(
           msg name = :(",")
           msg next detach,
 
-          msg previous 
           comma = newMsg(:",")
           comma previous = msg previous
           comma next = msg

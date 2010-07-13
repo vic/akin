@@ -105,9 +105,8 @@ describe("Akin Parser",
   )
 
   it("should should not rewrite the message name if has parens", 
-    {pending: true},
-    msg = parse("case(n):\nmatch(a):\n hello\nis(b):\n bye")
-    msg code should == "case(n,\nmatch(a),\n hello, is(b),\n bye)"
+    msg = parse("case(n):\nmatch(a): hello\nis(b): bye")
+    msg code should == "case(n\n,match(a), hello\n,is(b), bye)"
   )
 
 
