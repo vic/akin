@@ -2,8 +2,9 @@
 Akin Tokenizer At = Origin mimic
 Akin Tokenizer At do(
 
-  initialize = method(reader, phyPos, logPos phyPos, char nil,
-    @reader = reader. @phyPos = phyPos. @logPos = logPos.
+  initialize = method(reader, position, char nil,
+    @reader = reader
+    @position = position
     @cached:n = nil
     if(char, @char = char)
   )
@@ -38,18 +39,14 @@ Akin Tokenizer At do(
     false
   )
 
-  next = method(
-    newPhyPos = phyPos next
-    newLogPos = logPos next
+  succ = method(
+    pos = position succ
     if(escapedEol?,
       @cached:n = reader:read
-      newPhyPos = phyPos next nextLine
-      newLogPos = logPos next,
-      if(eol?, 
-        newPhyPos = phyPos nextLine
-        newLogPos = logPos nextLine)
+      pos = position succEscaped,
+      if(eol?, pos = position succLine)
     )
-    @next = Akin Tokenizer At mimic(reader, newPhyPos, newLogPos, cached:n)
+    @succ = Akin Tokenizer At mimic(reader, pos, cached:n)
   )
   
   ? = method(+items, 
@@ -58,7 +55,7 @@ Akin Tokenizer At do(
         m = self
         i chars all?(c,
           if(Akin Tokenizer String charMatch?(m char, c),
-            m = m next
+            m = m succ
             true,
             false
           )
@@ -86,26 +83,26 @@ Akin Tokenizer At do(
   eof? = method(?(-1))
   tab? = method(?("\t"))
 
-  lineComment? = method( ?("#") && (next ?("!", "#") || next space?) )
+  lineComment? = method( ?("#") && (succ ?("!", "#") || succ space?) )
 
-  docStart? = method( ?("/") && next ?("*"))
-  docStart2? = method( ?("/") && next ?("*") && next next ?("*"))
-  docStart3? = method( ?("/") && next ?("*") && next next ?("*") && next next next ?("*"))
-  docEnd? = method(?("*") && next ?("/"))
-  docStar? = method(?("*") && next ?("/") not)
+  docStart? = method( ?("/") && succ ?("*"))
+  docStart2? = method( ?("/") && succ ?("*") && succ succ ?("*"))
+  docStart3? = method( ?("/") && succ ?("*") && succ succ ?("*") && succ succ succ ?("*"))
+  docEnd? = method(?("*") && succ ?("/"))
+  docStar? = method(?("*") && succ ?("/") not)
   docBlank? = method(blank? || docStar?)
 
   space? = method(?(" ", "\t", "\u0009","\u000b","\u000c") || escapedEol?)
   blank? = method(space? || lineComment?)
 
-  terminator? = method(eol? || (?(".") && next ?(".") not))
-  enumerator? = method(?(",") && next ?(",") not)
-  separator? = method(?(";") && next ?(";") not)
-  colon? = method(?(":") && next ?(":") not)
+  terminator? = method(eol? || (?(".") && succ ?(".") not))
+  enumerator? = method(?(",") && succ ?(",") not)
+  separator? = method(?(";") && succ ?(";") not)
+  colon? = method(?(":") && succ ?(":") not)
 
   single? = method(terminator? || enumerator? || separator?)
 
-  symbolStart? = method(colon? && (next ?("\"") || next symbol?))
+  symbolStart? = method(colon? && (succ ?("\"") || succ symbol?))
   symbol? = method(alpha? || decimal? || sub? || ?("?", "$"))
 
   backslash? = method(?("\\"))

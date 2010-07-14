@@ -1,15 +1,13 @@
 Akin Tokenizer Message = Origin mimic
 Akin Tokenizer Message do(
 
-  initialize = method(name nil, body nil, 
-    literal: nil, phyPos: nil, logPos: nil,
+  initialize = method(name nil, body nil, literal: nil, position: nil,
     @name = if(name, :(name), nil)
     @body = body
     @literal = literal
-    @next = nil
-    @previous = nil
-    @phyPos = phyPos
-    @logPos = logPos || phyPos
+    @succ = nil
+    @prec = nil
+    @position = position
   )
 
   body? = method(body nil? not)
@@ -30,7 +28,7 @@ Akin Tokenizer Message do(
 
   comment? = method(literal && literal type == :comment)
   
-  space? = method(name == :(""))
+  space? = method(name == :("") && body nil?)
   dot? = method(name == :("."))
   colon? = method(name == :(":"))
   semicolon? = method(name == :(";"))
@@ -55,11 +53,11 @@ Akin Tokenizer Message do(
   at = method(index,
     if(index == 0, return self)
     idx = index abs
-    fwd = index == idx
+    succ = index == idx
     msg = self
     while(msg && idx > 0, 
       idx--
-      if(fwd, msg = msg next, msg = msg previous)
+      if(succ, msg = msg succ, msg = msg prec)
       if(idx == 0, return msg)
     )
     nil
@@ -70,15 +68,27 @@ Akin Tokenizer Message do(
     body argAt(index)
   )
   
+  cell("arg=") = method(index, msg, 
+    arg = @arg(index)
+    unless(arg, error!("No argument found at index #{index}"))
+    comma = arg findForward(enumerator?)
+    upto = if(comma, comma prev, 
+      lst = arg last
+      if(lst space?, lst prev, lst)
+    )
+    msg replace(arg, upto)
+    msg
+  )
+  
   first = method(
     m = self
-    while(m previous, m = m previous)
+    while(m prec, m = m prec)
     m
   )
 
   last = method(
     m = self
-    while(m next, m = m next)
+    while(m succ, m = m succ)
     m
   )
 
@@ -87,7 +97,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m next)
+      m = m succ)
     nil,
 
     [name, code]
@@ -95,7 +105,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m next)
+      m = m succ)
     nil
   )
 
@@ -104,7 +114,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m previous)
+      m = m prec)
     nil,
 
     [name, code]
@@ -112,97 +122,146 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m previous)
+      m = m prec)
     nil
+  )
+
+  prev = method(
+    prec && prec findBackward(m, (m space? || m comment?) not)
+  )
+
+  next = method(
+    succ && succ findForward(m, (m space? || m comment?) not)
+  )
+
+  cell("next=") = method(msg,
+    n = @next
+    if(n, msg replace(n), last append(msg))
+    msg
+  )
+
+  cell("prev=") = method(msg,
+    p = @prev
+    if(p, msg replace(p), first prepend(msg))
+    msg
   )
 
   white? = method(space? || comment? || eol?)
 
-  visible? = method((space? || comment? || punctuation?) not)
-  visible = method(n 0,
+  expression? = method((white? || punctuation?) not)
+
+  expression = method(n 0,
     n = n abs + 1
-    m = self
-    while(n > 0,
-      n--
-      m = m findForward(visible?)
-      if(n == 0, return m)
-      unless(m, return)
-      m = m next
-      unless(m, return)
-    )
-    nil
+    findForward(m, m expression? && (n-- == 0))
   )
 
-  firstInExpr = method(
+  firstExpr = method(
     if(p = findBackward(punctuation?),
-      p next,
-      self)
+      p expression,
+      first expression)
   )
 
-  firstVisibleInLine? = method(
-    firstInLine visible == self
-  )
+  firstExpr? = method(firstExpr == self)
 
-  firstVisibleInExpr? = method(
-    firstInExpr visible == self
-  )
+  nextExpr? = method(next && next expression?)
 
-  hasNextVisibleInExpr? = method(
-    endOfExpr = findForward(punctuation?)
-    findForward(n, 
-      if(endOfExpr nil? && n visible?, return true)
-      if(n visible?, return true)
-      if(n == endOfExpr, return false)
-    )
-    nil
-  )
+  firstExprInLine = method(firstInLine expression)
+
+  firstExprInLine? = method(firstInLine == self)
 
   enumerated = method(n 0,
     n = n abs + 1
     m = self
     while(m && n > 0,
       n--
-      m = m findForward(visible?)
+      m = m findForward(expression?)
       if(m && m enumerator?, m = nil)
       if(n == 0, return m)
       if(m, m = m findForward(enumerator?), return)
-      if(m, m = m next, return)
+      if(m, m = m succ, return)
     )
     nil
   )
 
-  firstInLine = method(
-    unless(logPos, return self)
+  firstInLine = method(usePosition: false,
+    if(usePosition nil? && position, usePosition = true)
+    if(usePosition, firstInLine:withPosition, firstInLine:noPosition)
+  )
+
+  firstInLine:noPosition = method(
+    eol = findBackward(eol?)
+    if(eol, eol succ, first)
+  )
+
+  firstInLine:withPosition = method(
+    unless(position, return self)
     m = self
-    while(m && m previous && 
-      m previous logPos line == logPos line,
-      m = m previous)
+    while(m && m prec && 
+      m prec position logical line == position logical line,
+      m = m prec)
     m
   )
   
-  indentLevel = method(
-    first = firstInLine
-    if(self != first && first next space?,
-      first next literal text length, 0)
+  lineIndentLevel = method(usePosition: false,
+    if(usePosition nil? && position, usePosition = true)
+    first = firstInLine(usePosition: usePosition)
+    if(self != first && first space?,
+      first literal text length, 0)
   )
 
-  sameLine? = method(msg, 
-    logPos && msg logPos && logPos line == msg logPos line
+  sameLineIndent? = method(m, usePosition: false,
+    if(usePosition nil? && position && m position, usePosition = true)
+    lineIndentLevel(usePosition: usePosition) ==  m lineIndentLevel(usePosition: usePosition)
   )
 
-  sameColumn? = method(msg,
-    logPos && msg logPos && logPos column == msg logPos column
+  sameLine? = method(m, usePosition: false,
+    if(usePosition nil? && position && m position, usePosition = true)
+    if(usePosition, sameLine:withPosition(m), sameLine:noPosition(m))
   )
- 
+
+  sameLine:noPosition? = method(msg, 
+    findBackward(eol?) == msg findBackward(eol?)
+  )
+
+  sameLine:withPosition? = method(msg, 
+    (position && msg position &&
+      position logical line == msg position logical line)
+  )
+
+  sameColumn? = method(m, usePosition: false,
+    if(usePosition nil? && position && m position, usePosition = true)
+    if(usePosition, sameColumn:withPosition?(m), 
+      sameColumn:noPosition?(m))
+  )
+
+  sameColumn:noPosition? = method(msg, 
+    indentLevel == msg indentLevel
+  )
+
+  sameColumn:withPosition? = method(msg,
+    (position && msg position && 
+      position logical column == msg position logical column)
+  )
+
+  append = method(msg, 
+    msg prec = self
+    if(succ, succ pevious = nil)
+    @succ = msg
+    msg
+  )
+
+  prepend = method(msg,
+    msg succ = self
+    if(prec, prec succ = nil)
+    @prec = msg
+    msg
+  )
+
   attach = method(msg,
     if(body nil? && msg name nil? && msg body && msg literal nil?,
       @body = msg body
       return self)
-    
-    if(next, next previous = nil)
-    msg previous = self
-    @next = msg
-    msg
+    append(msg)
   )
 
   detachLeft = method(prevNext: nil,
@@ -216,28 +275,39 @@ Akin Tokenizer Message do(
   )
 
   detach = method(newNext: nil, newPrev: nil,
-    edges = list(previous, next)
-    if(previous, previous next = next)
-    if(next, next previous = previous)
-    @previous = newNext
-    @next = newPrev
+    edges = list(prec, succ)
+    if(prec, prec succ = succ)
+    if(succ, succ prec = prec)
+    @prec = newNext
+    @succ = newPrev
     edges
   )
 
   insert = method(msg,
-    old = next
-    if(old, old previous = msg)
-    msg previous = self
-    @next = msg
+    old = succ
+    if(old, old prec = msg)
+    msg prec = self
+    @succ = msg
     msg
   )
 
-  cell("+") = method(msg,
-    if(msg previous, msg previous = nil)
-    msg previous = self
-    if(next && next previous, next previous = nil)
-    @next = msg
-    msg
+  replace = method(other, upto nil,
+    if(upto nil?,
+      other insert(self)
+      other detach,
+
+      @prec = other prec
+      if(prec, prec succ = self)
+
+      last = @last
+      last succ = upto succ
+      if(last succ, last succ prec = last)
+
+      other prec = nil
+      upto succ = nil
+
+    )
+    self
   )
 
   appendArgument = method(arg, 
@@ -245,8 +315,8 @@ Akin Tokenizer Message do(
       if(body message, 
         last = body message last findBackward(white? not)
         if(last comma?, 
-          last + arg,
-          last + Akin Tokenizer Message mimic(:",") + arg
+          last append(arg),
+          last append(Akin Tokenizer Message mimic(:",")) append(arg)
           if(arg findForward(white? not) comma?,
             arg findForward(white? not) detach
           )
@@ -275,7 +345,7 @@ Akin Tokenizer Message do(
         sb << body brackets last
       )
     )
-    if(next, sb << next code)
+    if(succ, sb << succ code)
     sb asText
   )
 
@@ -285,20 +355,20 @@ Akin Tokenizer Message mimic!(Mixins Enumerable)
 Akin Tokenizer Message each = dmacro(
   [code]
   m = self
-  while(m, code evaluateOn(call ground, m). m = m next)
+  while(m, code evaluateOn(call ground, m). m = m succ)
   self,
 
   [name, code]
   lexicalCode = LexicalBlock createFrom(list(name, code), call ground)
   m = self
-  while(m, lexicalCode call(m). m = m next)
+  while(m, lexicalCode call(m). m = m succ)
   self,
 
   [index, place, code]
   lexicalCode = LexicalBlock createFrom(list(index,name, code), call ground)
   i = 0
   m = self
-  while(m, lexicalCode call(i, m). m = m next. i++)
+  while(m, lexicalCode call(i, m). m = m succ. i++)
   self,
 )
 

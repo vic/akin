@@ -46,7 +46,7 @@ describe("Akin Tokenizer parseText message identifiers",
     msg should not be nil
     msg name should == :hello
     msg should not be body
-    msg next name should == :(":")
+    msg succ name should == :(":")
   )
   
 

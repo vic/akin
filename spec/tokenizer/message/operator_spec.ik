@@ -11,28 +11,28 @@ describe("Akin Tokenizer parseText",
     msg = parse("hello : world")
     msg should not be nil
     msg name should == :hello
-    msg next should be space
-    msg next next name should == :(":")
-    msg next next next should be space
-    msg next next next next name should == :world
+    msg succ should be space
+    msg succ succ name should == :(":")
+    msg succ succ succ should be space
+    msg succ succ succ succ name should == :world
     
-    msg visible(0) name should == :hello
-    msg visible(1) name should == :(":")
-    msg visible(2) name should == :world
+    msg expression(0) name should == :hello
+    msg expression(1) name should == :(":")
+    msg expression(2) name should == :world
   )
 
   it("should parse =",
     msg = parse("hello= world")
-    msg visible(0) name should == :hello
-    msg visible(1) name should == :("=")
-    msg visible(2) name should == :world
+    msg expression(0) name should == :hello
+    msg expression(1) name should == :("=")
+    msg expression(2) name should == :world
   )
 
   it("should parse as two messages if = has spaces",
     msg = parse("hello = world")
-    msg visible(0) name should == :hello
-    msg visible(1) name should == :("=")
-    msg visible(2) name should == :world
+    msg expression(0) name should == :hello
+    msg expression(1) name should == :("=")
+    msg expression(2) name should == :world
   )
 
   it("should parse operators starting with #",
