@@ -59,7 +59,10 @@ Akin Tokenizer Message do(
     arg = @arg(index)
     unless(arg, error!("No argument found at index #{index}"))
     comma = arg findForward(enumerator?)
-    upto = if(comma, comma prev, arg last)
+    upto = if(comma, comma prev, 
+      lst = arg last
+      if(lst space?, lst prev, lst)
+    )
     msg replace(arg, upto)
     msg
   )

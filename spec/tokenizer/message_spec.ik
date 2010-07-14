@@ -117,7 +117,7 @@ describe("Akin Tokenizer Message",
     foo arg(1) name should == :bar
     foo arg(2) name should == :baz
     foo arg(2) = qux
-    foo code should == "hello( foo,  bar man  , qux mux)"
+    foo code should == "hello( foo,  bar man  , qux mux )"
   )
 
 
