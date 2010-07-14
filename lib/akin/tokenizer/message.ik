@@ -15,7 +15,7 @@ Akin Tokenizer Message do(
 
   comment? = method(literal && literal type == :comment)
   
-  space? = method(name == :(""))
+  space? = method(name == :("") && body nil?)
   dot? = method(name == :("."))
   colon? = method(name == :(":"))
   semicolon? = method(name == :(";"))
@@ -53,6 +53,15 @@ Akin Tokenizer Message do(
   arg = method(index,
     unless(body, return)
     body argAt(index)
+  )
+  
+  cell("arg=") = method(index, msg, 
+    arg = @arg(index)
+    unless(arg, error!("No argument found at index #{index}"))
+    comma = arg findForward(enumerator?)
+    upto = if(comma, comma prev, arg last)
+    msg replace(arg, upto)
+    msg
   )
   
   first = method(
@@ -101,21 +110,33 @@ Akin Tokenizer Message do(
     nil
   )
 
+  prev = method(
+    prec && prec findBackward(m, (m space? || m comment?) not)
+  )
+
+  next = method(
+    succ && succ findForward(m, (m space? || m comment?) not)
+  )
+
+  cell("next=") = method(msg,
+    n = @next
+    if(n, msg replace(n), last append(msg))
+    msg
+  )
+
+  cell("prev=") = method(msg,
+    p = @prev
+    if(p, msg replace(p), first prepend(msg))
+    msg
+  )
+
   white? = method(space? || comment? || eol?)
 
-  visible? = method((space? || comment? || punctuation?) not)
-  visible = method(n 0,
+  expression? = method((white? || punctuation?) not)
+
+  expression = method(n 0,
     n = n abs + 1
-    m = self
-    while(n > 0,
-      n--
-      m = m find(visible?)
-      if(n == 0, return m)
-      unless(m, return)
-      m = m succ
-      unless(m, return)
-    )
-    nil
+    findForward(m, m expression? && (n-- == 0))
   )
 
   enumerated = method(n 0,
@@ -123,10 +144,10 @@ Akin Tokenizer Message do(
     m = self
     while(m && n > 0,
       n--
-      m = m find(visible?)
+      m = m findForward(expression?)
       if(m && m enumerator?, m = nil)
       if(n == 0, return m)
-      if(m, m = m find(enumerator?), return)
+      if(m, m = m findForward(enumerator?), return)
       if(m, m = m succ, return)
     )
     nil
@@ -228,6 +249,25 @@ Akin Tokenizer Message do(
     msg prec = self
     @succ = msg
     msg
+  )
+
+  replace = method(other, upto nil,
+    if(upto nil?,
+      other insert(self)
+      other detach,
+
+      @prec = other prec
+      if(prec, prec succ = self)
+
+      last = @last
+      last succ = upto succ
+      if(last succ, last succ prec = last)
+
+      other prec = nil
+      upto succ = nil
+
+    )
+    self
   )
 
   appendArgument = method(arg, 
