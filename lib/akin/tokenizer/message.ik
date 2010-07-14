@@ -14,6 +14,19 @@ Akin Tokenizer Message do(
 
   body? = method(body nil? not)
   literal? = method(literal nil? not)
+  hasArgs? = method(argCount == 0)
+
+  argCount = method(
+    if(body nil? || body message nil?, return 0)
+    n = -1
+    c = body message findForward(comma?)
+    while(c,
+      n++
+      c = c next && c next findForward(comma?)
+    )
+    n + 1
+  )
+
 
   comment? = method(literal && literal type == :comment)
   
@@ -111,11 +124,35 @@ Akin Tokenizer Message do(
     m = self
     while(n > 0,
       n--
-      m = m find(visible?)
+      m = m findForward(visible?)
       if(n == 0, return m)
       unless(m, return)
       m = m next
       unless(m, return)
+    )
+    nil
+  )
+
+  firstInExpr = method(
+    if(p = findBackward(punctuation?),
+      p next,
+      self)
+  )
+
+  firstVisibleInLine? = method(
+    firstInLine visible == self
+  )
+
+  firstVisibleInExpr? = method(
+    firstInExpr visible == self
+  )
+
+  hasNextVisibleInExpr? = method(
+    endOfExpr = findForward(punctuation?)
+    findForward(n, 
+      if(endOfExpr nil? && n visible?, return true)
+      if(n visible?, return true)
+      if(n == endOfExpr, return false)
     )
     nil
   )
@@ -125,10 +162,10 @@ Akin Tokenizer Message do(
     m = self
     while(m && n > 0,
       n--
-      m = m find(visible?)
+      m = m findForward(visible?)
       if(m && m enumerator?, m = nil)
       if(n == 0, return m)
-      if(m, m = m find(enumerator?), return)
+      if(m, m = m findForward(enumerator?), return)
       if(m, m = m next, return)
     )
     nil
@@ -166,6 +203,16 @@ Akin Tokenizer Message do(
     msg previous = self
     @next = msg
     msg
+  )
+
+  detachLeft = method(prevNext: nil,
+    if(previous, previous next = prevNext)
+    @previous = nil
+  )
+
+  detachRight = method(nextPrev: nil,
+    if(next, next previous = nextPrev)
+    @next = nil
   )
 
   detach = method(newNext: nil, newPrev: nil,
