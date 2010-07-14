@@ -31,18 +31,18 @@ describe("Akin Tokenizer parseText for comments",
   it("should treat comments as whitespace, starting from #! to end of line",
     msg = parse("  #! A comment in akin\n is upto #! the end of line")
     msg should be space
-    msg next should be literal
-    msg next literal type should == :comment
-    msg next literal text should == "#! A comment in akin"
-    msg next next should be terminator
-    msg next next next should be space
-    msg next next next next name should == :is
-    msg next next next next next should be space
-    msg next next next next next next name should == :upto
-    msg next next next next next next next should be space
-    msg next next next next next next next next should be literal
-    msg next next next next next next next next literal type should == :comment
-    msg next next next next next next next next literal text should == "#! the end of line"
+    msg succ should be literal
+    msg succ literal type should == :comment
+    msg succ literal text should == "#! A comment in akin"
+    msg succ succ should be terminator
+    msg succ succ succ should be space
+    msg succ succ succ succ name should == :is
+    msg succ succ succ succ succ should be space
+    msg succ succ succ succ succ succ name should == :upto
+    msg succ succ succ succ succ succ succ should be space
+    msg succ succ succ succ succ succ succ succ should be literal
+    msg succ succ succ succ succ succ succ succ literal type should == :comment
+    msg succ succ succ succ succ succ succ succ literal text should == "#! the end of line"
   )
 
 

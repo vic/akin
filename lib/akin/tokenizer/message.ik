@@ -5,8 +5,8 @@ Akin Tokenizer Message do(
     @name = if(name, :(name), nil)
     @body = body
     @literal = literal
-    @next = nil
-    @previous = nil
+    @succ = nil
+    @prec = nil
     @position = position
   )
 
@@ -40,11 +40,11 @@ Akin Tokenizer Message do(
   at = method(index,
     if(index == 0, return self)
     idx = index abs
-    fwd = index == idx
+    succ = index == idx
     msg = self
     while(msg && idx > 0, 
       idx--
-      if(fwd, msg = msg next, msg = msg previous)
+      if(succ, msg = msg succ, msg = msg prec)
       if(idx == 0, return msg)
     )
     nil
@@ -57,13 +57,13 @@ Akin Tokenizer Message do(
   
   first = method(
     m = self
-    while(m previous, m = m previous)
+    while(m prec, m = m prec)
     m
   )
 
   last = method(
     m = self
-    while(m next, m = m next)
+    while(m succ, m = m succ)
     m
   )
 
@@ -72,7 +72,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m next)
+      m = m succ)
     nil,
 
     [name, code]
@@ -80,7 +80,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m next)
+      m = m succ)
     nil
   )
 
@@ -89,7 +89,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m previous)
+      m = m prec)
     nil,
 
     [name, code]
@@ -97,7 +97,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m previous)
+      m = m prec)
     nil
   )
 
@@ -112,7 +112,7 @@ Akin Tokenizer Message do(
       m = m find(visible?)
       if(n == 0, return m)
       unless(m, return)
-      m = m next
+      m = m succ
       unless(m, return)
     )
     nil
@@ -127,7 +127,7 @@ Akin Tokenizer Message do(
       if(m && m enumerator?, m = nil)
       if(n == 0, return m)
       if(m, m = m find(enumerator?), return)
-      if(m, m = m next, return)
+      if(m, m = m succ, return)
     )
     nil
   )
@@ -139,15 +139,15 @@ Akin Tokenizer Message do(
 
   firstInLine:noPosition = method(
     eol = findBackward(eol?)
-    if(eol, eol next, first)
+    if(eol, eol succ, first)
   )
 
   firstInLine:withPosition = method(
     unless(position, return self)
     m = self
-    while(m && m previous && 
-      m previous position logical line == position logical line,
-      m = m previous)
+    while(m && m prec && 
+      m prec position logical line == position logical line,
+      m = m prec)
     m
   )
   
@@ -193,16 +193,16 @@ Akin Tokenizer Message do(
   )
 
   append = method(msg, 
-    msg previous = self
-    if(next, next pevious = nil)
-    @next = msg
+    msg prec = self
+    if(succ, succ pevious = nil)
+    @succ = msg
     msg
   )
 
   prepend = method(msg,
-    msg next = self
-    if(previous, previous next = nil)
-    @previous = msg
+    msg succ = self
+    if(prec, prec succ = nil)
+    @prec = msg
     msg
   )
 
@@ -214,19 +214,19 @@ Akin Tokenizer Message do(
   )
 
   detach = method(newNext: nil, newPrev: nil,
-    edges = list(previous, next)
-    if(previous, previous next = next)
-    if(next, next previous = previous)
-    @previous = newNext
-    @next = newPrev
+    edges = list(prec, succ)
+    if(prec, prec succ = succ)
+    if(succ, succ prec = prec)
+    @prec = newNext
+    @succ = newPrev
     edges
   )
 
   insert = method(msg,
-    old = next
-    if(old, old previous = msg)
-    msg previous = self
-    @next = msg
+    old = succ
+    if(old, old prec = msg)
+    msg prec = self
+    @succ = msg
     msg
   )
 
@@ -265,7 +265,7 @@ Akin Tokenizer Message do(
         sb << body brackets last
       )
     )
-    if(next, sb << next code)
+    if(succ, sb << succ code)
     sb asText
   )
 
@@ -275,20 +275,20 @@ Akin Tokenizer Message mimic!(Mixins Enumerable)
 Akin Tokenizer Message each = dmacro(
   [code]
   m = self
-  while(m, code evaluateOn(call ground, m). m = m next)
+  while(m, code evaluateOn(call ground, m). m = m succ)
   self,
 
   [name, code]
   lexicalCode = LexicalBlock createFrom(list(name, code), call ground)
   m = self
-  while(m, lexicalCode call(m). m = m next)
+  while(m, lexicalCode call(m). m = m succ)
   self,
 
   [index, place, code]
   lexicalCode = LexicalBlock createFrom(list(index,name, code), call ground)
   i = 0
   m = self
-  while(m, lexicalCode call(i, m). m = m next. i++)
+  while(m, lexicalCode call(i, m). m = m succ. i++)
   self,
 )
 

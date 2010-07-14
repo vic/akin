@@ -23,9 +23,9 @@ describe("Akin Tokenizer parseText for text literals",
     msg literal type should == :text
     msg literal parts[0] should == "hel "
     msg literal parts[1] name should == :lo
-    msg literal parts[1] next name should == :("")
-    msg literal parts[1] next next name should == :wo
-    msg literal parts[1] next next next should be nil
+    msg literal parts[1] succ name should == :("")
+    msg literal parts[1] succ succ name should == :wo
+    msg literal parts[1] succ succ succ should be nil
     msg literal parts[2] should == " rld"
   )
 
@@ -37,13 +37,13 @@ describe("Akin Tokenizer parseText for text literals",
     msg literal type should == :text
     msg literal parts[0] should == "hel "
     msg literal parts[1] name should == :lo
-    msg literal parts[1] next name should == :("")
-    msg literal parts[1] next next name should be nil
-    msg literal parts[1] next next should be literal
-    msg literal parts[1] next next literal type should == :text
-    msg literal parts[1] next next literal parts first should == "you"
-    msg literal parts[1] next next next name should  == :("")
-    msg literal parts[1] next next next next name should  == :wo
+    msg literal parts[1] succ name should == :("")
+    msg literal parts[1] succ succ name should be nil
+    msg literal parts[1] succ succ should be literal
+    msg literal parts[1] succ succ literal type should == :text
+    msg literal parts[1] succ succ literal parts first should == "you"
+    msg literal parts[1] succ succ succ name should  == :("")
+    msg literal parts[1] succ succ succ succ name should  == :wo
     msg literal parts[2] should == " rld"
   )
 

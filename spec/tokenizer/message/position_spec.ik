@@ -21,10 +21,10 @@ describe("Akin Tokenizer parseText sets message position",
   it("should treat escaped new line as space",
     msg = parse("hello\\\nworld")
     msg name should == :hello
-    msg next name should == :("")
-    msg next next name should == :world
-    msg next next position physical asList should == [:foo, 2, 1, 8]
-    msg next next position logical asList should == [:foo, 1, 7, 7]
+    msg succ name should == :("")
+    msg succ succ name should == :world
+    msg succ succ position physical asList should == [:foo, 2, 1, 8]
+    msg succ succ position logical asList should == [:foo, 1, 7, 7]
   )
 
   it("should handle \\r\\n as a single terminator",

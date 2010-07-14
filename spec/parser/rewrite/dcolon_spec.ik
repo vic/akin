@@ -9,12 +9,12 @@ describe("Akin Parser",
     tokens = Akin Tokenizer parseText(txt)
     Akin Parser Rewrite DColon rewrite(tokens))
 
-  it("should append previous message as argument to next",
+  it("should append prec message as argument to succ",
     msg = parse("foo :: baz")
     msg code should == "baz(foo )"
   )
 
-  it("should append previous messages as argument to next",
+  it("should append prec messages as argument to succ",
     msg = parse("hello\n  foo, bar :: baz")
     msg code should == "hello\n  baz(foo, bar )"
   )

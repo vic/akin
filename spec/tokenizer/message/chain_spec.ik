@@ -6,7 +6,7 @@ describe("Akin Tokenizer parseText",
 
   parse = fn(txt, Akin Tokenizer parseText(txt))
 
-  it("should set next message",
+  it("should set succ message",
     msg = parse("foo(bar, baz) bat")
 
     msg should not be nil
@@ -21,12 +21,12 @@ describe("Akin Tokenizer parseText",
     msg name should == :foo
     msg body should not be nil
     msg body message name should == :bar
-    msg body message next should be enumerator
-    msg body message next next should be space
-    msg body message next next next name should == :baz
-    msg body message next next next next should be nil
-    msg next should be space
-    msg next next name should == :bat
+    msg body message succ should be enumerator
+    msg body message succ succ should be space
+    msg body message succ succ succ name should == :baz
+    msg body message succ succ succ succ should be nil
+    msg succ should be space
+    msg succ succ name should == :bat
   )
 
   it("should parse message enumeration", 
@@ -36,10 +36,10 @@ describe("Akin Tokenizer parseText",
     msg[0] name should == :a
 
     msg name should == :a
-    msg next name should == :(",")
-    msg next next name should == :b
-    msg next next next name should == :(",")
-    msg next next next next name should == :c
+    msg succ name should == :(",")
+    msg succ succ name should == :b
+    msg succ succ succ name should == :(",")
+    msg succ succ succ succ name should == :c
   )
 
 
@@ -71,7 +71,7 @@ describe("Akin Tokenizer parseText",
     msg at(9) should be space
     msg at(10) name should == :c
     msg at(11) should be space
-    msg at(11) next should be nil
+    msg at(11) succ should be nil
   )
 
   it("should parse message enumeration with new lines and linecomment", 
@@ -97,10 +97,10 @@ describe("Akin Tokenizer parseText",
     msg should have body
     msg body should be round
     msg body message name should == :world
-    msg next name should == :""
-    msg next body should be curly
-    msg next next name should == :""
-    msg next next body should be square
+    msg succ name should == :""
+    msg succ body should be curly
+    msg succ succ name should == :""
+    msg succ succ body should be square
   )
 
   it("should correctly parse chained invocations without inner spaces",
@@ -109,12 +109,12 @@ describe("Akin Tokenizer parseText",
     msg should have body
     msg body should be round
     msg body message name should == :world
-    msg next name should be nil
-    msg next body should be curly
-    msg next body message name should == :good
-    msg next next name should be nil
-    msg next next body should be square
-    msg next next body message name should == :bye
+    msg succ name should be nil
+    msg succ body should be curly
+    msg succ body message name should == :good
+    msg succ succ name should be nil
+    msg succ succ body should be square
+    msg succ succ body message name should == :bye
   )
 
   it("should have indentation level per line",

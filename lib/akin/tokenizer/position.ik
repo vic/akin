@@ -14,21 +14,21 @@ Akin Tokenizer Position do(
     @physical = physical
   )
   
-  next = method(
-    newPhy = physical next
-    newLog = if(logical == physical, newPhy, logical next)
+  succ = method(
+    newPhy = physical succ
+    newLog = if(logical == physical, newPhy, logical succ)
     Akin Tokenizer Position mimic(newLog, newPhy)
   )
 
-  nextLine = method(
-    newPhy = physical nextLine
-    newLog = if(logical == physical, newPhy, logical nextLine)
+  succLine = method(
+    newPhy = physical succLine
+    newLog = if(logical == physical, newPhy, logical succLine)
     Akin Tokenizer Position mimic(newLog, newPhy)
   )
 
-  nextEscaped = method(
-    newPhy = physical next nextLine
-    newLog = logical next
+  succEscaped = method(
+    newPhy = physical succ succLine
+    newLog = logical succ
     Akin Tokenizer Position mimic(newLog, newPhy)
   )
 
@@ -47,11 +47,11 @@ Akin Tokenizer Position Data do(
   asText = method(
     "#{source} @[ln:#{line},col:#{column},position:#{position}]")
   
-  next = method(n 1, 
+  succ = method(n 1, 
     Akin Tokenizer Position Data mimic(
       source, line, column + n, position + n))
 
-  nextLine = method(n 1, 
+  succLine = method(n 1, 
     Akin Tokenizer Position Data mimic(
       source, line + n, 1, position + n))
   
