@@ -21,7 +21,8 @@ Akin Parser Rewrite Colon do(
     while(msg = msg next,
       end = msg
       if(msg end?, break)
-      if((msg sameColumn?(first) || msg sameColumn?(into)) &&
+      if((msg sameColumn?(first, usePosition: nil) ||
+          msg sameColumn?(into, usePosition: nil)) &&
         msg next && msg next colonArgOp?,
         if(msg body nil?,
           sb << ":" << msg name
@@ -41,7 +42,7 @@ Akin Parser Rewrite Colon do(
         if(msg body && msg body message,
           rewrite(msg body message))
       )
-      if(!msg white? && msg logPos column <= first logPos column,
+      if(!msg white? && msg position logical column <= first position logical column,
         end = msg firstInLine previous
         break)
     )

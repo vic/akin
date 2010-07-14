@@ -2,7 +2,7 @@
 Akin Tokenizer MessageReader = Origin mimic
 Akin Tokenizer MessageReader do(
 
-  initialize = method(at, @phyPos = nil. @logPos = nil. @at = at)
+  initialize = method(at, @savedPosition = nil. @at = at)
 
   read = method(
     txt = Akin Tokenizer String txt(at char)
@@ -13,20 +13,16 @@ Akin Tokenizer MessageReader do(
   fwd = method(at next)
 
   savePosition = macro(
-    phyOld = @phyPos
-    logOld = @logPos
+    old = @savedPosition
     ensure(
-      @phyPos = at phyPos
-      @logPos = at logPos
+      @savedPosition = at position
       call arguments first evaluateOn(call ground, self),
-      @phyPos = phyOld
-      @logPos = logOld
+      @savedPosition = old
     )
   )
 
   newMsg = method(+rest, +:krest,
-    krest[:phyPos] = phyPos || at phyPos
-    krest[:logPos] = logPos || at logPos
+    krest[:position] = at position
     Akin Tokenizer Message mimic(*rest, *krest)
   )
   newLit = method(+rest, +:krest,

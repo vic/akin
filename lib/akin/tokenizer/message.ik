@@ -1,15 +1,13 @@
 Akin Tokenizer Message = Origin mimic
 Akin Tokenizer Message do(
 
-  initialize = method(name nil, body nil, 
-    literal: nil, phyPos: nil, logPos: nil,
+  initialize = method(name nil, body nil, literal: nil, position: nil,
     @name = if(name, :(name), nil)
     @body = body
     @literal = literal
     @next = nil
     @previous = nil
-    @phyPos = phyPos
-    @logPos = logPos || phyPos
+    @position = position
   )
 
   body? = method(body nil? not)
@@ -134,38 +132,85 @@ Akin Tokenizer Message do(
     nil
   )
 
-  firstInLine = method(
-    unless(logPos, return self)
+  firstInLine = method(usePosition: false,
+    if(usePosition nil? && position, usePosition = true)
+    if(usePosition, firstInLine:withPosition, firstInLine:noPosition)
+  )
+
+  firstInLine:noPosition = method(
+    eol = findBackward(eol?)
+    if(eol, eol next, first)
+  )
+
+  firstInLine:withPosition = method(
+    unless(position, return self)
     m = self
     while(m && m previous && 
-      m previous logPos line == logPos line,
+      m previous position logical line == position logical line,
       m = m previous)
     m
   )
   
-  indentLevel = method(
-    first = firstInLine
-    if(self != first && first next space?,
-      first next literal text length, 0)
+  lineIndentLevel = method(usePosition: false,
+    if(usePosition nil? && position, usePosition = true)
+    first = firstInLine(usePosition: usePosition)
+    if(self != first && first space?,
+      first literal text length, 0)
   )
 
-  sameLine? = method(msg, 
-    logPos && msg logPos && logPos line == msg logPos line
+  sameLineIndent? = method(m, usePosition: false,
+    if(usePosition nil? && position && m position, usePosition = true)
+    lineIndentLevel(usePosition: usePosition) ==  m lineIndentLevel(usePosition: usePosition)
   )
 
-  sameColumn? = method(msg,
-    logPos && msg logPos && logPos column == msg logPos column
+  sameLine? = method(m, usePosition: false,
+    if(usePosition nil? && position && m position, usePosition = true)
+    if(usePosition, sameLine:withPosition(m), sameLine:noPosition(m))
   )
- 
+
+  sameLine:noPosition? = method(msg, 
+    findBackward(eol?) == msg findBackward(eol?)
+  )
+
+  sameLine:withPosition? = method(msg, 
+    (position && msg position &&
+      position logical line == msg position logical line)
+  )
+
+  sameColumn? = method(m, usePosition: false,
+    if(usePosition nil? && position && m position, usePosition = true)
+    if(usePosition, sameColumn:withPosition?(m), 
+      sameColumn:noPosition?(m))
+  )
+
+  sameColumn:noPosition? = method(msg, 
+    indentLevel == msg indentLevel
+  )
+
+  sameColumn:withPosition? = method(msg,
+    (position && msg position && 
+      position logical column == msg position logical column)
+  )
+
+  append = method(msg, 
+    msg previous = self
+    if(next, next pevious = nil)
+    @next = msg
+    msg
+  )
+
+  prepend = method(msg,
+    msg next = self
+    if(previous, previous next = nil)
+    @previous = msg
+    msg
+  )
+
   attach = method(msg,
     if(body nil? && msg name nil? && msg body && msg literal nil?,
       @body = msg body
       return self)
-    
-    if(next, next previous = nil)
-    msg previous = self
-    @next = msg
-    msg
+    append(msg)
   )
 
   detach = method(newNext: nil, newPrev: nil,
@@ -185,21 +230,13 @@ Akin Tokenizer Message do(
     msg
   )
 
-  cell("+") = method(msg,
-    if(msg previous, msg previous = nil)
-    msg previous = self
-    if(next && next previous, next previous = nil)
-    @next = msg
-    msg
-  )
-
   appendArgument = method(arg, 
     if(body, 
       if(body message, 
         last = body message last findBackward(white? not)
         if(last comma?, 
-          last + arg,
-          last + Akin Tokenizer Message mimic(:",") + arg
+          last append(arg),
+          last append(Akin Tokenizer Message mimic(:",")) append(arg)
           if(arg findForward(white? not) comma?,
             arg findForward(white? not) detach
           )

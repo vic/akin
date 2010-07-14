@@ -2,8 +2,9 @@
 Akin Tokenizer At = Origin mimic
 Akin Tokenizer At do(
 
-  initialize = method(reader, phyPos, logPos phyPos, char nil,
-    @reader = reader. @phyPos = phyPos. @logPos = logPos.
+  initialize = method(reader, position, char nil,
+    @reader = reader
+    @position = position
     @cached:n = nil
     if(char, @char = char)
   )
@@ -39,17 +40,13 @@ Akin Tokenizer At do(
   )
 
   next = method(
-    newPhyPos = phyPos next
-    newLogPos = logPos next
+    pos = position next
     if(escapedEol?,
       @cached:n = reader:read
-      newPhyPos = phyPos next nextLine
-      newLogPos = logPos next,
-      if(eol?, 
-        newPhyPos = phyPos nextLine
-        newLogPos = logPos nextLine)
+      pos = position nextEscaped,
+      if(eol?, pos = position nextLine)
     )
-    @next = Akin Tokenizer At mimic(reader, newPhyPos, newLogPos, cached:n)
+    @next = Akin Tokenizer At mimic(reader, pos, cached:n)
   )
   
   ? = method(+items, 
