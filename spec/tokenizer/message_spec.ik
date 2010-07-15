@@ -8,16 +8,16 @@ describe("Akin Tokenizer Message",
 
   it("should obtain successive message by calling succ",
     msg = parse("foo bat")
-    msg name should == :foo
+    msg text should == "foo"
     msg succ should be space
-    msg succ succ name should == :bat
+    msg succ succ text should == "bat"
   )
   
   it("should obtain preciding message by calling prec",
     msg = parse("foo bat")
-    msg name should == :foo
+    msg text should == "foo"
     msg succ should be space
-    msg succ succ name should == :bat
+    msg succ succ text should == "bat"
     msg succ succ prec should be space
     msg succ succ prec should be(msg succ)
     msg succ prec should be(msg)
@@ -25,8 +25,8 @@ describe("Akin Tokenizer Message",
   
   it("should obtain next non-blank message by calling next", 
     msg = parse("foo bat")
-    msg name should == :foo
-    msg next name should == :bat
+    msg text should == "foo"
+    msg next text should == "bat"
   )
 
   it("should obtain previous non-blank message by calling prev", 
@@ -86,16 +86,16 @@ describe("Akin Tokenizer Message",
 
   it("arg should obtain arguments by index",
     foo = parse("foo(  bar  , baz  )")
-    foo arg(0) name should == :bar
-    foo arg(1) name should == :baz
+    foo arg(0) text should == "bar"
+    foo arg(1) text should == "baz"
   )
 
   it("arg= should replace argument at index",
     foo = parse("hello( foo,  bar man  , baz )")
     qux = parse("qux mux")
-    foo arg(0) name should == :foo
-    foo arg(1) name should == :bar
-    foo arg(2) name should == :baz
+    foo arg(0) text should == "foo"
+    foo arg(1) text should == "bar"
+    foo arg(2) text should == "baz"
     foo arg(1) = qux
     foo code should == "hello( foo,  qux mux  , baz )"
   )
@@ -103,9 +103,9 @@ describe("Akin Tokenizer Message",
   it("arg= should replace first argument",
     foo = parse("hello( foo,  bar man  , baz )")
     qux = parse("qux mux")
-    foo arg(0) name should == :foo
-    foo arg(1) name should == :bar
-    foo arg(2) name should == :baz
+    foo arg(0) text should == "foo"
+    foo arg(1) text should == "bar"
+    foo arg(2) text should == "baz"
     foo arg(0) = qux
     foo code should == "hello( qux mux,  bar man  , baz )"
   )
@@ -113,9 +113,9 @@ describe("Akin Tokenizer Message",
   it("arg= should replace last argument",
     foo = parse("hello( foo,  bar man  , baz )")
     qux = parse("qux mux")
-    foo arg(0) name should == :foo
-    foo arg(1) name should == :bar
-    foo arg(2) name should == :baz
+    foo arg(0) text should == "foo"
+    foo arg(1) text should == "bar"
+    foo arg(2) text should == "baz"
     foo arg(2) = qux
     foo code should == "hello( foo,  bar man  , qux mux )"
   )

@@ -2,7 +2,7 @@
 Akin Tokenizer MessageReader = Origin mimic
 Akin Tokenizer MessageReader do(
 
-  initialize = method(at, @savedPosition = nil. @at = at)
+  initialize = method(at, @at = at)
 
   read = method(
     txt = Akin Tokenizer String txt(at char)
@@ -12,21 +12,9 @@ Akin Tokenizer MessageReader do(
 
   succ = method(at succ)
 
-  savePosition = macro(
-    old = @savedPosition
-    ensure(
-      @savedPosition = at position
-      call arguments first evaluateOn(call ground, self),
-      @savedPosition = old
-    )
-  )
-
   newMsg = method(+rest, +:krest,
     krest[:position] = at position
     Akin Tokenizer Message mimic(*rest, *krest)
-  )
-  newLit = method(+rest, +:krest,
-    Akin Tokenizer Message Literal mimic(*rest, *krest)
   )
 
   newSb = method(Akin Tokenizer StringBuilder mimic)
@@ -47,10 +35,9 @@ Akin Tokenizer MessageReader do(
   readMessage = method(
     if(at eof?, read. return)
     if(at rightBracket?, return)
-    if(at eol?, read. return newMsg("\n"))
+    if(at punctuation?, return readPunctuation)
     if(at space?, return readSpace)
-    if(at single?, return newMsg(read))
-    if(at leftBracket?, return readBrackets)
+    if(at leftBracket?, return readActivation)
     if(at lineComment?, return readLineComment)
     if(at docStart?, return readDocument)
     if(at symbolStart?, return readSymbol)
@@ -61,8 +48,14 @@ Akin Tokenizer MessageReader do(
     readIdentifier
   )
 
+  readPunctuation = method(
+    msg = newMsg(:punctuation)
+    msg text = if(at eol?, read. "\n", read)
+    msg
+  )
+
   readIdentifier = method(
-    msg = newMsg
+    msg = newMsg(:identifier)
     sb = newSb
     loop(
       if(at ?(":"), 
@@ -73,30 +66,32 @@ Akin Tokenizer MessageReader do(
         sb << read,
         break)
     )
-    msg name = :(sb asText)
+    msg text = sb asText
     msg
   )
 
   readOperator = method(
-    savePosition(
-      sb = newSb
-      while(at operator?, sb << read)
-      newMsg(sb asText))
+    msg = newMsg(:operator)
+    sb = newSb
+    while(at operator?, sb << read)
+    msg text = sb asText
+    msg
   )
 
   readLineComment = method(
     unless(at lineComment?, error!("Expected start of line comment -  "+at))
-    msg = newMsg
+    msg = newMsg(:comment)
     sb = newSb
     until(at eol? || at eof?, sb << read)
-    msg literal = newLit(:comment, text: sb asText)
+    msg text = sb asText
     msg
   )
 
-  readBrackets = method(
+  readActivation = method(
     brackets = Akin Tokenizer Message Body brackets assoc(read)
     unless(brackets, error!("Unknown left bracket -  "+at))
-    msg = newMsg(nil, Akin Tokenizer Message Body mimic(readMessageChain, brackets))
+    msg = newMsg(:activation)
+    msg appendArgument(readMessageChain, brackets)
     readChar(brackets last)
     msg
   )
@@ -104,16 +99,16 @@ Akin Tokenizer MessageReader do(
   readSymbol = method(
     unless(at colon?, 
       error!("Expected colon at start of symbol literal- got "+at))
-    msg = newMsg
+    msg = newMsg(:symbol)
     read
     if(at quote?,
       txt = readText
       msg literal = txt literal
-      msg literal type = :symbolText
+      msg type = :symbolText
       ,
       identifier = readIdentifier
-      text = identifier name asText
-      msg literal = newLit(:symbolIdentifier, text: text)
+      msg text = identifier text
+      msg type = :symbolIdentifier
     )
     msg
   )
@@ -125,74 +120,76 @@ Akin Tokenizer MessageReader do(
   )
 
   readText = method(left nil, right left, escapes: nil,
-    savePosition(
-      if(left nil?,
-        if(at textStartLit?,
-          left = read + read
-          right = at textEnd,
-          left = read
-          right = left
+    msg = newMsg(:text)
+
+    if(left nil?,
+      if(at textStartLit?,
+        left = read + read
+        right = at textEnd,
+        left = read
+        right = left
         ),
       read)
-      interpolate? = left != "'"
-      parts = list
-      sb = nil
-      loop(
-        if(at eof?,
-          error!("Expected end of text, found "+at)
-          break)
-        if(at backslash?,
-          unless(sb, sb = newSb)
-          if(succ eol?,
-            read. read,
-            if(succ ?("u", "U"),
-              read. read.
-              hex = readHexadecimalNumber(4) literal text
-              sb << "\\u" << hex,
-              if(succ octal?,
-                sb << read << succ char
-                if(at ?("0".."3"),
-                  if(succ octal?,
-                    sb << read
-                    if(succ octal?,
-                      sb << read
-                      )),
-                  if(succ octal?,
-                    sb << read
-                  )
-                  )),
-              if(succ ?(at textEscapes, right),
-                sb << read << read,
-                if(escapes && succ?(escapes, right),
-                  sb << read << read,
-                  error!("Undefined text escape "+at))
-        ))))
-        if(interpolate? && at interpolateStart?,
-          parts << sb asText
-          sb = nil
-          read. read.
-          body = readMessageChain
-          parts << body
-          readChar(at interpolateEnd)
-        )
-        if(at ?(right),
-          read.
-          if(sb, parts << sb asText)
-          break
-        )
+    
+    interpolate? = left != "'"
+    parts = list
+    sb = nil
+    loop(
+      if(at eof?,
+        error!("Expected end of text, found "+at)
+        break)
+      if(at backslash?,
         unless(sb, sb = newSb)
-        sb << read
+        if(succ eol?,
+          read. read,
+          if(succ ?("u", "U"),
+            read. read.
+            hex = readHexadecimalNumber(4) literal text
+            sb << "\\u" << hex,
+            if(succ octal?,
+              sb << read << succ char
+              if(at ?("0".."3"),
+                if(succ octal?,
+                  sb << read
+                  if(succ octal?,
+                    sb << read
+                    )),
+                if(succ octal?,
+                  sb << read
+                )
+                )),
+            if(succ ?(at textEscapes, right),
+              sb << read << read,
+              if(escapes && succ?(escapes, right),
+                sb << read << read,
+                error!("Undefined text escape "+at))
+      ))))
+      if(interpolate? && at interpolateStart?,
+        parts << sb asText
+        sb = nil
+        read. read.
+        body = readMessageChain
+        parts << body
+        readChar(at interpolateEnd)
       )
-      lit = newLit(:text, parts: parts, left: left, right: right)
-      msg = newMsg(literal: lit)
+      if(at ?(right),
+        read.
+        if(sb, parts << sb asText)
+        break
+      )
+      unless(sb, sb = newSb)
+      sb << read
     )
+
+    msg literal = dict(parts: parts, left: left, right: right)
+    msg
   )
 
   readRegexp = method(
     unless(at regexpStart?,
       error!("Expected char "+expected inspect+" got "+at))
     read
-    msg = readText("/", "/", escapes: true)
+    msg = readText("$/", "/", escapes: true)
     flags = nil
     while(at regexpFlags?, 
       unless(flags, flags = newSb)
@@ -201,32 +198,35 @@ Akin Tokenizer MessageReader do(
     engine = nil
     if(at colon?,
       read
-      engine = :(readIdentifier name asText))
-    msg literal type = :regexp
-    msg literal flags = flags
-    msg literal engine = engine
+      engine = readIdentifier text)
+    msg type = :regexp
+    msg literal[:flags] = flags
+    msg literal[:engine] = engine
     msg
   )
 
   readNumber = method(
-    savePosition(
-      if(at ?("0"),
-        if(succ ?("x", "X"),
-          read.read.
-          return readHexadecimalNumber,
-          if(succ ?("b", "B"),
+    pos = at position
+    msg = nil
+    if(at ?("0"),
+      if(succ ?("x", "X"),
+        read.read.
+        msg = readHexadecimalNumber,
+        if(succ ?("b", "B"),
+          read. read.
+          msg = readBinaryNumber,
+          if(succ ?("o", "O"),
             read. read.
-            return readBinaryNumber,
-            if(succ ?("o", "O"),
-              read. read.
-              return readOctalNumber,
-              read.
-              return readOctalNumber))))
-      readDecimalNumber
-    )
+            msg = readOctalNumber,
+            read.
+            msg = readOctalNumber))),
+      msg = readDecimalNumber)
+    msg position = pos
+    msg
   )
 
   readHexadecimalNumber = method(howManyChars nil,
+    msg = newMsg(:hexNumber)
     unless(at hexadecimal?,
       error!("Invalid char in hexadecimal number literal - got "+at))
     sb = newSb
@@ -238,33 +238,36 @@ Akin Tokenizer MessageReader do(
       sb << read)
     if(howManyChars && many > 0, 
       error!("Expected #{many} more hexadecimal character(s)"))
-    lit = newLit(:hexNumber, text: sb asText)
-    newMsg(literal: lit)
+    msg text = sb asText
+    msg
   )
 
   readOctalNumber = method(
+    msg = newMsg(:octNumber)
     unless(at octal?,
       error!("Invalid char in octal number literal - got "+at))
     sb = newSb
     while(at octal? || (at sub? || succ octal?),
       if(at sub?, read)
       sb << read)
-    lit = newLit(:octNumber, text: sb asText)
-    newMsg(literal: lit)
+    msg text = sb asText
+    msg
   )
 
   readBinaryNumber = method(
+    msg = newMsg(:binNumber)
     unless(at binary?,
       error!("Invalid char in binary number literal - got "+at))
     sb = newSb
     while(at binary? || (at sub? || succ binary?),
       if(at sub?, read)
       sb << read)
-    lit = newLit(:binNumber, text: sb asText)
-    newMsg(literal: lit)
+    msg text = sb asText
+    msg
   )
 
   readDecimalNumber = method(
+    msg = newMsg(:decNumber)
     integer = readDecimalInteger
     fraction = nil
     exponent = nil
@@ -277,16 +280,17 @@ Akin Tokenizer MessageReader do(
       read
       exponent = readDecimalExponent)
       
-    lit = newLit(:decNumber,
-      integer: integer literal text,
-      fraction: if(fraction, fraction literal text, nil),
-      expsign: if(exponent, exponent literal sign, nil),
-      exponent: if(exponent, exponent literal exp, nil))
+    msg literal = dict(
+      integer: integer text,
+      fraction: if(fraction, fraction text, nil),
+      exponent: if(exponent, exponent text, nil)
+    )
 
-    newMsg(literal: lit)
+    msg
   )
 
   readDecimalInteger = method(
+    msg = newMsg(:decInteger)
     unless(at decimal?,
       error!("Invalid char in decimal number literal - got "+at))
     sb = newSb
@@ -294,22 +298,23 @@ Akin Tokenizer MessageReader do(
     while(at decimal? || (at sub? && succ decimal?),
       if(at sub?, read)
       sb << read)
-    lit = newLit(:decInteger, text: sb asText)
-    newMsg(literal: lit)
+    msg text = sb asText
+    msg
   )
 
   readDecimalExponent = method(
+    msg = newMsg(:decExponent)
     unless(at decimal? || at adition?,
       error!("Invalid char in decimal exponent literal - got "+at))
     sign = "+"
     if(at adition?, sign = read)
     exp = readDecimalInteger
-    lit = newLit(:decExponent, sign: sign, exp: exp literal text)
-    newMsg(literal: lit)
+    msg text = sign + exp text
+    msg
   )
 
   readSpace = method(
-    msg = newMsg(:(""))
+    msg = newMsg(:space)
     sb = newSb
     while(at space? || at escapedEol?,
       if(at escapedEol?,
@@ -318,11 +323,12 @@ Akin Tokenizer MessageReader do(
         if(at lineComment?,
           until(at eol?, read),
           sb << read)))
-    msg literal = newLit(:space, text: sb asText)
+    msg text = sb asText
     msg
   )
 
   readDocument = method(
+    msg = newMsg(:document)
     sb = newSb
     docs = 0
     loop(
@@ -336,8 +342,8 @@ Akin Tokenizer MessageReader do(
       if(docs == 0, break)
       sb << read
     )
-    txt = sb asText
-    newMsg(literal: newLit(:document, text: txt))
+    msg text = sb asText
+    msg
   )
 
 )

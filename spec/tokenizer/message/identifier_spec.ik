@@ -9,44 +9,45 @@ describe("Akin Tokenizer parseText message identifiers",
   it("should parse simple identifier",
     msg = parse("hello")
     msg should not be nil
-    msg name should == :hello
-    msg should not be body
+    msg should be identifier
+    msg text should == "hello"
+    msg should not be call
   )
 
   it("should parse simple identifier including $",
     msg = parse("hel$lo")
     msg should not be nil
-    msg name should == :"hel$lo"
-    msg should not be body
+    msg text should == "hel$lo"
+    msg should not be call
   )
 
   it("should parse simple identifier ending in ?",
     msg = parse("hello?")
     msg should not be nil
-    msg name should == :"hello?"
-    msg should not be body
+    msg text should == "hello?"
+    msg should not be call
   )
 
   it("should parse simple identifier ending in ?",
     msg = parse("hello?world?")
     msg should not be nil
-    msg name should == :"hello?world?"
-    msg should not be body
+    msg text should == "hello?world?"
+    msg should not be call
   )
 
   it("should parse simple identifier including :",
     msg = parse("hel:lo::there")
     msg should not be nil
-    msg name should == :"hel:lo::there"
-    msg should not be body
+    msg text should == "hel:lo::there"
+    msg should not be call
   )
 
   it("should parse identifier with : at end as two messages",
     msg = parse("hello:")
     msg should not be nil
-    msg name should == :hello
-    msg should not be body
-    msg succ name should == :(":")
+    msg text should == "hello"
+    msg should not be call
+    msg succ text should == ":"
   )
   
 

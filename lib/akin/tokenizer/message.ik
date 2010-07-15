@@ -1,8 +1,9 @@
 Akin Tokenizer Message = Origin mimic
 Akin Tokenizer Message do(
 
-  initialize = method(name nil, body nil, literal: nil, position: nil,
-    @name = if(name, :(name), nil)
+  initialize = method(type nil, text nil, body: nil, literal: nil, position: nil,
+    @type = type
+    @text = text
     @body = body
     @literal = literal
     @succ = nil
@@ -10,8 +11,15 @@ Akin Tokenizer Message do(
     @position = position
   )
 
-  body? = method(body nil? not)
-  literal? = method(literal nil? not)
+  
+  identifier? = method(type == :identifier)
+  comment? = method(type == :comment)
+  space? = method(type == :space)
+  document? = method(type == :document)
+  operator? = method(type == :operator)
+  
+
+  call? = method(body nil? not)
   hasArgs? = method(argCount == 0)
 
   argCount = method(
@@ -26,22 +34,19 @@ Akin Tokenizer Message do(
   )
 
 
-  comment? = method(literal && literal type == :comment)
-  
-  space? = method(name == :("") && body nil?)
-  dot? = method(name == :("."))
-  colon? = method(name == :(":"))
-  semicolon? = method(name == :(";"))
-  dcolon? = method(name == :("::"))
+  dot? = method(text == ".")
+  colon? = method(text == ":")
+  semicolon? = method(text == ";")
+  dcolon? = method(text == "::")
 
-  comma? = method(name == :(","))
+  comma? = method(text == ",")
   
   end? = method(dot? || semicolon?)
-  eol? = method(name == :("\n") || name == :("\r"))
+  eol? = method(text == "\n")
   
   terminator? = method(end? || eol?)
-  separator? = method(name == :(";"))
-  enumerator? = method(name == :(","))
+  separator? = method(text == ";")
+  enumerator? = method(text == ",")
 
   punctuation? = method(terminator? || separator? || enumerator?)
 
@@ -206,7 +211,7 @@ Akin Tokenizer Message do(
     if(usePosition nil? && position, usePosition = true)
     first = firstInLine(usePosition: usePosition)
     if(self != first && first space?,
-      first literal text length, 0)
+      first text length, 0)
   )
 
   sameLineIndent? = method(m, usePosition: false,
@@ -258,7 +263,7 @@ Akin Tokenizer Message do(
   )
 
   attach = method(msg,
-    if(body nil? && msg name nil? && msg body && msg literal nil?,
+    if(msg type == :activation && expression? && body nil?,
       @body = msg body
       return self)
     append(msg)
@@ -310,7 +315,7 @@ Akin Tokenizer Message do(
     self
   )
 
-  appendArgument = method(arg, 
+  appendArgument = method(arg, brackets  list("(", ")"),
     if(body, 
       if(body message, 
         last = body message last findBackward(white? not)
@@ -322,12 +327,12 @@ Akin Tokenizer Message do(
           )
         ),
         body message = arg),
-      @body = Akin Tokenizer Message Body mimic(arg, list("(", ")"))
+      @body = Akin Tokenizer Message Body mimic(arg, brackets)
     )
     self
   )
 
-  notice = method(super + "["+name+"]")
+  notice = method(super + "["+text+"]")
 
   code = method(
     sb = Akin Tokenizer StringBuilder mimic
@@ -338,8 +343,8 @@ Akin Tokenizer Message do(
       literal && literal type == :symbolIdentifier,
       sb << ":" << literal text,
 
-      if(name, sb << name asText)
-      if(body, 
+      if(text, sb << text)
+      if(body,
         sb << body brackets first
         if(body message, sb << body message code)
         sb << body brackets last
@@ -403,11 +408,4 @@ Akin Tokenizer Message Body do(
 
 )
 
-Akin Tokenizer Message Literal = Origin mimic
-Akin Tokenizer Message Literal do(
-  initialize = method(type, +:kdata,
-    @type = type
-    kdata keys each(k, @cell(k) = kdata[k])
-  )
-)
 

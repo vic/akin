@@ -100,7 +100,7 @@ Akin Tokenizer At do(
   separator? = method(?(";") && succ ?(";") not)
   colon? = method(?(":") && succ ?(":") not)
 
-  single? = method(terminator? || enumerator? || separator?)
+  punctuation? = method(terminator? || enumerator? || separator?)
 
   symbolStart? = method(colon? && (succ ?("\"") || succ symbol?))
   symbol? = method(alpha? || decimal? || sub? || ?("?", "$"))

@@ -8,32 +8,31 @@ describe("Akin Tokenizer for regexp literals",
 
   it("should parse simple regexp enclosed between $/ and  /",
     msg = parse("$/hello/")
-    msg name should be nil
-    msg should not be body
-    msg should be literal
-    msg literal type should == :regexp
-    msg literal parts first should == "hello"
+    msg text should be nil
+    msg should not be call
+    msg type should == :regexp
+    msg literal[:parts] first should == "hello"
+    msg literal[:left] should == "$/"
+    msg literal[:right] should == "/"
   )
 
   it("should parse simple regexp enclosed between $/ and  / with flags",
     msg = parse("$/hello/umix")
-    msg name should be nil
-    msg should not be body
-    msg should be literal
-    msg literal type should == :regexp
-    msg literal parts first should == "hello"
-    msg literal flags should == "umix"
+    msg text should be nil
+    msg should not be call
+    msg type should == :regexp
+    msg literal[:parts] first should == "hello"
+    msg literal[:flags] should == "umix"
   )
 
   it("should parse simple regexp enclosed between $/ and  / with engine",
     msg = parse("$/hello/:re2")
-    msg name should be nil
-    msg should not be body
-    msg should be literal
-    msg literal type should == :regexp
-    msg literal parts first should == "hello"
-    msg literal flags should be nil
-    msg literal engine should == :re2
+    msg text should be nil
+    msg should not be call
+    msg type should == :regexp
+    msg literal[:parts] first should == "hello"
+    msg literal[:flags] should be nil
+    msg literal[:engine] should == "re2"
   )
 
 

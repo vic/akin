@@ -8,20 +8,16 @@ describe("Akin Tokenizer parseText for symbol literals",
 
   it("should parse simple symbol",
     msg = parse(":hello")
-    msg name should be nil
-    msg should not have body
-    msg should be literal
-    msg literal type should == :symbolIdentifier
-    msg literal text should == "hello"
+    msg should not be call
+    msg type should == :symbolIdentifier
+    msg text should == "hello"
   )
 
   it("should parse simple symbol from string",
     msg = parse(":\"hello\"")
-    msg name should be nil
-    msg should not have body
-    msg should be literal
-    msg literal type should == :symbolText
-    msg literal parts first should == "hello"
+    msg should not be call
+    msg type should == :symbolText
+    msg literal[:parts] first should == "hello"
   )
 
 
