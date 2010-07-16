@@ -1,4 +1,30 @@
-/*** The Akin programming language.
+
+                 !Hp                                            
+                 "Hk                                            
+       Chl       7HG                                            
+      VHHHi      tHa                                            
+     ?HpeHx      CHe                                            
+     LHu AK`     eHC               1V;                          
+     ZHi 6H;     OHJ               0HR`                         
+    .NB. 5HJ     aHJ               ;Zs                          
+    1HG  IH8     aHj                                            
+    LHu  )Hw     hHr    ,rt'                                    
+    gH7  `mA-    PHr  ?hNHHO                                    
+   'EQ-   kH*    GHr nMHKG0?                                    
+   cH6    aHj    GH*JHWe-                      7t)              
+   YHn  ?ugHks:  4HOBM1           'nao        VHHBo             
+   wH; CMHHHHHn  uHHHL )-        1FHHHJ      oHQVHF`    I2*     
+  ,WK` pHLuHpo.  cHHQ`"W0       lWHxuHF`     pHv DH;  `6HHB1    
+  IHx  DH` HD    'AHP rHZ      oMH5  dH*    eHy  SHz  OHZeHd    
+  sHC  5Hu BQ-    fHC )Hq    `sHMC   hHl   7EHr  uH5 ,NE, bH"   
+  DH:  (Wm'XW'    )5-  yHz-"eqHq1    2HU-r4MHa   jH9 0H4  eHPcue
+ .Hm`   aHdMd          jHHKHHEs.     (BHQHHmC    'NM6HB(  !mHHHA
+ )Hf    -GHHJ           3dNys(        IXBg2.      CMHAj    )sxO"
+  c!      I?              .             .          :t!          
+                                                                
+                                                                
+                                                                
+An Akin programming language
 
 inspirations:
  lisp, self, smalltalk, ruby, python, ioke, newspeak
@@ -9,4 +35,3 @@ license:
 copyright:
  Victor Hugo Borja <vborja@apache.org>
 
-*/
