@@ -6,11 +6,11 @@ Akin Tokenizer MessageReader do(
 
   read = method(
     txt = Akin Tokenizer String txt(at char)
-    @at = at succ
+    @at = at fwd
     txt
   )
 
-  succ = method(at succ)
+  fwd = method(at fwd)
 
   newMsg = method(+rest, +:krest,
     krest[:position] = at position
@@ -26,7 +26,7 @@ Akin Tokenizer MessageReader do(
       if(head nil?,
         head = current
         last = current,
-        last = last attach(current)
+        last = last chain!(current)
       )
     )
     head
@@ -59,7 +59,7 @@ Akin Tokenizer MessageReader do(
     sb = newSb
     loop(
       if(at ?(":"), 
-        if(succ identifier?, 
+        if(fwd identifier?, 
           sb << read << read,
           break))
       if(at identifier?,
@@ -88,18 +88,19 @@ Akin Tokenizer MessageReader do(
   )
 
   readActivation = method(
+    open = at
     brackets = Akin Tokenizer Message Body brackets assoc(read)
-    unless(brackets, error!("Unknown left bracket -  "+at))
+    unless(brackets, error!("Unknown left bracket -  "+open))
     msg = newMsg(:activation)
     msg appendArgument(readMessageChain, brackets)
-    readChar(brackets last)
+    readChar(brackets last, open)
     msg
   )
 
   readSymbol = method(
     unless(at colon?, 
       error!("Expected colon at start of symbol literal- got "+at))
-    msg = newMsg(:symbol)
+    msg = newMsg(nil)
     read
     if(at quote?,
       txt = readText
@@ -113,9 +114,12 @@ Akin Tokenizer MessageReader do(
     msg
   )
 
-  readChar = method(expected,
+  readChar = method(expected, open nil,
     unless(at ?(expected),
-      error!("Expected char "+expected inspect+" got "+at))
+      msg = "Expected char #{expected inspect}"
+      if(open, msg += " because seen #{open}")
+      msg += " but got #{at}"
+      error!(msg))
     read
   )
 
@@ -140,37 +144,39 @@ Akin Tokenizer MessageReader do(
         break)
       if(at backslash?,
         unless(sb, sb = newSb)
-        if(succ eol?,
+        if(fwd eol?,
           read. read,
-          if(succ ?("u", "U"),
+          if(fwd ?("u", "U"),
             read. read.
             hex = readHexadecimalNumber(4) literal text
             sb << "\\u" << hex,
-            if(succ octal?,
-              sb << read << succ char
+            if(fwd octal?,
+              sb << read << fwd char
               if(at ?("0".."3"),
-                if(succ octal?,
+                if(fwd octal?,
                   sb << read
-                  if(succ octal?,
+                  if(fwd octal?,
                     sb << read
                     )),
-                if(succ octal?,
+                if(fwd octal?,
                   sb << read
                 )
                 )),
-            if(succ ?(at textEscapes, right),
+            if(fwd ?(at textEscapes, right),
               sb << read << read,
-              if(escapes && succ?(escapes, right),
+              if(escapes && fwd?(escapes, right),
                 sb << read << read,
                 error!("Undefined text escape "+at))
       ))))
       if(interpolate? && at interpolateStart?,
         parts << sb asText
         sb = nil
-        read. read.
+        read
+        open = at
+        read
         body = readMessageChain
         parts << body
-        readChar(at interpolateEnd)
+        readChar(at interpolateEnd, open)
       )
       if(at ?(right),
         read.
@@ -209,13 +215,13 @@ Akin Tokenizer MessageReader do(
     pos = at position
     msg = nil
     if(at ?("0"),
-      if(succ ?("x", "X"),
+      if(fwd ?("x", "X"),
         read.read.
         msg = readHexadecimalNumber,
-        if(succ ?("b", "B"),
+        if(fwd ?("b", "B"),
           read. read.
           msg = readBinaryNumber,
-          if(succ ?("o", "O"),
+          if(fwd ?("o", "O"),
             read. read.
             msg = readOctalNumber,
             read.
@@ -232,7 +238,7 @@ Akin Tokenizer MessageReader do(
     sb = newSb
     many = howManyChars
     seek = unless(many, true)
-    while(seek && (at hexadecimal? || (at sub? || succ hexadecimal?)),
+    while(seek && (at hexadecimal? || (at sub? || fwd hexadecimal?)),
       if(many, seek = (many--) > 0)
       if(at sub?, read)
       sb << read)
@@ -247,7 +253,7 @@ Akin Tokenizer MessageReader do(
     unless(at octal?,
       error!("Invalid char in octal number literal - got "+at))
     sb = newSb
-    while(at octal? || (at sub? || succ octal?),
+    while(at octal? || (at sub? || fwd octal?),
       if(at sub?, read)
       sb << read)
     msg text = sb asText
@@ -259,7 +265,7 @@ Akin Tokenizer MessageReader do(
     unless(at binary?,
       error!("Invalid char in binary number literal - got "+at))
     sb = newSb
-    while(at binary? || (at sub? || succ binary?),
+    while(at binary? || (at sub? || fwd binary?),
       if(at sub?, read)
       sb << read)
     msg text = sb asText
@@ -272,11 +278,11 @@ Akin Tokenizer MessageReader do(
     fraction = nil
     exponent = nil
     
-    if(at ?(".") && succ decimal?,
+    if(at ?(".") && fwd decimal?,
       read
       fraction = readDecimalInteger)
       
-    if(at ?("e", "E") && (succ adition? || succ decimal?),
+    if(at ?("e", "E") && (fwd adition? || fwd decimal?),
       read
       exponent = readDecimalExponent)
       
@@ -295,7 +301,7 @@ Akin Tokenizer MessageReader do(
       error!("Invalid char in decimal number literal - got "+at))
     sb = newSb
     sb << read
-    while(at decimal? || (at sub? && succ decimal?),
+    while(at decimal? || (at sub? && fwd decimal?),
       if(at sub?, read)
       sb << read)
     msg text = sb asText

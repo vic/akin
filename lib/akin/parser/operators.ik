@@ -156,7 +156,7 @@ Akin Parser Operators do(
       false)
   )
 
-  precedence = method(msg, 
+  bwdedence = method(msg, 
     name = msg name asText
     value = operatorTable[name] || invertedOperatorTable[name]
     unless(value,

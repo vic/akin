@@ -19,7 +19,7 @@ describe("Akin Parser",
     msg code should == "hello :bar baz"
   )
 
-  it("should add following message as argument to preceding one",
+  it("should add following message as argument to bwdeding one",
     msg = parse("hello: bar")
     msg code should == "hello( bar)"
   )

@@ -21,9 +21,9 @@ describe("Akin Tokenizer parseText for text literals",
     msg type should == :text
     msg literal[:parts][0] should == "hel "
     msg literal[:parts][1] text should == "lo"
-    msg literal[:parts][1] succ text should == " "
-    msg literal[:parts][1] succ succ text should == "wo"
-    msg literal[:parts][1] succ succ succ should be nil
+    msg literal[:parts][1] fwd text should == " "
+    msg literal[:parts][1] fwd fwd text should == "wo"
+    msg literal[:parts][1] fwd fwd fwd should be nil
     msg literal[:parts][2] should == " rld"
   )
 
@@ -34,12 +34,12 @@ describe("Akin Tokenizer parseText for text literals",
     msg type should == :text
     msg literal[:parts][0] should == "hel "
     msg literal[:parts][1] text should == "lo"
-    msg literal[:parts][1] succ text should == " "
-    msg literal[:parts][1] succ succ text should be nil
-    msg literal[:parts][1] succ succ type should == :text
-    msg literal[:parts][1] succ succ literal[:parts] first should == "you"
-    msg literal[:parts][1] succ succ succ text should  == " "
-    msg literal[:parts][1] succ succ succ succ text should  == "wo"
+    msg literal[:parts][1] fwd text should == " "
+    msg literal[:parts][1] fwd fwd text should be nil
+    msg literal[:parts][1] fwd fwd type should == :text
+    msg literal[:parts][1] fwd fwd literal[:parts] first should == "you"
+    msg literal[:parts][1] fwd fwd fwd text should  == " "
+    msg literal[:parts][1] fwd fwd fwd fwd text should  == "wo"
     msg literal[:parts][2] should == " rld"
   )
 

@@ -14,7 +14,7 @@ Akin Tokenizer At do(
   char = method(@char = reader:read)
   text = method(Akin Tokenizer String txt(char))
 
-  asText = method("character "+ Akin Tokenizer String desc(char) + " at " +phyPos)
+  asText = method("character "+ Akin Tokenizer String desc(char) + " at " +position physical)
 
   eol? = method(
     if(match?(char, "\n", "\u000C", "\u0085", "\u2028", "\u2029"),
@@ -39,14 +39,14 @@ Akin Tokenizer At do(
     false
   )
 
-  succ = method(
-    pos = position succ
+  fwd = method(
+    pos = position fwd
     if(escapedEol?,
       @cached:n = reader:read
-      pos = position succEscaped,
-      if(eol?, pos = position succLine)
+      pos = position fwdEscaped,
+      if(eol?, pos = position fwdLine)
     )
-    @succ = Akin Tokenizer At mimic(reader, pos, cached:n)
+    @fwd = Akin Tokenizer At mimic(reader, pos, cached:n)
   )
   
   ? = method(+items, 
@@ -55,7 +55,7 @@ Akin Tokenizer At do(
         m = self
         i chars all?(c,
           if(Akin Tokenizer String charMatch?(m char, c),
-            m = m succ
+            m = m fwd
             true,
             false
           )
@@ -83,26 +83,26 @@ Akin Tokenizer At do(
   eof? = method(?(-1))
   tab? = method(?("\t"))
 
-  lineComment? = method( ?("#") && (succ ?("!", "#") || succ space?) )
+  lineComment? = method( ?("#") && (fwd ?("!", "#") || fwd space?) )
 
-  docStart? = method( ?("/") && succ ?("*"))
-  docStart2? = method( ?("/") && succ ?("*") && succ succ ?("*"))
-  docStart3? = method( ?("/") && succ ?("*") && succ succ ?("*") && succ succ succ ?("*"))
-  docEnd? = method(?("*") && succ ?("/"))
-  docStar? = method(?("*") && succ ?("/") not)
+  docStart? = method( ?("/") && fwd ?("*"))
+  docStart2? = method( ?("/") && fwd ?("*") && fwd fwd ?("*"))
+  docStart3? = method( ?("/") && fwd ?("*") && fwd fwd ?("*") && fwd fwd fwd ?("*"))
+  docEnd? = method(?("*") && fwd ?("/"))
+  docStar? = method(?("*") && fwd ?("/") not)
   docBlank? = method(blank? || docStar?)
 
   space? = method(?(" ", "\t", "\u0009","\u000b","\u000c") || escapedEol?)
   blank? = method(space? || lineComment?)
 
-  terminator? = method(eol? || (?(".") && succ ?(".") not))
-  enumerator? = method(?(",") && succ ?(",") not)
-  separator? = method(?(";") && succ ?(";") not)
-  colon? = method(?(":") && succ ?(":") not)
+  terminator? = method(eol? || (?(".") && fwd ?(".") not))
+  enumerator? = method(?(",") && fwd ?(",") not)
+  separator? = method(?(";") && fwd ?(";") not)
+  colon? = method(?(":") && fwd ?(":") not)
 
   punctuation? = method(terminator? || enumerator? || separator?)
 
-  symbolStart? = method(colon? && (succ ?("\"") || succ symbol?))
+  symbolStart? = method(colon? && (fwd ?("\"") || fwd symbol?))
   symbol? = method(alpha? || decimal? || sub? || ?("?", "$"))
 
   backslash? = method(?("\\"))

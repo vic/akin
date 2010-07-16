@@ -6,8 +6,8 @@ Akin Tokenizer Message do(
     @text = text
     @body = body
     @literal = literal
-    @succ = nil
-    @prec = nil
+    @fwd = nil
+    @bwd = nil
     @position = position
   )
 
@@ -58,11 +58,11 @@ Akin Tokenizer Message do(
   at = method(index,
     if(index == 0, return self)
     idx = index abs
-    succ = index == idx
+    fwd = index == idx
     msg = self
     while(msg && idx > 0, 
       idx--
-      if(succ, msg = msg succ, msg = msg prec)
+      if(fwd, msg = msg fwd, msg = msg bwd)
       if(idx == 0, return msg)
     )
     nil
@@ -85,24 +85,16 @@ Akin Tokenizer Message do(
     msg
   )
   
-  first = method(
-    m = self
-    while(m prec, m = m prec)
-    m
-  )
+  first = method(findBackward(bwd nil?))
 
-  last = method(
-    m = self
-    while(m succ, m = m succ)
-    m
-  )
+  last = method(findForward(fwd nil?))
 
   findForward = dmacro(
     [code]
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m succ)
+      m = m fwd)
     nil,
 
     [name, code]
@@ -110,7 +102,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m succ)
+      m = m fwd)
     nil
   )
 
@@ -119,7 +111,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m prec)
+      m = m bwd)
     nil,
 
     [name, code]
@@ -127,26 +119,64 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m prec)
+      m = m bwd)
     nil
   )
 
-  prev = method(
-    prec && prec findBackward(m, (m space? || m comment?) not)
-  )
-
   next = method(
-    succ && succ findForward(m, (m space? || m comment?) not)
+    ;; find next until punctuation
+    fwd && fwd findForward(m,
+      if(m punctuation?, return)
+      (m space? || m comment?) not
+    )
   )
 
-  cell("next=") = method(msg,
-    n = @next
+  prev = method(
+    ;; find prev until punctuation
+    bwd && bwd findBackward(m,
+      if(m punctuation?, return)
+      (m space? || m comment?) not
+    )
+  )
+
+  cell("next=") = method(msg, 
+    ;; Set next until punctuation,
+    p = fwd && fwd findForward(punctuation?)
+    here = findForward(m, (m space? || m comment?)) || self
+    here append(msg)
+    if(p, 
+      p = p findBackward(m, (m space? || m comment?)) || p
+      msg last append(p))
+    msg
+  )
+
+  cell("prev=") = method(msg, 
+    ;; Set prev until punctuation,
+    p = bwd && bwd findBackward(punctuation?)
+    here = findBackward(m, (m space? || m comment?)) || self
+    msg last append(here)
+    if(p, 
+      p = p findForward(m, (m space? || m comment?)) || p
+      p append(msg))
+    msg
+  )
+
+  prec = method(
+    bwd && bwd findBackward(m, (m space? || m comment?) not)
+  )
+
+  succ = method(
+    fwd && fwd findForward(m, (m space? || m comment?) not)
+  )
+
+  cell("succ=") = method(msg,
+    n = @succ
     if(n, msg replace(n), last append(msg))
     msg
   )
 
-  cell("prev=") = method(msg,
-    p = @prev
+  cell("prec=") = method(msg,
+    p = @prec
     if(p, msg replace(p), first prepend(msg))
     msg
   )
@@ -183,7 +213,7 @@ Akin Tokenizer Message do(
       if(m && m enumerator?, m = nil)
       if(n == 0, return m)
       if(m, m = m findForward(enumerator?), return)
-      if(m, m = m succ, return)
+      if(m, m = m fwd, return)
     )
     nil
   )
@@ -195,15 +225,15 @@ Akin Tokenizer Message do(
 
   firstInLine:noPosition = method(
     eol = findBackward(eol?)
-    if(eol, eol succ, first)
+    if(eol, eol fwd, first)
   )
 
   firstInLine:withPosition = method(
     unless(position, return self)
     m = self
-    while(m && m prec && 
-      m prec position logical line == position logical line,
-      m = m prec)
+    while(m && m bwd && 
+      m bwd position logical line == position logical line,
+      m = m bwd)
     m
   )
   
@@ -249,50 +279,54 @@ Akin Tokenizer Message do(
   )
 
   append = method(msg, 
-    msg prec = self
-    if(succ, succ pevious = nil)
-    @succ = msg
+    if(msg bwd, msg bwd fwd = nil)
+    msg bwd = self
+    if(fwd, fwd bwd = nil)
+    @fwd = msg
     msg
   )
 
   prepend = method(msg,
-    msg succ = self
-    if(prec, prec succ = nil)
-    @prec = msg
+    if(msg fwd, msg fwd bwd = nil)
+    msg fwd = self
+    if(bwd, bwd fwd = nil)
+    @bwd = msg
     msg
   )
 
-  attach = method(msg,
+  chain! = method(msg,
     if(msg type == :activation && expression? && body nil?,
       @body = msg body
       return self)
     append(msg)
   )
 
-  detachLeft = method(prevNext: nil,
-    if(previous, previous next = prevNext)
-    @previous = nil
+  detachLeft = method(newFwd: nil,
+    old = bwd
+    if(old, old fwd = newFwd)
+    @bwd = nil
+    old
   )
 
-  detachRight = method(nextPrev: nil,
-    if(next, next previous = nextPrev)
-    @next = nil
+  detachRight = method(newBwd: nil,
+    old = fwd
+    if(old, old bwd = newBwd)
+    @fwd = nil
+    old
   )
 
-  detach = method(newNext: nil, newPrev: nil,
-    edges = list(prec, succ)
-    if(prec, prec succ = succ)
-    if(succ, succ prec = prec)
-    @prec = newNext
-    @succ = newPrev
+  detach = method(newFwd: nil, newBwd: nil,
+    edges = list(bwd, fwd)
+    if(bwd, bwd fwd = fwd)
+    if(fwd, fwd bwd = bwd)
+    @bwd = newFwd
+    @fwd = newBwd
     edges
   )
 
   insert = method(msg,
-    old = succ
-    if(old, old prec = msg)
-    msg prec = self
-    @succ = msg
+    msg last append(fwd)
+    append(msg)
     msg
   )
 
@@ -301,15 +335,15 @@ Akin Tokenizer Message do(
       other insert(self)
       other detach,
 
-      @prec = other prec
-      if(prec, prec succ = self)
+      @bwd = other bwd
+      if(bwd, bwd fwd = self)
 
       last = @last
-      last succ = upto succ
-      if(last succ, last succ prec = last)
+      last fwd = upto fwd
+      if(last fwd, last fwd bwd = last)
 
-      other prec = nil
-      upto succ = nil
+      other bwd = nil
+      upto fwd = nil
 
     )
     self
@@ -336,44 +370,95 @@ Akin Tokenizer Message do(
 
   code = method(
     sb = Akin Tokenizer StringBuilder mimic
-    cond(
-      literal && literal type == :space,
-      sb << literal text,
-
-      literal && literal type == :symbolIdentifier,
-      sb << ":" << literal text,
-
-      if(text, sb << text)
-      if(body,
-        sb << body brackets first
-        if(body message, sb << body message code)
-        sb << body brackets last
-      )
-    )
-    if(succ, sb << succ code)
+    Akin Tokenizer Message Code send(type, self, sb)
     sb asText
   )
 
+)
+
+Akin Tokenizer Message Code = Origin mimic
+Akin Tokenizer Message Code do(
+
+  rest = method(m, sb,
+    if(m body,
+      if(m body brackets, sb << m body brackets first)
+      sb << m body message code
+      if(m body brackets, sb << m body brackets last)
+    )
+    if(m fwd, sb << m fwd code)
+  )
+
+  activation = method(m, sb, 
+    if(m text, sb << m text)
+    rest(m, sb)
+  )
+  space = cell(:activation)
+  identifier = cell(:activation)
+  punctuation = cell(:activation)
+  operator = cell(:activation)
+  comment = cell(:activation)
+  document = cell(:activation)
+  symbolIdentifier = method(m, sb,
+    sb << ":". activation(m, sb)
+  )
+  symbolText = method(m, sb,
+    sb << ":". text(m, sb)
+  )
+  text = method(m, sb, rest: true,
+    sb << m literal[:left]
+    m literal[:parts] each(i, part, 
+      if(i % 2 == 0, 
+        sb << m literal[:parts][i],
+        sb << "$(" << m literal[:parts][i] code << ")"
+      )
+    )
+    sb << m literal[:right]
+    if(rest, @rest(m, sb))
+  )
+  regexp = method(m, sb,
+    text(m, sb, rest: false)
+    if(m literal[:flags], sb << m literal flags)
+    if(m literal[:engine], sb << ":" << m literal engine)
+    rest(m, sb)
+  )
+  hexNumber = method(m, sb,
+    sb << "0x". activation(m, sb)
+  )
+  octNumber = method(m, sb,
+    sb << "0o". activation(m, sb)
+  )
+  binNumber = method(m, sb,
+    sb << "0b". activation(m, sb)
+  )
+  decNumber = method(m, sb,
+    sb << m literal[:integer]
+    if(m literal[:fraction],
+      sb << "." << m literal[:fraction])
+    if(m literal[:exponent],
+      sb << "e" << m literal[:exponent])
+    rest(m, sb)
+  )
+  
 )
 
 Akin Tokenizer Message mimic!(Mixins Enumerable)
 Akin Tokenizer Message each = dmacro(
   [code]
   m = self
-  while(m, code evaluateOn(call ground, m). m = m succ)
+  while(m, code evaluateOn(call ground, m). m = m fwd)
   self,
 
   [name, code]
   lexicalCode = LexicalBlock createFrom(list(name, code), call ground)
   m = self
-  while(m, lexicalCode call(m). m = m succ)
+  while(m, lexicalCode call(m). m = m fwd)
   self,
 
   [index, place, code]
   lexicalCode = LexicalBlock createFrom(list(index,name, code), call ground)
   i = 0
   m = self
-  while(m, lexicalCode call(i, m). m = m succ. i++)
+  while(m, lexicalCode call(i, m). m = m fwd. i++)
   self,
 )
 

@@ -35,7 +35,7 @@ Akin Parser Rewrite Levels do(
     final = msg
 
     name = msg name asText
-    precedence = operators precedence(msg)
+    bwdedence = operators bwdedence(msg)
     arity = operators arity(msg)
     argsn = msg argCount
     inverted = operators inverted?(msg)
@@ -45,7 +45,7 @@ Akin Parser Rewrite Levels do(
     ;; -(foo) bar
     if(argsn == 0 && name == "-" && 
       msg firstVisibleInExpr? && msg hasNextVisibleInExpr?,
-      precedence = -1
+      bwdedence = -1
       arg = msg next visible
       arg detach
       msg appendArgument(arg)
@@ -144,7 +144,7 @@ Akin Parser Rewrite Levels do(
     level = pool[0]
     level message = nil
     level type = :new
-    level precedence = OP_LEVEL_MAX
+    level bwdedence = OP_LEVEL_MAX
 
     stack clear!
     stack unshift!(pool[0])
@@ -172,10 +172,10 @@ Akin Parser Rewrite Levels Level do(
     )
   )
 
-  setAwaitingFirstArg = method(msg, precedence,
+  setAwaitingFirstArg = method(msg, bwdedence,
     @type = :arg
     @message = msg
-    @precedence = precedence
+    @bwdedence = bwdedence
   )
 
   setAlreadyHasArgs = method(msg, 

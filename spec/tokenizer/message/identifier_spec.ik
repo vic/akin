@@ -47,7 +47,7 @@ describe("Akin Tokenizer parseText message identifiers",
     msg should not be nil
     msg text should == "hello"
     msg should not be call
-    msg succ text should == ":"
+    msg fwd text should == ":"
   )
   
 
