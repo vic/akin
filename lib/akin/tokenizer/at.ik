@@ -14,7 +14,7 @@ Akin Tokenizer At do(
   char = method(@char = reader:read)
   text = method(Akin Tokenizer String txt(char))
 
-  asText = method("character "+ Akin Tokenizer String desc(char) + " at " +phyPos)
+  asText = method("character "+ Akin Tokenizer String desc(char) + " at " +position physical)
 
   eol? = method(
     if(match?(char, "\n", "\u000C", "\u0085", "\u2028", "\u2029"),

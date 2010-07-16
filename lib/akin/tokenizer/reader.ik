@@ -26,7 +26,7 @@ Akin Tokenizer MessageReader do(
       if(head nil?,
         head = current
         last = current,
-        last = last attach(current)
+        last = last chain!(current)
       )
     )
     head
@@ -88,18 +88,19 @@ Akin Tokenizer MessageReader do(
   )
 
   readActivation = method(
+    open = at
     brackets = Akin Tokenizer Message Body brackets assoc(read)
-    unless(brackets, error!("Unknown left bracket -  "+at))
+    unless(brackets, error!("Unknown left bracket -  "+open))
     msg = newMsg(:activation)
     msg appendArgument(readMessageChain, brackets)
-    readChar(brackets last)
+    readChar(brackets last, open)
     msg
   )
 
   readSymbol = method(
     unless(at colon?, 
       error!("Expected colon at start of symbol literal- got "+at))
-    msg = newMsg(:symbol)
+    msg = newMsg(nil)
     read
     if(at quote?,
       txt = readText
@@ -113,9 +114,12 @@ Akin Tokenizer MessageReader do(
     msg
   )
 
-  readChar = method(expected,
+  readChar = method(expected, open nil,
     unless(at ?(expected),
-      error!("Expected char "+expected inspect+" got "+at))
+      msg = "Expected char #{expected inspect}"
+      if(open, msg += " because seen #{open}")
+      msg += " but got #{at}"
+      error!(msg))
     read
   )
 
@@ -167,10 +171,12 @@ Akin Tokenizer MessageReader do(
       if(interpolate? && at interpolateStart?,
         parts << sb asText
         sb = nil
-        read. read.
+        read
+        open = at
+        read
         body = readMessageChain
         parts << body
-        readChar(at interpolateEnd)
+        readChar(at interpolateEnd, open)
       )
       if(at ?(right),
         read.

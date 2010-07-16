@@ -29,9 +29,82 @@ describe("Akin Tokenizer Message",
     msg next text should == "bat"
   )
 
+  it("next should obtain next message in chain until terminator",
+    msg = parse("foo bat. baz")
+    msg text should == "foo"
+    msg next text should == "bat"
+    msg next succ should be terminator
+    msg next fwd  should be terminator
+    msg next next should be nil
+  )
+
+  it("next should obtain next message in chain until enumerator",
+    msg = parse("foo bat, baz")
+    msg text should == "foo"
+    msg next text should == "bat"
+    msg next succ should be comma
+    msg next fwd  should be comma
+    msg next next should be nil
+  )
+
+  it("next should obtain next message in chain until semicolon",
+    msg = parse("foo bat; baz")
+    msg text should == "foo"
+    msg next text should == "bat"
+    msg next succ should be semicolon
+    msg next fwd  should be semicolon
+    msg next next should be nil
+  )
+
+  it("next should obtain next message in chain until eol",
+    msg = parse("foo bat\n baz")
+    msg text should == "foo"
+    msg next text should == "bat"
+    msg next succ should be eol
+    msg next fwd  should be eol
+    msg next next should be nil
+  )
+
+
   it("should obtain previous non-blank message by calling prev", 
     msg = parse("foo bat")
     msg next prev should be(msg)
+  )
+
+  it("prev should obtain prev message in chain until terminator",
+    msg = parse("bat. baz foo") last
+    msg text should == "foo"
+    msg prev text should == "baz"
+    msg prev prec should be terminator
+    msg prev bwd  should be space
+    msg prev prev should be nil
+  )
+
+  it("prev should obtain prev message in chain until comma",
+    msg = parse("bat, baz foo") last
+    msg text should == "foo"
+    msg prev text should == "baz"
+    msg prev prec should be comma
+    msg prev bwd  should be space
+    msg prev prev should be nil
+  )
+
+  it("prev should obtain prev message in chain until semicolon",
+    msg = parse("bat; baz foo") last
+    msg text should == "foo"
+    msg prev text should == "baz"
+    msg prev prec should be semicolon
+    msg prev bwd  should be space
+    msg prev prev should be nil
+  )
+
+  it("prev should obtain prev message in chain until eol",
+    msg = parse("bat\n baz foo") last
+    msg text should == "foo"
+    msg prev text should == "baz"
+    msg prev prec should be eol
+    msg prev bwd  should be space
+    msg prev prev should be nil
   )
   
   it("next= should not alter spaces between",
@@ -120,7 +193,35 @@ describe("Akin Tokenizer Message",
     foo code should == "hello( foo,  bar man  , qux mux )"
   )
 
+  it("asText should quine space message",
+    code = "   \t   "
+    msg = parse(code)
+    msg code should == code
+  )
 
+  it("asText should quine punctuation",
+    code = "  foo = bar, bar. baz\n bat   "
+    msg = parse(code)
+    msg code should == code
+  )
+
+  it("asText should quine string literal",
+    code = #[  "hello $(akin) world"  ]
+    msg = parse(code)
+    msg code should == code
+  )
+
+  it("asText should quine comment literal",
+    code = #[  foo \n # Hello \n bar  ]
+    msg = parse(code)
+    msg code should == code
+  )
+
+  it("asText should quine document literal",
+    code = #[  foo /* hello \n bar baz */ \n bar  ]
+    msg = parse(code)
+    msg code should == code
+  )
 
 )
     
