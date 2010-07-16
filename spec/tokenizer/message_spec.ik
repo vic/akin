@@ -6,21 +6,21 @@ describe("Akin Tokenizer Message",
 
   parse = fn(txt, Akin Tokenizer parseText(txt))
 
-  it("should obtain successive message by calling succ",
+  it("should obtain fwdessive message by calling fwd",
     msg = parse("foo bat")
     msg text should == "foo"
-    msg succ should be space
-    msg succ succ text should == "bat"
+    msg fwd should be space
+    msg fwd fwd text should == "bat"
   )
   
-  it("should obtain preciding message by calling prec",
+  it("should obtain bwdiding message by calling bwd",
     msg = parse("foo bat")
     msg text should == "foo"
-    msg succ should be space
-    msg succ succ text should == "bat"
-    msg succ succ prec should be space
-    msg succ succ prec should be(msg succ)
-    msg succ prec should be(msg)
+    msg fwd should be space
+    msg fwd fwd text should == "bat"
+    msg fwd fwd bwd should be space
+    msg fwd fwd bwd should be(msg fwd)
+    msg fwd bwd should be(msg)
   )
   
   it("should obtain next non-blank message by calling next", 
@@ -39,24 +39,24 @@ describe("Akin Tokenizer Message",
     qux = parse("qux")
     bar = msg next
     msg next = qux
-    msg succ should be space
-    msg succ succ should be(qux)
+    msg fwd should be space
+    msg fwd fwd should be(qux)
     msg next should be(qux)
     qux prev should be(msg)
-    qux prec should be space
-    qux prec should == msg succ
+    qux bwd should be space
+    qux bwd should == msg fwd
     bar prev should be nil
-    bar prec should be nil
+    bar bwd should be nil
   )
 
   it("next= should not alter leading spaces",
     msg = parse("foo   ")
     qux = parse("qux")
     msg next should be nil
-    msg succ should be space
+    msg fwd should be space
     msg next = qux
-    msg succ should be space
-    msg succ succ should be(qux)
+    msg fwd should be space
+    msg fwd fwd should be(qux)
   )
 
 
@@ -65,22 +65,22 @@ describe("Akin Tokenizer Message",
     qux = parse("qux")
     bar = foo next
     bar prev = qux
-    bar prec should be space
-    bar prec prec should be(qux)
+    bar bwd should be space
+    bar bwd bwd should be(qux)
     foo next should be nil
-    foo succ should be nil
+    foo fwd should be nil
     bar prev should be(qux)
   )
 
-  it("prev= should not alter preceding spaces",
+  it("prev= should not alter bwdeding spaces",
     space = parse("   foo")
     qux = parse("qux")
-    foo = space succ
+    foo = space fwd
     foo prev = qux
-    foo prec should be space
-    foo prec prec should be(qux)
+    foo bwd should be space
+    foo bwd bwd should be(qux)
     foo prev should be(qux)
-    qux succ should be space
+    qux fwd should be space
     qux next should be(foo)
   )
 

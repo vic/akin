@@ -6,8 +6,8 @@ Akin Tokenizer Message do(
     @text = text
     @body = body
     @literal = literal
-    @succ = nil
-    @prec = nil
+    @fwd = nil
+    @bwd = nil
     @position = position
   )
 
@@ -58,11 +58,11 @@ Akin Tokenizer Message do(
   at = method(index,
     if(index == 0, return self)
     idx = index abs
-    succ = index == idx
+    fwd = index == idx
     msg = self
     while(msg && idx > 0, 
       idx--
-      if(succ, msg = msg succ, msg = msg prec)
+      if(fwd, msg = msg fwd, msg = msg bwd)
       if(idx == 0, return msg)
     )
     nil
@@ -87,13 +87,13 @@ Akin Tokenizer Message do(
   
   first = method(
     m = self
-    while(m prec, m = m prec)
+    while(m bwd, m = m bwd)
     m
   )
 
   last = method(
     m = self
-    while(m succ, m = m succ)
+    while(m fwd, m = m fwd)
     m
   )
 
@@ -102,7 +102,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m succ)
+      m = m fwd)
     nil,
 
     [name, code]
@@ -110,7 +110,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m succ)
+      m = m fwd)
     nil
   )
 
@@ -119,7 +119,7 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(code evaluateOn(call ground, m), return m)
-      m = m prec)
+      m = m bwd)
     nil,
 
     [name, code]
@@ -127,16 +127,16 @@ Akin Tokenizer Message do(
     m = self
     while(m, 
       if(lexicalCode call(m), return m)
-      m = m prec)
+      m = m bwd)
     nil
   )
 
   prev = method(
-    prec && prec findBackward(m, (m space? || m comment?) not)
+    bwd && bwd findBackward(m, (m space? || m comment?) not)
   )
 
   next = method(
-    succ && succ findForward(m, (m space? || m comment?) not)
+    fwd && fwd findForward(m, (m space? || m comment?) not)
   )
 
   cell("next=") = method(msg,
@@ -183,7 +183,7 @@ Akin Tokenizer Message do(
       if(m && m enumerator?, m = nil)
       if(n == 0, return m)
       if(m, m = m findForward(enumerator?), return)
-      if(m, m = m succ, return)
+      if(m, m = m fwd, return)
     )
     nil
   )
@@ -195,15 +195,15 @@ Akin Tokenizer Message do(
 
   firstInLine:noPosition = method(
     eol = findBackward(eol?)
-    if(eol, eol succ, first)
+    if(eol, eol fwd, first)
   )
 
   firstInLine:withPosition = method(
     unless(position, return self)
     m = self
-    while(m && m prec && 
-      m prec position logical line == position logical line,
-      m = m prec)
+    while(m && m bwd && 
+      m bwd position logical line == position logical line,
+      m = m bwd)
     m
   )
   
@@ -249,16 +249,16 @@ Akin Tokenizer Message do(
   )
 
   append = method(msg, 
-    msg prec = self
-    if(succ, succ pevious = nil)
-    @succ = msg
+    msg bwd = self
+    if(fwd, fwd pevious = nil)
+    @fwd = msg
     msg
   )
 
   prepend = method(msg,
-    msg succ = self
-    if(prec, prec succ = nil)
-    @prec = msg
+    msg fwd = self
+    if(bwd, bwd fwd = nil)
+    @bwd = msg
     msg
   )
 
@@ -280,19 +280,19 @@ Akin Tokenizer Message do(
   )
 
   detach = method(newNext: nil, newPrev: nil,
-    edges = list(prec, succ)
-    if(prec, prec succ = succ)
-    if(succ, succ prec = prec)
-    @prec = newNext
-    @succ = newPrev
+    edges = list(bwd, fwd)
+    if(bwd, bwd fwd = fwd)
+    if(fwd, fwd bwd = bwd)
+    @bwd = newNext
+    @fwd = newPrev
     edges
   )
 
   insert = method(msg,
-    old = succ
-    if(old, old prec = msg)
-    msg prec = self
-    @succ = msg
+    old = fwd
+    if(old, old bwd = msg)
+    msg bwd = self
+    @fwd = msg
     msg
   )
 
@@ -301,15 +301,15 @@ Akin Tokenizer Message do(
       other insert(self)
       other detach,
 
-      @prec = other prec
-      if(prec, prec succ = self)
+      @bwd = other bwd
+      if(bwd, bwd fwd = self)
 
       last = @last
-      last succ = upto succ
-      if(last succ, last succ prec = last)
+      last fwd = upto fwd
+      if(last fwd, last fwd bwd = last)
 
-      other prec = nil
-      upto succ = nil
+      other bwd = nil
+      upto fwd = nil
 
     )
     self
@@ -350,7 +350,7 @@ Akin Tokenizer Message do(
         sb << body brackets last
       )
     )
-    if(succ, sb << succ code)
+    if(fwd, sb << fwd code)
     sb asText
   )
 
@@ -360,20 +360,20 @@ Akin Tokenizer Message mimic!(Mixins Enumerable)
 Akin Tokenizer Message each = dmacro(
   [code]
   m = self
-  while(m, code evaluateOn(call ground, m). m = m succ)
+  while(m, code evaluateOn(call ground, m). m = m fwd)
   self,
 
   [name, code]
   lexicalCode = LexicalBlock createFrom(list(name, code), call ground)
   m = self
-  while(m, lexicalCode call(m). m = m succ)
+  while(m, lexicalCode call(m). m = m fwd)
   self,
 
   [index, place, code]
   lexicalCode = LexicalBlock createFrom(list(index,name, code), call ground)
   i = 0
   m = self
-  while(m, lexicalCode call(i, m). m = m succ. i++)
+  while(m, lexicalCode call(i, m). m = m fwd. i++)
   self,
 )
 

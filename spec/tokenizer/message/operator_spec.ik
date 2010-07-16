@@ -11,10 +11,10 @@ describe("Akin Tokenizer parseText",
     msg = parse("hello : world")
     msg should not be nil
     msg text should == "hello"
-    msg succ should be space
-    msg succ succ text should == ":"
-    msg succ succ succ should be space
-    msg succ succ succ succ text should == "world"
+    msg fwd should be space
+    msg fwd fwd text should == ":"
+    msg fwd fwd fwd should be space
+    msg fwd fwd fwd fwd text should == "world"
     
     msg expression(0) text should == "hello"
     msg expression(1) text should == ":"

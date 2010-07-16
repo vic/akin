@@ -5,26 +5,26 @@ Akin Parser Rewrite DColon do(
   rewrite = method(chain,
     m = chain
     while(m,
-      if(m succ && m succ succ && m succ dcolonArgOp?, 
-        m = m succ succ
-        chain = process(m prec) first
+      if(m fwd && m fwd fwd && m fwd dcolonArgOp?, 
+        m = m fwd fwd
+        chain = process(m bwd) first
       )
       if(m body && m body message, rewrite(m body message))
-      m = m succ)
+      m = m fwd)
     chain
   )
 
   process = method(dcolon,
     first = dcolon firstInLine findForward(white? not)
-    into = dcolon succ findForward(white? not)
-    upto = dcolon prec
+    into = dcolon fwd findForward(white? not)
+    upto = dcolon bwd
 
-    nl = first prec
-    nl succ = into
-    into prec = nl
+    nl = first bwd
+    nl fwd = into
+    into bwd = nl
 
-    first prec = nil
-    upto succ = nil
+    first bwd = nil
+    upto fwd = nil
 
     into appendArgument(first)
     into
