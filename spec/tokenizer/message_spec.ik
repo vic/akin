@@ -132,6 +132,22 @@ describe("Akin Tokenizer Message",
     msg fwd fwd should be(qux)
   )
 
+  it("next= should set until terminator",
+    foo = parse("foo bar. baz bat")
+    msg = parse("hola adios")
+    foo next text should == "bar"
+    foo next = msg
+    foo code should == "foo hola adios. baz bat"
+  )
+
+
+  it("next= should set until terminator",
+    foo = parse("foo bar . baz bat")
+    msg = parse("hola adios")
+    foo next text should == "bar"
+    foo next = msg
+    foo code should == "foo hola adios . baz bat"
+  )
 
   it("prev= should not alter spaces between",
     foo = parse("foo bar")
@@ -156,6 +172,16 @@ describe("Akin Tokenizer Message",
     qux fwd should be space
     qux next should be(foo)
   )
+
+  it("prev= should set until terminator",
+    foo = parse("foo bar. baz bat")
+    bat = foo last
+    msg = parse("hola adios")
+    bat text should == "bat"
+    bat prev = msg
+    foo code should == "foo bar. hola adios bat"
+  )
+
 
   it("arg should obtain arguments by index",
     foo = parse("foo(  bar  , baz  )")

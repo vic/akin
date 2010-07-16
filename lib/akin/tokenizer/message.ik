@@ -144,7 +144,9 @@ Akin Tokenizer Message do(
     p = fwd && fwd findForward(punctuation?)
     here = findForward(m, (m space? || m comment?)) || self
     here append(msg)
-    if(p, msg last append(p))
+    if(p, 
+      p = p findBackward(m, (m space? || m comment?)) || p
+      msg last append(p))
     msg
   )
 
@@ -153,7 +155,9 @@ Akin Tokenizer Message do(
     p = bwd && bwd findBackward(punctuation?)
     here = findBackward(m, (m space? || m comment?)) || self
     msg last append(here)
-    if(p, p append(msg))
+    if(p, 
+      p = p findForward(m, (m space? || m comment?)) || p
+      p append(msg))
     msg
   )
 
