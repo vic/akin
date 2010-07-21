@@ -1,38 +1,44 @@
-Akin Parser Operators = Origin mimic
-Akin Parser Operators do(
-  
-  defaultOperators = dict(
+Akin Parser Rewrite Precedence = Origin mimic
+Akin Parser Rewrite Precedence do(
+
+  initialize = method(
+  )
+
+  operatorPrecedence = dict(
     "!"      =>  0,
     "?"      =>  0,
     "$"      =>  0,
     "~"      =>  0,
     "#"      =>  0,
+    "--"     =>  0,
+    "++"     =>  0,
     "**"     =>  1,
     "*"      =>  2,
     "/"      =>  2,
     "%"      =>  2,
     "+"      =>  3,
     "-"      =>  3,
-    "\u2229" =>  3,
-    "\u222A" =>  3,
+    "∩"      =>  3,
+    "∪"      =>  3,
     "<<"     =>  4,
     ">>"     =>  4,
     "<=>"    =>  5,
     ">"      =>  5,
     "<"      =>  5,
     "<="     =>  5,
-    "\u2264" =>  5,
+    "≤"      =>  5,
     ">="     =>  5,
-    "\u2265" =>  5,
+    "≥"      =>  5,
     "<>"     =>  5,
     "<>>"    =>  5,
-    "\u2282" =>  5,
-    "\u2283" =>  5,
-    "\u2286" =>  5,
-    "\u2287" =>  5,
+    "<<>>"   =>  5,
+    "⊂"      =>  5,
+    "⊃"      =>  5,
+    "⊆"      =>  5,
+    "⊇"      =>  5,
     "=="     =>  6,
     "!="     =>  6,
-    "\u2260" =>  6,
+    "≠"      =>  6,
     "==="    =>  6,
     "=~"     =>  6,
     "!~"     =>  6,
@@ -48,7 +54,7 @@ Akin Parser Operators do(
     "=>"     =>  12,
     "<->"    =>  12,
     "->"     =>  12,
-    "\u2218" =>  12,
+    "∘"      =>  12,
     "+>"     =>  12,
     "!>"     =>  12,
     "&>"     =>  12,
@@ -106,33 +112,25 @@ Akin Parser Operators do(
     "import" =>  14
   )
 
-  defaultTernaryOperators = dict(
-    "="   =>  2,
-    "+="  =>  2,
-    "-="  =>  2,
-    "/="  =>  2,
-    "*="  =>  2,
-    "**=" =>  2,
-    "%="  =>  2,
-    "&="  =>  2,
-    "&&=" =>  2,
-    "|="  =>  2,
-    "||=" =>  2,
-    "^="  =>  2,
-    "<<=" =>  2,
-    ">>=" =>  2,
-    "++"  =>  1,
-    "--"  =>  1
+  nonAssign = list(
+    "<=", ">=", "==", "==="
   )
 
-  defaultInvertedOperators = dict(
-    "\u2208" =>  12,
-    "\u2209" =>  12,
-    "::"     =>  12,
+  rightAssociative = list(
+    "**"
+  )
+
+  leftUnary = list(
+    "--", "++"
+  )
+
+  invertedOperator = dict(
+    "∈"      =>  12,
+    "∉"      =>  12,
     ":::"    =>  12
   )
   
-  operatorPrefixPrecedence = dict(
+  prefixPrecedence = dict(
     "|" =>  9,
     "^" =>  8,
     "&" =>  7,
@@ -150,25 +148,28 @@ Akin Parser Operators do(
     "%" =>  2
   )
 
-  inverted? = method(msg, 
-    if(name = msg name,
-      invertedOperatorTable key?(name),
-      false)
-  )
-
-  bwdedence = method(msg, 
-    name = msg name asText
-    value = operatorTable[name] || invertedOperatorTable[name]
+  precedence = method(msg,
+    if(msg nil? || msg text nil?, return)
+    name = msg text
+    value = operatorPrecedence[name] || invertedOperator[name]
     unless(value,
       if(name length > 0,
-        return operatorPrefixPrecedence[name[0..0]] || -1
+        return prefixPrecedence[name[0..0]]
       )
     )
-    return value || -1
+    return value
   )
 
-  arity = method(msg,
-    trinaryOperatorTable[msg name asText] || -1
+  rightAssociative? = method(msg, 
+    msg && rightAssociative include?(msg text)
   )
-  
+
+  leftUnary? = method(msg,
+    msg && leftUnary include?(msg text)
+  )
+
+  assignment? = method(msg,
+    msg && msg text && !nonAssign include?(msg text) && msg text chars last == "="
+  )
+
 )

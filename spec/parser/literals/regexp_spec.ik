@@ -1,10 +1,10 @@
 use("ispec")
 use("akin")
-use("akin/tokenizer")
+use("akin/parser")
 
-describe("Akin Tokenizer for regexp literals", 
+describe("Akin Parser for regexp literals", 
 
-  parse = fn(txt, Akin Tokenizer parseText(txt))
+  parse = fn(txt, Akin Parser parseText(txt))
 
   it("should parse simple regexp enclosed between $/ and  /",
     msg = parse("$/hello/")

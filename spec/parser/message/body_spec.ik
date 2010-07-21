@@ -1,10 +1,10 @@
 use("ispec")
 use("akin")
-use("akin/tokenizer")
+use("akin/parser")
 
-describe("Akin Tokenizer parseText on message bodys", 
+describe("Akin Parser parseText on message bodys", 
 
-  parse = fn(txt, Akin Tokenizer parseText(txt))
+  parse = fn(txt, Akin Parser parseText(txt))
 
   it("should parse message without body",
     msg = parse("hello") 

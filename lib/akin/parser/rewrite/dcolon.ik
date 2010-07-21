@@ -2,32 +2,48 @@
 Akin Parser Rewrite DColon = Origin mimic
 Akin Parser Rewrite DColon do(
   
-  rewrite = method(chain,
-    m = chain
-    while(m,
-      if(m fwd && m fwd fwd && m fwd dcolonArgOp?, 
-        m = m fwd fwd
-        chain = process(m bwd) first
-      )
-      if(m body && m body message, rewrite(m body message))
-      m = m fwd)
-    chain
+  apply? = method(msg, rewrite,
+    msg text == "::" && msg body nil?
   )
 
-  process = method(dcolon,
-    first = dcolon firstInLine findForward(white? not)
-    into = dcolon fwd findForward(white? not)
-    upto = dcolon bwd
+  initialize = method(dcolon, rw,
+    @dcolon = dcolon
+    @rw = rw
+  )
 
-    nl = first bwd
-    nl fwd = into
-    into bwd = nl
+  rewrite! = method(
+    first = dcolon findBackward(eol?) || dcolon first
+    last = dcolon findForward(eol?) || dcolon last
+    dlimit = nil
+    if(first literal == :delimit,
+      dlimit = first
+    )
+    if(first white?, first = first succ)
+    if(last white?, last = last prec)
 
-    first bwd = nil
-    upto fwd = nil
+    left =  dcolon prec
+    right = dcolon succ
 
-    into appendArgument(first)
-    into
+    prev = left findPrev(m, apply?(m, rw))
+
+    if(first bwd,
+      first bwd append(right), 
+      right detachLeft)
+    left detachRight
+
+    if(prev,
+      prev = Akin Parser Message mimic(:punctuation, "\n")
+      prev literal = :delimit
+      prev append(first)
+      first = prev
+    )
+    last appendArgument(first)
+    if(dlimit,
+      dlimit detach
+      nil
+      ,
+      right first
+    )
   )
 
 )

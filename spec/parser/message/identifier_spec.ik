@@ -1,10 +1,10 @@
 use("ispec")
 use("akin")
-use("akin/tokenizer")
+use("akin/parser")
 
-describe("Akin Tokenizer parseText message identifiers", 
+describe("Akin Parser parseText message identifiers", 
 
-  parse = fn(txt, Akin Tokenizer parseText(txt))
+  parse = fn(txt, Akin Parser parseText(txt))
 
   it("should parse simple identifier",
     msg = parse("hello")

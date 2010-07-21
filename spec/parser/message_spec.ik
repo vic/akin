@@ -1,10 +1,10 @@
 use("ispec")
 use("akin")
-use("akin/tokenizer")
+use("akin/parser")
 
-describe("Akin Tokenizer Message", 
+describe("Akin Parser Message", 
 
-  parse = fn(txt, Akin Tokenizer parseText(txt))
+  parse = fn(txt, Akin Parser parseText(txt))
 
   it("should obtain fwdessive message by calling fwd",
     msg = parse("foo bat")
@@ -226,7 +226,7 @@ describe("Akin Tokenizer Message",
   )
 
   it("asText should quine punctuation",
-    code = "  foo = bar, bar. baz\n bat   "
+    code = "  foo; bar, bar. baz\n bat   "
     msg = parse(code)
     msg code should == code
   )

@@ -1,7 +1,7 @@
 
 
-Akin Tokenizer String = Origin mimic
-Akin Tokenizer String do(
+Akin Parser String = Origin mimic
+Akin Parser String do(
 
   chr = method(text,
     java:io:StringReader new(text) read asRational
@@ -45,14 +45,25 @@ Akin Tokenizer String do(
 
 )
 
-Akin Tokenizer StringBuilder = Origin mimic
-Akin Tokenizer StringBuilder do(
+Akin Parser StringBuilder = Origin mimic
+Akin Parser StringBuilder do(
   initialize = method(
     @builder = java:lang:StringBuilder new
   )
-  cell("<<") = method(str,
+  
+  append = method(str,
     builder append(java:lang:String valueOf(str))
     self
   )
+
+  prepend = method(str,
+    builder insert(0, java:lang:String valueOf(str))
+    self
+  )
+
+  cell("<<") = cell("append")
+
+  cell(">>") = cell("prepend")
+  
   asText = method(builder toString asText)
 )

@@ -1,6 +1,14 @@
 
-use(System currentDirectory +"/parser/rewrite/colon_spec.ik")
-use(System currentDirectory +"/parser/rewrite/dcolon_spec.ik")
-
-
-
+use(System currentDirectory +"/parser/literals/symbol_spec.ik")
+use(System currentDirectory +"/parser/literals/number_spec.ik")
+use(System currentDirectory +"/parser/literals/string_spec.ik")
+use(System currentDirectory +"/parser/literals/regexp_spec.ik")
+use(System currentDirectory +"/parser/literals/comment_spec.ik")
+use(System currentDirectory +"/parser/message_spec.ik")
+use(System currentDirectory +"/parser/message/body_spec.ik")
+use(System currentDirectory +"/parser/message/chain_spec.ik")
+use(System currentDirectory +"/parser/message/identifier_spec.ik")
+use(System currentDirectory +"/parser/message/position_spec.ik")
+use(System currentDirectory +"/parser/message/rewrite/binary_spec.ik")
+use(System currentDirectory +"/parser/message/rewrite/dcolon_spec.ik")
+use(System currentDirectory +"/parser/message/rewrite/colon_spec.ik")

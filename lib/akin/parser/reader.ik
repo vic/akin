@@ -1,11 +1,14 @@
 
-Akin Tokenizer MessageReader = Origin mimic
-Akin Tokenizer MessageReader do(
+Akin Parser MessageReader = Origin mimic
+Akin Parser MessageReader do(
 
-  initialize = method(at, @at = at)
+  initialize = method(at, rw,
+    @rw = rw
+    @at = at
+  )
 
   read = method(
-    txt = Akin Tokenizer String txt(at char)
+    txt = Akin Parser String txt(at char)
     @at = at fwd
     txt
   )
@@ -14,22 +17,24 @@ Akin Tokenizer MessageReader do(
 
   newMsg = method(+rest, +:krest,
     krest[:position] = at position
-    Akin Tokenizer Message mimic(*rest, *krest)
+    Akin Parser Message mimic(*rest, *krest)
   )
 
-  newSb = method(Akin Tokenizer StringBuilder mimic)
+  newSb = method(Akin Parser StringBuilder mimic)
 
   readMessageChain = method(
     head = nil
     last = nil
+    level = rw level
     while(current = readMessage,
       if(head nil?,
         head = current
         last = current,
         last = last chain!(current)
       )
+      level add(last)
     )
-    head
+    level finish || head
   )
 
   readMessage = method(
@@ -89,7 +94,7 @@ Akin Tokenizer MessageReader do(
 
   readActivation = method(
     open = at
-    brackets = Akin Tokenizer Message Body brackets assoc(read)
+    brackets = Akin Parser Message Body brackets assoc(read)
     unless(brackets, error!("Unknown left bracket -  "+open))
     msg = newMsg(:activation)
     msg appendArgument(readMessageChain, brackets)

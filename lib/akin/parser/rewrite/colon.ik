@@ -1,64 +1,97 @@
 
 Akin Parser Rewrite Colon = Origin mimic
 Akin Parser Rewrite Colon do(
-
-  rewrite = method(chain,
-    m = chain
-    while(m,
-      if(m fwd && m fwd colonArgOp?, process(m fwd))
-      if(m body && m body message, rewrite(m body message))
-      m = m fwd)
-    chain
-  )
-
-  process = method(colon,
-    first = colon firstInLine
-    into = colon bwd
-    sb = Akin Tokenizer StringBuilder mimic
-    sb << into name
-    end = nil
-    msg = colon
-    while(msg = msg fwd,
-      end = msg
-      if(msg end?, break)
-      if((msg sameColumn?(first, usePosition: nil) ||
-          msg sameColumn?(into, usePosition: nil)) &&
-        msg fwd && msg fwd colonArgOp?,
-        if(msg body nil?,
-          sb << ":" << msg name
-          msg name = :(",")
-          msg fwd detach,
-
-          comma = newMsg(:",")
-          comma bwd = msg bwd
-          comma fwd = msg
-          msg bwd fwd = comma
-          msg fwd name = :(",")
-        )
-        continue
-      )
-      if(msg fwd && msg fwd colonArgOp?,
-        process(msg fwd)
-        if(msg body && msg body message,
-          rewrite(msg body message))
-      )
-      if(!msg white? && msg position logical column <= first position logical column,
-        end = msg firstInLine bwd
-        break)
-    )
-    into fwd = end fwd
-    if(into fwd, into fwd bwd = into)
-    body = colon fwd
-    body bwd = nil
-    end fwd = nil
-    into name = :(sb asText)
-    into appendArgument(body)
-    into
-  )
-
-  newMsg = method(+args, +:kargs,
-    Akin Tokenizer Message mimic(*args, *kargs)
-  )
   
-)
+  apply? = method(msg, rw,
+    msg && msg text == ":"  && msg body nil?
+  )
 
+  initialize = method(colon, rw,
+    @colon = colon
+    @rw = rw
+  )
+
+  rewrite! = method(
+    unless(apply?(colon, rw) && colon fwd && colon bwd, return)
+    head = colon firstInLine
+    if(head invisible?, head = head succ)
+    into = colon prev
+    end = findEnd(colon, into)
+    into = findStart(head, into)
+
+    colon = into succ
+
+    body = colon fwd
+    while(body white?, body = body detach last)
+    body detachLeft
+    into appendArgument(body)
+    if(end terminator?,
+      while(end bwd && end bwd white?, end bwd detach)
+      into append(end)
+      if(end semicolon?, end detach)
+    )
+
+    colon detach
+    
+    nil
+  )
+
+  findStart = method(head, into,
+    if(head != into, return into)
+    last = into
+    msg = into
+    names = list()
+    while(msg = msg bwd,
+      pos = msg position logical
+      if(msg white? not && pos column < into position logical column,
+        break)
+      if(apply?(msg succ, rw) && 
+        pos column == into position logical column,
+        last succ text = ","
+        last succ type = :punctuation
+        if(last body,
+          last bwd insert(buildComma(last bwd)),
+          unless(names include?(last text),
+            names unshift!(last text))
+          last detach)
+        last = msg
+      )
+    )
+    names unshift!(last text)
+    last text = names join(":")
+    last
+  )
+
+  buildComma = method(msg nil,
+    comma = Akin Parser Message mimic(:punctuation, ",")
+    comma position = msg && msg position
+    comma
+  )
+
+  findEnd = method(msg, into,
+    end = nil
+    intoPos = into position logical
+    while(end nil? && msg && msg = msg fwd,
+      pos = msg position logical
+      if(pos line == intoPos line && msg end?,
+        end = msg
+        break
+      )
+      if(msg end? && pos column <= intoPos column,
+        end = msg
+        break
+      )
+      if(msg visible? && pos column <= intoPos column,
+        end = msg findBackward(eol?)
+        break
+      )
+      if(msg fwd nil?,
+        end = msg
+        break
+      )
+    )
+    end
+  )
+
+
+)

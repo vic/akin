@@ -1,5 +1,5 @@
-Akin Tokenizer Message = Origin mimic
-Akin Tokenizer Message do(
+Akin Parser Message = Origin mimic
+Akin Parser Message do(
 
   initialize = method(type nil, text nil, body: nil, literal: nil, position: nil,
     @type = type
@@ -11,6 +11,29 @@ Akin Tokenizer Message do(
     @position = position
   )
 
+  copy = method(
+    msg = Akin Parser Message mimic(
+      type, text, body: body, literal: literal, position: position
+    )
+    msg fwd = fwd
+    msg bwd = bwd
+    msg
+  )
+
+  deepCopy = method(
+    msg = Akin Parser Message mimic(type, text)
+    if(body, 
+      msg body = Akin Parser Message Body mimic(
+        if(body message, body message deepCopy, nil),
+        if(body brackets, body brackets mimic, nil)
+      )
+    )
+    if(literal, msg literal = literal mimic)
+    if(position, msg position = position)
+    if(fwd, msg fwd = msg fwd deepCopy)
+    if(bwd, msg bwd = bwd)
+  )
+
   
   identifier? = method(type == :identifier)
   comment? = method(type == :comment)
@@ -20,17 +43,15 @@ Akin Tokenizer Message do(
   
 
   call? = method(body nil? not)
-  hasArgs? = method(argCount == 0)
+  hasArgs? = method(argCount > 0)
 
   argCount = method(
     if(body nil? || body message nil?, return 0)
-    n = -1
-    c = body message findForward(comma?)
-    while(c,
-      n++
-      c = c next && c next findForward(comma?)
-    )
-    n + 1
+    commas = 0
+    c = body message findForward(enumerator?)
+    while(c, commas++. c = c findForward(enumerator?))
+    if(body message expression, commas++)
+    commas
   )
 
 
@@ -85,88 +106,68 @@ Akin Tokenizer Message do(
     msg
   )
   
-  first = method(findBackward(bwd nil?))
+  first = method(findBackward(bwd nil?) || self)
 
-  last = method(findForward(fwd nil?))
-
-  findForward = dmacro(
-    [code]
-    m = self
-    while(m, 
-      if(code evaluateOn(call ground, m), return m)
-      m = m fwd)
-    nil,
-
-    [name, code]
-    lexicalCode = LexicalBlock createFrom(list(name, code), call ground)
-    m = self
-    while(m, 
-      if(lexicalCode call(m), return m)
-      m = m fwd)
-    nil
-  )
-
-  findBackward = dmacro(
-    [code]
-    m = self
-    while(m, 
-      if(code evaluateOn(call ground, m), return m)
-      m = m bwd)
-    nil,
-
-    [name, code]
-    lexicalCode = LexicalBlock createFrom(list(name, code), call ground)
-    m = self
-    while(m, 
-      if(lexicalCode call(m), return m)
-      m = m bwd)
-    nil
-  )
+  last = method(findForward(fwd nil?) || self)
 
   next = method(
     ;; find next until punctuation
-    fwd && fwd findForward(m,
+    findForward(m,
       if(m punctuation?, return)
-      (m space? || m comment?) not
+      m visible?
     )
   )
 
   prev = method(
     ;; find prev until punctuation
-    bwd && bwd findBackward(m,
+    findBackward(m,
       if(m punctuation?, return)
-      (m space? || m comment?) not
+      m visible?
     )
   )
 
   cell("next=") = method(msg, 
+    if(msg && msg == @next, return msg)
     ;; Set next until punctuation,
-    p = fwd && fwd findForward(punctuation?)
-    here = findForward(m, (m space? || m comment?)) || self
-    here append(msg)
+    p = findForward(punctuation?)
+    here = (msg && findForward(invisible?)) || self
+    if(msg, 
+      here append(msg),
+      here detachRight)
     if(p, 
-      p = p findBackward(m, (m space? || m comment?)) || p
-      msg last append(p))
+      if(msg, 
+        p = p findBackward(invisible?) || p
+        msg last append(p),
+        here append(p)
+      )
+    )
     msg
   )
 
   cell("prev=") = method(msg, 
+    if(msg && msg == @prev, return msg)
     ;; Set prev until punctuation,
-    p = bwd && bwd findBackward(punctuation?)
-    here = findBackward(m, (m space? || m comment?)) || self
-    msg last append(here)
+    p = findBackward(punctuation?)
+    here = (msg && findBackward(invisible?)) || self
+    if(msg, 
+      msg last append(here),
+      here detachLeft)
     if(p, 
-      p = p findForward(m, (m space? || m comment?)) || p
-      p append(msg))
+      p = p findForward(invisible?) || p
+      if(msg, 
+        p append(msg),
+        p append(here)
+      )
+    )
     msg
   )
 
   prec = method(
-    bwd && bwd findBackward(m, (m space? || m comment?) not)
+    findBackward(visible?)
   )
 
   succ = method(
-    fwd && fwd findForward(m, (m space? || m comment?) not)
+    findForward(visible?)
   )
 
   cell("succ=") = method(msg,
@@ -181,6 +182,9 @@ Akin Tokenizer Message do(
     msg
   )
 
+  invisible? = method(space? || comment?)
+  visible? = method(invisible? not)
+
   white? = method(space? || comment? || eol?)
 
   expression? = method((white? || punctuation?) not)
@@ -188,6 +192,13 @@ Akin Tokenizer Message do(
   expression = method(n 0,
     n = n abs + 1
     findForward(m, m expression? && (n-- == 0))
+  )
+
+  lastExpr = method(
+    if(p = findForward(punctuation?),
+      p findBackward(expression),
+      last findBackward(expression)
+    )
   )
 
   firstExpr = method(
@@ -206,19 +217,22 @@ Akin Tokenizer Message do(
 
   enumerated = method(n 0,
     n = n abs + 1
-    m = self
+    m = if(expression?, self, next)
     while(m && n > 0,
       n--
-      m = m findForward(expression?)
-      if(m && m enumerator?, m = nil)
       if(n == 0, return m)
-      if(m, m = m findForward(enumerator?), return)
-      if(m, m = m fwd, return)
+      m = m findForward(enumerator?)
+      if(m, m = m next)
     )
     nil
   )
 
-  firstInLine = method(usePosition: false,
+  firstInNextLine = method(
+    eol = findForward(eol?)
+    if(eol, eol fwd, nil)
+  )
+
+  firstInLine = method(usePosition false,
     if(usePosition nil? && position, usePosition = true)
     if(usePosition, firstInLine:withPosition, firstInLine:noPosition)
   )
@@ -236,20 +250,25 @@ Akin Tokenizer Message do(
       m = m bwd)
     m
   )
+
+  previousLine = method(
+    eol = findBackward(eol?)
+    eol && eol bwd && eol bwd firstInLine
+  )
   
-  lineIndentLevel = method(usePosition: false,
+  lineIndentLevel = method(usePosition false,
     if(usePosition nil? && position, usePosition = true)
-    first = firstInLine(usePosition: usePosition)
+    first = firstInLine(usePosition)
     if(self != first && first space?,
       first text length, 0)
   )
 
-  sameLineIndent? = method(m, usePosition: false,
+  sameLineIndent? = method(m, usePosition false,
     if(usePosition nil? && position && m position, usePosition = true)
-    lineIndentLevel(usePosition: usePosition) ==  m lineIndentLevel(usePosition: usePosition)
+    lineIndentLevel(usePosition) ==  m lineIndentLevel(usePosition)
   )
 
-  sameLine? = method(m, usePosition: false,
+  sameLine? = method(m, usePosition false,
     if(usePosition nil? && position && m position, usePosition = true)
     if(usePosition, sameLine:withPosition(m), sameLine:noPosition(m))
   )
@@ -263,7 +282,7 @@ Akin Tokenizer Message do(
       position logical line == msg position logical line)
   )
 
-  sameColumn? = method(m, usePosition: false,
+  sameColumn? = method(m, usePosition false,
     if(usePosition nil? && position && m position, usePosition = true)
     if(usePosition, sameColumn:withPosition?(m), 
       sameColumn:noPosition?(m))
@@ -352,16 +371,20 @@ Akin Tokenizer Message do(
   appendArgument = method(arg, brackets  list("(", ")"),
     if(body, 
       if(body message, 
-        last = body message last findBackward(white? not)
+        last = body message last 
+        last = last findBackward(white? not) || last
         if(last comma?, 
           last append(arg),
-          last append(Akin Tokenizer Message mimic(:",")) append(arg)
-          if(arg findForward(white? not) comma?,
-            arg findForward(white? not) detach
+          fst = if(arg comma?, arg, arg next)
+          if(fst && fst comma?,
+            last append(arg),
+            comma = Akin Parser Message mimic(:punctuation, ",")
+            comma position = arg position
+            last append(comma) append(arg)
           )
         ),
         body message = arg),
-      @body = Akin Tokenizer Message Body mimic(arg, brackets)
+      @body = Akin Parser Message Body mimic(arg, brackets)
     )
     self
   )
@@ -369,15 +392,48 @@ Akin Tokenizer Message do(
   notice = method(super + "["+text+"]")
 
   code = method(
-    sb = Akin Tokenizer StringBuilder mimic
-    Akin Tokenizer Message Code send(type, self, sb)
+    sb = Akin Parser StringBuilder mimic
+    Akin Parser Message Code send(type, self, sb)
     sb asText
   )
 
 )
 
-Akin Tokenizer Message Code = Origin mimic
-Akin Tokenizer Message Code do(
+let(finderMethod, 
+  dsyntax(
+    [direction]
+    ''(
+      dmacro(
+        [code]
+        m = 'direction
+        while(m, 
+          if(code evaluateOn(call ground, m), return m)
+          m = m 'direction)
+        nil,
+        
+        [name, code]
+        lexicalCode = LexicalBlock createFrom(list(name, code),
+          call ground)
+        m = 'direction
+        while(m,
+          if(lexicalCode call(m), return m)
+          m = m 'direction)
+        nil
+      )
+    )
+  ),
+  
+  Akin Parser Message findForward = finderMethod(fwd)
+  Akin Parser Message findBackward = finderMethod(bwd)
+  Akin Parser Message findNext = finderMethod(next)
+  Akin Parser Message findPrev = finderMethod(prev)
+  Akin Parser Message findSucc = finderMethod(succ)
+  Akin Parser Message findPrec = finderMethod(prec)
+)
+
+
+Akin Parser Message Code = Origin mimic
+Akin Parser Message Code do(
 
   rest = method(m, sb,
     if(m body,
@@ -441,8 +497,8 @@ Akin Tokenizer Message Code do(
   
 )
 
-Akin Tokenizer Message mimic!(Mixins Enumerable)
-Akin Tokenizer Message each = dmacro(
+Akin Parser Message mimic!(Mixins Enumerable)
+Akin Parser Message each = dmacro(
   [code]
   m = self
   while(m, code evaluateOn(call ground, m). m = m fwd)
@@ -462,8 +518,8 @@ Akin Tokenizer Message each = dmacro(
   self,
 )
 
-Akin Tokenizer Message Body = Origin mimic
-Akin Tokenizer Message Body do(
+Akin Parser Message Body = Origin mimic
+Akin Parser Message Body do(
 
   initialize = method(message, brackets nil,
     @message = message
@@ -488,7 +544,8 @@ Akin Tokenizer Message Body do(
     list("(", ")"),
     list("[", "]"),
     list("{", "}"),
-    list("⟨", "⟩")
+    list("⟨", "⟩"),
+    list("¿", "?")
   )
 
 )

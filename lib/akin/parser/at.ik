@@ -1,6 +1,6 @@
 
-Akin Tokenizer At = Origin mimic
-Akin Tokenizer At do(
+Akin Parser At = Origin mimic
+Akin Parser At do(
 
   initialize = method(reader, position, char nil,
     @reader = reader
@@ -12,9 +12,9 @@ Akin Tokenizer At do(
   reader:read = method(reader read asRational)
 
   char = method(@char = reader:read)
-  text = method(Akin Tokenizer String txt(char))
+  text = method(Akin Parser String txt(char))
 
-  asText = method("character "+ Akin Tokenizer String desc(char) + " at " +position physical)
+  asText = method("character "+ Akin Parser String desc(char) + " at " +position physical)
 
   eol? = method(
     if(match?(char, "\n", "\u000C", "\u0085", "\u2028", "\u2029"),
@@ -46,7 +46,7 @@ Akin Tokenizer At do(
       pos = position fwdEscaped,
       if(eol?, pos = position fwdLine)
     )
-    @fwd = Akin Tokenizer At mimic(reader, pos, cached:n)
+    @fwd = Akin Parser At mimic(reader, pos, cached:n)
   )
   
   ? = method(+items, 
@@ -54,19 +54,19 @@ Akin Tokenizer At do(
       if(i is?(Text) && i length > 1,
         m = self
         i chars all?(c,
-          if(Akin Tokenizer String charMatch?(m char, c),
+          if(Akin Parser String charMatch?(m char, c),
             m = m fwd
             true,
             false
           )
         )
         ,
-        Akin Tokenizer String charMatch?(char, i)
+        Akin Parser String charMatch?(char, i)
     ))
   )
 
   match? = method(char, +items, 
-    items flatten any?(i, Akin Tokenizer String charMatch?(char, i)))
+    items flatten any?(i, Akin Parser String charMatch?(char, i)))
 
   adition? = method(?("+", "-"))
 
@@ -137,7 +137,7 @@ Akin Tokenizer At do(
       "=","?","¡","@","ł",
       "€","¶","ŧ","↓","→",
       "ø","þ","æ","ß","ð",
-      "đ","ŋ","ħ","j","ĸ",
+      "đ","ŋ","ħ","ĸ",
       "ł","~","«","»","¢",
       "“","”","µ","¬",
       "|","·","½","\\","¿",
@@ -147,8 +147,8 @@ Akin Tokenizer At do(
 
   bracket? = method(leftBracket? || rightBracket?)
 
-  leftBracket? = method(?(Akin Tokenizer Message Body brackets map(first)))
+  leftBracket? = method(?(Akin Parser Message Body brackets map(first)))
 
-  rightBracket? = method(?(Akin Tokenizer Message Body brackets map(second)))
+  rightBracket? = method(?(Akin Parser Message Body brackets map(second)))
 
 )

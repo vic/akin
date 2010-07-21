@@ -1,10 +1,10 @@
 use("ispec")
 use("akin")
-use("akin/tokenizer")
+use("akin/parser")
 
-describe("Akin Tokenizer parseText for comments", 
+describe("Akin Parser parseText for comments", 
 
-  parse = fn(txt, Akin Tokenizer parseText(txt))
+  parse = fn(txt, Akin Parser parseText(txt))
 
   it("should treat documentation starting with /* as documentation ",
     msg = parse("/* This is a comment */")
