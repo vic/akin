@@ -255,6 +255,137 @@ foo bar(baz(bat)
 "
   )
 
+  it("should", 
+    msg = parse("
+foo bar baz: 
+  a
+  b
+")
+    msg code should == "
+foo bar baz(a
+  b
+)
+"
+  )
+
+  it("should", 
+    msg = parse("
+foo bar baz: 
+  a
+  bat:
+  man
+")
+    msg code should == "
+foo bar baz(a
+  bat(man
+)
+)
+"
+  )
+
+  it("should", 
+    msg = parse("
+foo bar baz: 
+  a
+        bat:
+  man
+")
+    msg code should == "
+foo bar baz(a
+        bat(man
+)
+)
+"
+  )
+
+  it("should", 
+    msg = parse("
+foo bar baz: 
+  a
+bat:
+  man
+")
+    msg code should == "
+foo bar baz(a
+bat(man)
+)
+"
+  )
+
+
+  it("should", 
+    msg = parse("
+    a = b: c
+")
+    msg code should == "
+    =(a,b(c))
+"
+  )
+
+  it("should", 
+    msg = parse("
+    a = : b
+")
+    msg code should == "
+    a =(b)
+"
+  )
+
+  it("should", 
+    msg = parse("
+    a =: b
+")
+    msg code should == "
+    a =:(b)
+"
+  )
+
+
+  it("should", 
+    msg = parse("
+    a = (n, m): n + m
+")
+    msg code should == "
+    =(a,(n, m,n +(m)))
+"
+  )
+
+  it("should", 
+    msg = parse("
+    a = (): n, m, n + m
+")
+    msg code should == "
+    =(a,(n, m, n +(m)))
+"
+  )
+
+  it("should",
+    msg = parse("a(): b")
+    msg code should == "a(b)"
+    msg text should == "a"
+    msg literal should be nil
+  )
+
+  it("should",
+    msg = parse("(): b")
+    msg code should == "(b)"
+    msg text should be nil
+    msg literal should == :code
+  )
+
+  it("should",
+    msg = parse("{}: b")
+    msg code should == "{b}"
+    msg text should be nil
+    msg literal should == :code
+  )
+
+  it("should",
+    msg = parse("[]: b")
+    msg code should == "[b]"
+    msg text should be nil
+    msg literal should == :code
+  )
 
 )
 

@@ -51,14 +51,21 @@ Akin Parser Rewrite Colon do(
         last succ type = :punctuation
         if(last body,
           last bwd insert(buildComma(last bwd)),
-          unless(names include?(last text),
+          if(last text && last text length > 0 && 
+            !names include?(last text),
             names unshift!(last text))
           last detach)
         last = msg
       )
     )
-    names unshift!(last text)
-    last text = names join(":")
+    if(last text && last text length > 0 &&
+      !names include?(last text),
+      names unshift!(last text)
+    )
+    if(names empty?,
+      last literal = :code,
+      last text = names join(":")
+    )
     last
   )
 

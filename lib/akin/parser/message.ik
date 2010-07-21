@@ -372,7 +372,7 @@ Akin Parser Message do(
     if(body, 
       if(body message, 
         last = body message last 
-        last = last findBackward(white? not) || last
+        if(last white?, last = last prec)
         if(last comma?, 
           last append(arg),
           fst = if(arg comma?, arg, arg next)
