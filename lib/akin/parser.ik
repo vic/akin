@@ -18,13 +18,13 @@ Akin Parser do(
     Akin Parser MessageReader mimic(at, rw) readMessageChain
   )
 
-  parseURI = method(uri,
-    sr = java:io:InputStreamReader new(java:net:URL new(uri) openStream)
-    pos = Akin Parser Position position(
-      source: uri, line: 1, column: 1, position: 1)
+  parseURL = method(url,
+    sr = java:io:InputStreamReader new(url openStream)
+    pos = Akin Parser position(
+      source: url, line: 1, column: 1, position: 1)
     at = Akin Parser At mimic(sr, pos)
     rw = Akin Parser Rewrite mimic
-    Akin Parser MessageReader mimic(at) readMessageChain
+    Akin Parser MessageReader mimic(at, rw) readMessageChain
   )
 
 )

@@ -229,8 +229,11 @@ Akin Parser MessageReader do(
           if(fwd ?("o", "O"),
             read. read.
             msg = readOctalNumber,
-            read.
-            msg = readOctalNumber))),
+            if(fwd octal?,
+              read.
+              msg = readOctalNumber,
+              msg = readDecimalNumber,
+              )))),
       msg = readDecimalNumber)
     msg position = pos
     msg

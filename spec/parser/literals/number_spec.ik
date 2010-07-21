@@ -72,4 +72,11 @@ describe("Akin Parser parseText for numeric literals",
     msg literal[:integer] should == "24000000"
   )
 
+  it("should parse single 0 as decimal",
+    msg = parse("0")
+    msg text should be nil
+    msg should not be call
+    msg type should == :decNumber
+  )
+
 )
