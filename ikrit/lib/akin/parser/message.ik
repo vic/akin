@@ -20,6 +20,19 @@ Akin Parser Message do(
     msg
   )
 
+  copyUntil = dmacro(
+    [code]
+    here = ''(findForward(`code)) evaluateOn(call ground, self)
+    if(here nil?, return deepCopy)
+    bwd = here bwd
+    bwd fwd = nil
+    ensure(
+      cp = @deepCopy,
+      bwd fwd = here
+    )
+    cp
+  )
+
   deepCopy = method(
     msg = Akin Parser Message mimic(type, text)
     if(body, 
@@ -32,6 +45,7 @@ Akin Parser Message do(
     if(position, msg position = position)
     if(fwd, msg fwd = msg fwd deepCopy)
     if(bwd, msg bwd = bwd)
+    msg
   )
 
   
@@ -109,6 +123,11 @@ Akin Parser Message do(
   first = method(findBackward(bwd nil?) || self)
 
   last = method(findForward(fwd nil?) || self)
+
+  afterPunctuation = method(
+    punc = findForward(punctuation?)
+    punc && punc fwd
+  )
 
   next = method(
     ;; find next until punctuation
@@ -519,7 +538,7 @@ Akin Parser Message each = dmacro(
   self,
 
   [index, place, code]
-  lexicalCode = LexicalBlock createFrom(list(index,name, code), call ground)
+  lexicalCode = LexicalBlock createFrom(list(index,place,code), call ground)
   i = 0
   m = self
   while(m, lexicalCode call(i, m). m = m fwd. i++)
@@ -538,6 +557,8 @@ Akin Parser Message Body do(
   cell("[]") = method(index, message at(index))
   
   argAt = method(index, message enumerated(index))
+
+  arg = method(index, m = argAt(index). m && m copyUntil(punctuation?))
   
   round? = method( bracketed?("(", ")") )
   square? = method( bracketed?("[", "]") )

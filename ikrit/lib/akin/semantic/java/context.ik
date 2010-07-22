@@ -1,0 +1,55 @@
+let(
+  Semantic, Akin Semantic,
+  Node,     Akin Semantic Node,
+  Java,     Akin Semantic Java,
+  Context,  Akin Semantic Java Context,
+
+  Context initialize = method(
+    @packages = list(Java Package mimic)
+  )
+  Context classes = method(packages map(classes) flatten)
+
+
+  Context Script = Context create:ctx
+  Context Script cell("identifier:package()") = method(msg, receiver,
+    name = msg body message select(visible?) map(text) join(".")
+    pkg = node world packages find(p, p name == name)
+    unless(pkg,
+      pkg = Java Package mimic(name)
+      node world packages << pkg
+    )
+    list(self, msg afterPunctuation)
+  )
+
+  Context Script cell("any:identifier") = method(msg, receiver,
+    pointer = Java Pointer mimic(msg text, msg position physical)
+    list(self, msg fwd, pointer)
+  )
+
+  Context Script cell("identifier:class") = method(msg, receiver,
+    cls = Java Class mimic(nil)
+    list(self, msg fwd, cls)
+  )
+
+  Context Script cell("operator:=()") = method(msg, receiver,
+    lhs = node process(msg body arg(0)) last
+    rhs = node process(msg body arg(1)) last
+
+    asg = Java Assignment mimic(receiver, lhs, rhs)
+    
+    cond(
+
+      asg topLevel? && asg class?,
+      asg rhs name = lhs name
+      lhs reference  = rhs
+      rhs package = node currentPackage
+      node currentPackage classes << rhs,
+
+      true,
+      error!("ASIGN?")
+    )
+    
+    list(self, msg fwd, asg)
+  )
+
+)

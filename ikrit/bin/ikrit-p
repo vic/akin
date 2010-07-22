@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec ioke -I../lib -Ilib bin/ikrit-p.ik $*
