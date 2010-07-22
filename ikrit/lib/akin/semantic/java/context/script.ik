@@ -5,13 +5,27 @@ let(
 
   Context Script = Java create:ctx
   Context Script cell("identifier:package()") = method(msg, receiver,
-    name = msg body message select(visible?) map(text) join(".")
+    name = msg body message select(visible?) map(text)
     pkg = node world packages find(p, p name == name)
     unless(pkg,
       pkg = Java Package mimic(name)
       node world packages << pkg
     )
     list(self, msg afterPunctuation)
+  )
+
+  Context Script cell("identifier:import()") = method(msg, receiver,
+    imports = msg body args map(select(visible?) map(text))
+    imports each(imp,
+      imp = Java Import mimic(imp, node)
+      node imports << imp
+      pkg = imp package
+      unless(pkg,
+        pkg = Java Package mimic(imp packageName)
+        node world packages << pkg
+      )
+    )
+    list(self, msg fwd, receiver)
   )
 
   Context Script cell("identifier:class") = method(msg, receiver,

@@ -60,15 +60,7 @@ Akin Parser Message do(
   call? = method(body nil? not)
   hasArgs? = method(argCount > 0)
 
-  argCount = method(
-    if(body nil? || body message nil?, return 0)
-    commas = 0
-    c = body message findForward(enumerator?)
-    while(c, commas++. c = c findForward(enumerator?))
-    if(body message expression, commas++)
-    commas
-  )
-
+  argCount = method(if(body nil? || body message nil?, return 0, body argCount))
 
   dot? = method(text == ".")
   colon? = method(text == ":")
@@ -556,10 +548,26 @@ Akin Parser Message Body do(
 
   at = method(index, message at(index))
   cell("[]") = method(index, message at(index))
+
+  argCount = method(
+    if(message nil?, return 0)
+    commas = 0
+    c = message findForward(enumerator?)
+    while(c, commas++. c = c findForward(enumerator?))
+    if(message expression, commas++)
+    commas
+  )
+
   
   argAt = method(index, message enumerated(index))
 
   arg = method(index, m = argAt(index). m && m copyExpr)
+  args = method(
+    unless(message, return list)
+    result = list
+    argCount times(i, result append!(arg(i)))
+    result
+  )
   
   round? = method( bracketed?("(", ")") )
   square? = method( bracketed?("[", "]") )

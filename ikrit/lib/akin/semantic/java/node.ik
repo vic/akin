@@ -9,6 +9,7 @@ let(
     @world = world
     @position = position
     @currentPackage = world packages first
+    @imports = list
   )
 
   Java Package = java:node
@@ -20,6 +21,17 @@ let(
     @annotations = list
   )
 
+  Java Import = java:node
+  Java Import initialize = method(names, script,
+    @names = names
+    @script = script
+  )
+  Java Import packageName = method(names butLast)
+  Java Import package = method(
+    name = packageName
+    script world packages find(p, p name == name)
+  )
+
   Java Class = java:node
   Java Class initialize = method(name nil, package nil,
     @name = name
@@ -27,11 +39,12 @@ let(
     @inner = Java Package mimic
     @annotations = list
     @parameters = list
+    @members = list
   )
 
 
   Java Pointer = java:node
-  Java Pointer initialize = method(name, position nil, reference nil,
+  Java Pointer initialize = method(name, position nil, reference nil, 
     @name = name
     @position = position
     @reference = reference
@@ -48,11 +61,37 @@ let(
   Java Assignment atClass? = method(receiver is?(Java Class))
   Java Assignment class? = method(rhs is?(Java Class))
   
+  Java Value = Origin mimic
 
-  Java NumericLiteral = java:node
+  Java NumericLiteral = java:node mimic!(Java Value)
   Java NumericLiteral initialize = method(msg,
     @msg = msg
   )
   
+  Java Member = java:node
+  Java Member initialize = method(field, value nil, meta nil,
+    @field = field
+    @value = value
+    @meta = meta
+  )
+  Java Member name = method(field name)
+  Java Member method? = method(value is?(Java Method))
+  Java Member value? = method(value is?(Java Value))
+  
+  Java MemberMeta = java:node
+  Java MemberMeta initialize = method(owner,
+    @owner = owner
+    @modifiers = list
+    @annotations = list
+  )
+  Java MemberMeta private? = method(modifiers include?("private"))
+  Java MemberMeta public? = method(modifiers include?("public"))
+  Java MemberMeta static? = method(modifiers include?("static"))
+  Java MemberMeta nonStatic? = method(!modifiers include?("static"))
+  Java MemberMeta protected? = method(modifiers include?("protected"))
+  Java MemberMeta final? = method(modifiers include?("final"))
+
+
+  Java Method = java:node
 
 )

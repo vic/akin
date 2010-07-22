@@ -52,7 +52,19 @@ describe("Akin Java Semantic Analizer",
   it("should parse package definition",
     w = sa("package(foo bar)")
     w packages size should == 2
-    w packages last name should == "foo.bar"
+    w packages last name should == list("foo", "bar")
+  )
+
+  it("should import simple class",
+    w = sa("import(moo bat Man)")
+    w packages size should == 2
+    w packages find(p, p name == list("moo", "bat")) should not be nil
+  )
+
+
+  it("should evalute curly code blocks on current context",
+    w = sa(" \#{ world foo = 22 } ")
+    w foo should == 22
   )
 
   it("should parse emtpy class definition",
@@ -73,11 +85,80 @@ describe("Akin Java Semantic Analizer",
     w = sa("Foo = class( a = 1 )")
     foo = w classes last
     foo name should == "Foo"
+    foo members first name should == "a"
   )
 
-  it("should evalute curly code blocks on current context",
-    w = sa(" \#{ world foo = 22 } ")
-    w foo should == 22
+  it("should parse class definition with private field assignment",
+    w = sa("Foo = class( private a = 1 )")
+    foo = w classes last
+    foo name should == "Foo"
+    a = foo members find(m, m meta nonStatic? && m name == "a")
+    a meta should be private
   )
+
+  it("should parse class definition with protected field assignment",
+    w = sa("Foo = class( protected a = 1 )")
+    foo = w classes last
+    foo name should == "Foo"
+    a = foo members find(m, m meta nonStatic? && m name == "a")
+    a meta should be protected
+  )
+
+  it("should parse class definition with static field assignment",
+    w = sa("Foo = class( static a = 1 )")
+    foo = w classes last
+    foo name should == "Foo"
+    a = foo members find(m, m meta static? && m name == "a")
+    a meta should be static
+  )
+
+  it("should parse class definition with public field assignment",
+    w = sa("Foo = class( public a = 1 )")
+    foo = w classes last
+    foo name should == "Foo"
+    a = foo members find(m, m meta nonStatic? && m name == "a")
+    a meta should be public
+  )
+
+  it("should parse class definition with final field assignment",
+    w = sa("Foo = class( final a = 1 )")
+    foo = w classes last
+    foo name should == "Foo"
+    a = foo members find(m, m meta nonStatic? && m name == "a")
+    a meta should be final
+  )
+
+  it("should parse class definition with final field assignment",
+    w = sa("Foo = class( final a = 1 )")
+    foo = w classes last
+    foo name should == "Foo"
+    a = foo members find(m, m meta nonStatic? && m name == "a")
+    a meta should be final
+  )
+
+  it("should parse class definition with empty void method",
+    w = sa("Foo = class( hello = method )")
+    foo = w classes last
+    foo name should == "Foo"
+    hello = foo members first
+    hello method? should be true
+  )
+
+  it("should parse class definition with empty void method",
+    w = sa("Foo = class( hello = method() )")
+    foo = w classes last
+    foo name should == "Foo"
+    hello = foo members first
+    hello method? should be true
+  )
+
+  it("should parse class definition with empty void method",
+    w = sa("Foo = class( hello = method() )")
+    foo = w classes last
+    foo name should == "Foo"
+    hello = foo members first
+    hello method? should be true
+  )
+
 
 )
