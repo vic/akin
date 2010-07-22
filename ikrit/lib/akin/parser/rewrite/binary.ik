@@ -24,6 +24,7 @@ Akin Parser Rewrite Binary do(
     )
     while(op fwd && op fwd white?, op fwd detach)
     arg = op fwd
+    unless(arg, return)
     arg detachLeft
     nextPr = nil
     nextOp = arg findNext(m, nextPr = rw precedence(m))

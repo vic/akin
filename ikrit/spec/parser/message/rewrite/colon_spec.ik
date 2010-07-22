@@ -388,5 +388,16 @@ bat(man)
     msg literal should be nil
   )
 
+  it("should",
+    msg = parse("
+package: bar.
+import: foo.
+")
+    msg code should == "
+package(bar).
+import(foo).
+"
+  )
+
 )
 

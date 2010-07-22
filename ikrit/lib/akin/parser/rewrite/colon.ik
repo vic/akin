@@ -49,6 +49,10 @@ Akin Parser Rewrite Colon do(
         break)
       if(apply?(msg succ, rw) && 
         pos column == into position logical column,
+        pun = msg findForward(terminator?)
+        if(pun && pun end? &&
+          pun position logical line == msg position logical line,
+          break)
         last succ text = ","
         last succ type = :punctuation
         if(last body,
