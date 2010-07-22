@@ -336,8 +336,8 @@ bat(man)
     msg code should == "=(a,(b))"
     msg arg(0) text should == "a"
     msg arg(1) text should be nil
-    msg arg(1) type should == :activation
-    msg arg(1) literal should == :code
+    msg arg(1) type should == :code
+    msg arg(1) literal should be nil
   )
 
   it("should", 
@@ -369,21 +369,23 @@ bat(man)
     msg = parse("(): b")
     msg code should == "(b)"
     msg text should be nil
-    msg literal should == :code
+    msg type should == :code
   )
 
   it("should",
     msg = parse("{}: b")
     msg code should == "{b}"
     msg text should be nil
-    msg literal should == :code
+    msg type should == :code
+    msg literal should be nil
   )
 
   it("should",
     msg = parse("[]: b")
     msg code should == "[b]"
     msg text should be nil
-    msg literal should == :code
+    msg type should == :code
+    msg literal should be nil
   )
 
 )

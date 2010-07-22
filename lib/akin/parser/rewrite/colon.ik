@@ -38,7 +38,7 @@ Akin Parser Rewrite Colon do(
 
   findStart = method(head, into,
     if(head != into, 
-      if(into text nil?, into literal = :code)
+      if(into text nil?, into type = :code)
       return into)
     last = into
     msg = into
@@ -65,7 +65,7 @@ Akin Parser Rewrite Colon do(
       names unshift!(last text)
     )
     if(names empty?,
-      last literal = :code,
+      last type = :code,
       last text = names join(":")
     )
     last

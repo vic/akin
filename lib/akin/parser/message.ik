@@ -450,18 +450,19 @@ Akin Parser Message Code do(
     if(m fwd, sb << m fwd code)
   )
 
-  activation = method(m, sb, 
+  code = method(m, sb, 
     if(m text, sb << m text)
     rest(m, sb)
   )
-  space = cell(:activation)
-  identifier = cell(:activation)
-  punctuation = cell(:activation)
-  operator = cell(:activation)
-  comment = cell(:activation)
-  document = cell(:activation)
+  activation = cell(:code)
+  space = cell(:code)
+  identifier = cell(:code)
+  punctuation = cell(:code)
+  operator = cell(:code)
+  comment = cell(:code)
+  document = cell(:code)
   symbolIdentifier = method(m, sb,
-    sb << ":". activation(m, sb)
+    sb << ":". code(m, sb)
   )
   symbolText = method(m, sb,
     sb << ":". text(m, sb)
@@ -484,13 +485,13 @@ Akin Parser Message Code do(
     rest(m, sb)
   )
   hexNumber = method(m, sb,
-    sb << "0x". activation(m, sb)
+    sb << "0x". code(m, sb)
   )
   octNumber = method(m, sb,
-    sb << "0o". activation(m, sb)
+    sb << "0o". code(m, sb)
   )
   binNumber = method(m, sb,
-    sb << "0b". activation(m, sb)
+    sb << "0b". code(m, sb)
   )
   decNumber = method(m, sb,
     sb << m literal[:integer]
