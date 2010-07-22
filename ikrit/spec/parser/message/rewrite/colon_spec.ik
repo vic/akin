@@ -399,5 +399,14 @@ import(foo).
 "
   )
 
+  it("should",
+    msg = parse("
+  jojo:
+   foo bar(aa) = baz bat man")
+    msg code should == "
+  jojo(foo =(bar(aa),baz bat man))"
+  )
+
+
 )
 

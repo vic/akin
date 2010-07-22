@@ -33,7 +33,7 @@ Akin Parser Rewrite Colon do(
 
     colon detach
     
-    nil
+    into
   )
 
   findStart = method(head, into,
