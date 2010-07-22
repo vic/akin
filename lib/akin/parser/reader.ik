@@ -185,11 +185,13 @@ Akin Parser MessageReader do(
       ))))
       if(interpolate? && at interpolateStart?,
         parts << sb asText
+        body = newMsg(:operator, "$")
+        body position = at position
         sb = nil
         read
         open = at
         read
-        body = readMessageChain
+        body appendArgument(readMessageChain)
         parts << body
         readChar(at interpolateEnd, open)
       )

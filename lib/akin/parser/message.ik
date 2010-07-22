@@ -472,7 +472,7 @@ Akin Parser Message Code do(
     m literal[:parts] each(i, part, 
       if(i % 2 == 0, 
         sb << m literal[:parts][i],
-        sb << "$(" << m literal[:parts][i] code << ")"
+        sb << m literal[:parts][i] code
       )
     )
     sb << m literal[:right]
