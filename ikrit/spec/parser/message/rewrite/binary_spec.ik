@@ -96,6 +96,11 @@ describe("Akin Parser",
     msg code should == "=(a,b c d)"
   )
 
+  it("should rewrite assignment",
+    msg = parse("a = b c d\n")
+    msg code should == "=(a,b c d)\n"
+  )
+
   it("should correctly rewrite assignment precedence",
     msg = parse("a + b = c + d")
     msg code should == "a +(=(b,c +(d)))"

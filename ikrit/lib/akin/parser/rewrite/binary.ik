@@ -48,7 +48,9 @@ Akin Parser Rewrite Binary do(
       true,
       end = arg findForward(punctuation?)
     )
-    if(end, op append(end findBackward(space?) || end))
+    if(end, 
+      while(end bwd space?, end = end bwd)
+      op append(end))
 
     asgn = rw assign?(op)
     if(asgn,
