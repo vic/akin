@@ -249,5 +249,12 @@ describe("Akin Parser Message",
     msg code should == code
   )
 
+  it("asText should quine code literal ",
+    code = #[  #(hello)  ]
+    msg = parse(code)
+    msg code should == code
+  )
+
+
 )
     

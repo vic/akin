@@ -333,9 +333,9 @@ bat(man)
 
   it("should", 
     msg = parse("a =: b")
-    msg code should == "=(a,(b))"
+    msg code should == "=(a,#(b))"
     msg arg(0) text should == "a"
-    msg arg(1) text should be nil
+    msg arg(1) text should == "#"
     msg arg(1) type should == :code
     msg arg(1) literal should be nil
   )
@@ -345,7 +345,7 @@ bat(man)
     a = (n, m): n + m
 ")
     msg code should == "
-    =(a,(n, m,n +(m)))
+    =(a,#(n, m,n +(m)))
 "
   )
 
@@ -354,7 +354,7 @@ bat(man)
     a = (): n, m, n + m
 ")
     msg code should == "
-    =(a,(n, m, n +(m)))
+    =(a,#(n, m, n +(m)))
 "
   )
 

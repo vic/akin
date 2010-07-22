@@ -84,6 +84,7 @@ Akin Parser At do(
   tab? = method(?("\t"))
 
   lineComment? = method( ?("#") && (fwd ?("!", "#") || fwd space?) )
+  codeStart? = method( ?("#") && fwd leftBracket?)
 
   docStart? = method( ?("/") && fwd ?("*"))
   docStart2? = method( ?("/") && fwd ?("*") && fwd fwd ?("*"))

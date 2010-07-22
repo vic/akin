@@ -43,6 +43,7 @@ Akin Parser MessageReader do(
     if(at punctuation?, return readPunctuation)
     if(at space?, return readSpace)
     if(at leftBracket?, return readActivation)
+    if(at codeStart?, return readCode)
     if(at lineComment?, return readLineComment)
     if(at docStart?, return readDocument)
     if(at symbolStart?, return readSymbol)
@@ -100,6 +101,16 @@ Akin Parser MessageReader do(
     until(at eol? || at eof?, sb << read)
     msg text = sb asText
     msg
+  )
+
+  readCode = method(
+    here = at
+    text = read
+    act = readActivation
+    act text = text
+    act position = at position
+    act type = :code
+    act
   )
 
   readActivation = method(
