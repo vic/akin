@@ -317,6 +317,12 @@ Akin Parser Message do(
     if(msg type == :activation && expression? && body nil?,
       @body = msg body
       return self)
+    if(msg colonArgOp? && operator? && body nil?,
+      space = Akin Parser Message mimic(:activation)
+      space position = msg position
+      space append(msg)
+      append(space)
+      return msg)
     append(msg)
   )
 
@@ -438,7 +444,7 @@ Akin Parser Message Code do(
   rest = method(m, sb,
     if(m body,
       if(m body brackets, sb << m body brackets first)
-      sb << m body message code
+      if(m body message, sb << m body message code)
       if(m body brackets, sb << m body brackets last)
     )
     if(m fwd, sb << m fwd code)

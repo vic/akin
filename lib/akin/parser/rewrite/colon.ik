@@ -37,7 +37,9 @@ Akin Parser Rewrite Colon do(
   )
 
   findStart = method(head, into,
-    if(head != into, return into)
+    if(head != into, 
+      if(into text nil?, into literal = :code)
+      return into)
     last = into
     msg = into
     names = list()

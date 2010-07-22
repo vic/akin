@@ -332,14 +332,13 @@ bat(man)
   )
 
   it("should", 
-    msg = parse("
-    a =: b
-")
-    msg code should == "
-    a =:(b)
-"
+    msg = parse("a =: b")
+    msg code should == "=(a,(b))"
+    msg arg(0) text should == "a"
+    msg arg(1) text should be nil
+    msg arg(1) type should == :activation
+    msg arg(1) literal should == :code
   )
-
 
   it("should", 
     msg = parse("

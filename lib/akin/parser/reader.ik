@@ -78,7 +78,17 @@ Akin Parser MessageReader do(
   readOperator = method(
     msg = newMsg(:operator)
     sb = newSb
-    while(at operator?, sb << read)
+    loop(
+      if(at ?(":"),
+        if(fwd operator?,
+          sb << read << read,
+          if(sb asText == "",
+            sb << read)
+          break))
+      if(at operator?,
+        sb << read,
+        break)
+    )
     msg text = sb asText
     msg
   )
