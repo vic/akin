@@ -20,20 +20,19 @@ Akin Parser Message do(
     msg
   )
 
+  copyExpr = method(copyUntil(punctuation?))
+
   copyUntil = dmacro(
     [code]
     here = ''(findForward(`code)) evaluateOn(call ground, self)
-    if(here nil?, return deepCopy)
-    bwd = here bwd
-    bwd fwd = nil
-    ensure(
-      cp = @deepCopy,
-      bwd fwd = here
-    )
-    cp
+    deepCopy(here),
+
+    [name, code]
+    here = ''(findForward(`name, `code)) evaluateOn(call ground, self)
+    deepCopy(here)
   )
 
-  deepCopy = method(
+  deepCopy = method(limit nil,
     msg = Akin Parser Message mimic(type, text)
     if(body, 
       msg body = Akin Parser Message Body mimic(
@@ -43,7 +42,9 @@ Akin Parser Message do(
     )
     if(literal, msg literal = literal mimic)
     if(position, msg position = position)
-    if(fwd, msg fwd = msg fwd deepCopy)
+    if(fwd && fwd != limit, 
+      msg fwd = fwd deepCopy, 
+      msg fwd = nil)
     if(bwd, msg bwd = bwd)
     msg
   )
@@ -558,7 +559,7 @@ Akin Parser Message Body do(
   
   argAt = method(index, message enumerated(index))
 
-  arg = method(index, m = argAt(index). m && m copyUntil(punctuation?))
+  arg = method(index, m = argAt(index). m && m copyExpr)
   
   round? = method( bracketed?("(", ")") )
   square? = method( bracketed?("[", "]") )

@@ -21,13 +21,14 @@ let(
   )
 
   Java Class = java:node
-  Java Class initialize = method(name, package nil,
+  Java Class initialize = method(name nil, package nil,
     @name = name
     @package = package
     @inner = Java Package mimic
     @annotations = list
     @parameters = list
   )
+
 
   Java Pointer = java:node
   Java Pointer initialize = method(name, position nil, reference nil,
@@ -43,9 +44,15 @@ let(
     @rhs = rhs
   )
 
-  Java Assignment topLevel? = method(receiver nil?)
+  Java Assignment atPackage? = method(receiver nil? || receiver is?(Java Package))
+  Java Assignment atClass? = method(receiver is?(Java Class))
   Java Assignment class? = method(rhs is?(Java Class))
   
+
+  Java NumericLiteral = java:node
+  Java NumericLiteral initialize = method(msg,
+    @msg = msg
+  )
   
 
 )
