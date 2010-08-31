@@ -4,7 +4,11 @@ use("akin/parser")
 
 describe("Akin Parser Message", 
 
-  parse = fn(txt, Akin Parser parseText(txt))
+  parse = fn(txt, 
+    let(Akin Parser Rewrite rewriters, list,
+      Akin Parser parseText(txt)
+    )
+  )
 
   it("should obtain fwdessive message by calling fwd",
     msg = parse("foo bat")
@@ -60,8 +64,8 @@ describe("Akin Parser Message",
     msg = parse("foo bat\n baz")
     msg text should == "foo"
     msg next text should == "bat"
-    msg next succ should be eol
     msg next fwd  should be eol
+    msg next succ text should == "baz"
     msg next next should be nil
   )
 
@@ -102,8 +106,8 @@ describe("Akin Parser Message",
     msg = parse("bat\n baz foo") last
     msg text should == "foo"
     msg prev text should == "baz"
-    msg prev prec should be eol
     msg prev bwd  should be space
+    msg prev prec text should == "bat"
     msg prev prev should be nil
   )
   
@@ -250,11 +254,28 @@ describe("Akin Parser Message",
   )
 
   it("asText should quine code literal ",
-    code = #[  #(hello)  ]
+    code = #[  \\(hello)  ]
     msg = parse(code)
     msg code should == code
   )
 
-
+  it("should allow an string literal to have arguments",
+    code = #[  "help"(me) ]
+    msg = parse(code)
+    msg code should == code
+  )
+  
+  it("should allow a symbol literal to have arguments",
+    code = #[  :help(me) ]
+    msg = parse(code)
+    msg code should == code
+  )
+ 
+  it("should allow a regexp literal to have arguments",
+    code = #[  $/help/(me) ]
+    msg = parse(code)
+    msg code should == code
+  )
+ 
 )
     

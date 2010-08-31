@@ -1,6 +1,37 @@
 
 Akin Parser Rewrite Colon = Origin mimic
 Akin Parser Rewrite Colon do(
+
+  apply? = method(msg, rw,
+    msg && msg text == ":" && msg body nil? && :fwd
+  )
+
+  initialize = method(colon, rw,
+    @colon = colon
+    @rw = rw
+  )
+
+
+  rewrite! = method(
+    unless(apply?(colon, rw) && colon fwd && colon bwd, return)
+
+    ;; head is the first visible message on line. it mandates indentation.
+    head = colon firstInLine
+    if(head invisible?, head = head succ)
+    ;; into is the target message where args after colon will be appended.
+    into = colon prev
+
+
+    ;; rw points holds pointers to other colons 
+    
+
+    nil
+  )
+
+)
+
+Akin Parser Rewrite Colon2 = Origin mimic
+Akin Parser Rewrite Colon2 do(
   
   apply? = method(msg, rw,
     msg && msg text == ":"  && msg body nil?
@@ -59,17 +90,28 @@ Akin Parser Rewrite Colon do(
         last succ type = :punctuation
         if(last body,
           last bwd insert(buildComma(last bwd)),
-          if(last text && last text length > 0 && 
-            !names include?(last text),
-            names unshift!(last text))
+          if(last text && last text length > 0,
+            colname = ":"+last text
+            if(names first == last text, 
+              names[0] = colname,
+              unless(names first == colname, 
+                names unshift!(last text)
+              )
+            )
+          )
           last detach)
         last = msg
       )
     )
-    if(last text && last text length > 0 &&
-      !names include?(last text),
-      names unshift!(last text)
-    )
+    if(last text && last text length > 0,
+            colname = ":"+last text
+            if(names first == last text, 
+              names[0] = colname,
+              unless(names first == colname, 
+                names unshift!(last text)
+              )
+            )
+    )    
     if(names empty?,
       last type = "#"
       last type = :code,
@@ -87,7 +129,7 @@ Akin Parser Rewrite Colon do(
   findEnd = method(msg, into,
     end = nil
     intoPos = into position logical
-    while(end nil? && msg && msg = msg fwd,
+    while(end nil? && msg && (msg = msg fwd),
       pos = msg position logical
       if(pos line == intoPos line && msg end?,
         end = msg

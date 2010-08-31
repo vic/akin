@@ -28,22 +28,32 @@ Akin Parser MessageReader do(
     level = rw level
     while(current = readMessage,
       if(head nil?,
-        head = current
-        last = current,
-        last = last chain!(current)
-      )
+        head = current,
+        last append(current))
+      last = current
       level add(last)
     )
-    level finish || head
+    level head = head
+    level finish
+    level head && level head first
   )
 
   readMessage = method(
-    if(at eof?, read. return)
+    msg = readSingle
+    if(msg && msg type != :activation && msg expression? && at leftBracket?,
+      act = readActivation
+      msg body = act body
+    )
+    msg
+  )
+
+  readSingle = method(
+    if(at eof?, return)
     if(at rightBracket?, return)
     if(at punctuation?, return readPunctuation)
     if(at space?, return readSpace)
     if(at leftBracket?, return readActivation)
-    if(at codeStart?, return readCode)
+    if(at blockStart?, return readBlock)
     if(at lineComment?, return readLineComment)
     if(at docStart?, return readDocument)
     if(at symbolStart?, return readSymbol)
@@ -51,6 +61,7 @@ Akin Parser MessageReader do(
     if(at regexpStart?, return readRegexp)
     if(at decimal?, return readNumber)
     if(at operator?, return readOperator)
+
     readIdentifier
   )
 
@@ -64,7 +75,7 @@ Akin Parser MessageReader do(
     msg = newMsg(:identifier)
     sb = newSb
     loop(
-      if(at ?(":"), 
+      if(at identifierInner?, 
         if(fwd identifier?, 
           sb << read << read,
           break))
@@ -79,16 +90,11 @@ Akin Parser MessageReader do(
   readOperator = method(
     msg = newMsg(:operator)
     sb = newSb
-    loop(
-      if(at ?(":"),
-        if(fwd operator?,
-          sb << read << read,
-          if(sb asText == "",
-            sb << read)
-          break))
-      if(at operator?,
-        sb << read,
-        break)
+    while(at operator?,
+      opBr = !(fwd fwd operator? || fwd fwd leftBracket?)
+      if(!at dot? && fwd dot? && opBr, sb << read. break)
+      if(!at colon? && fwd colon? && opBr, sb << read. break)
+      sb << read
     )
     msg text = sb asText
     msg
@@ -103,13 +109,13 @@ Akin Parser MessageReader do(
     msg
   )
 
-  readCode = method(
+  readBlock = method(
     here = at
     text = read
     act = readActivation
     act text = text
-    act position = at position
-    act type = :code
+    act position = here position
+    act type = :block
     act
   )
 
@@ -124,7 +130,7 @@ Akin Parser MessageReader do(
   )
 
   readSymbol = method(
-    unless(at colon?, 
+    unless(at colonSingle?, 
       error!("Expected colon at start of symbol literal- got "+at))
     msg = newMsg(nil)
     read
@@ -230,7 +236,7 @@ Akin Parser MessageReader do(
       flags << read)
     if(flags, flags = flags asText)
     engine = nil
-    if(at colon?,
+    if(at colonSingle?,
       read
       engine = readIdentifier text)
     msg type = :regexp

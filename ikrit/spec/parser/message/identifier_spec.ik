@@ -4,7 +4,9 @@ use("akin/parser")
 
 describe("Akin Parser parseText message identifiers", 
 
-  parse = fn(txt, Akin Parser parseText(txt))
+  parse = fn(txt, 
+    let(Akin Parser Rewrite rewriters, list,
+      Akin Parser parseText(txt)))
 
   it("should parse simple identifier",
     msg = parse("hello")

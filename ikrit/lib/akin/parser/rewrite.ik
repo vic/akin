@@ -1,7 +1,7 @@
 
 Akin Parser Rewrite = Origin mimic
-use("akin/parser/rewrite/colon")
-use("akin/parser/rewrite/dcolon")
+use("akin/parser/rewrite/indent")
+use("akin/parser/rewrite/semicolon")
 use("akin/parser/rewrite/precedence")
 use("akin/parser/rewrite/binary")
 
@@ -13,16 +13,17 @@ Akin Parser Rewrite do(
   )
 
   level = method(
-    levels unshift!(Akin Parser Rewrite Level mimic(self))
-    currentLevel
+    level = Akin Parser Rewrite Level mimic(operators, rewriters map(mimic))
+    levels unshift!(level)
+    level
   )
   
   currentLevel = method(levels first)
 
   rewriters = list(
-    Akin Parser Rewrite Colon,
-    Akin Parser Rewrite DColon,
-    Akin Parser Rewrite Binary
+    Akin Parser Rewrite Indent,
+    Akin Parser Rewrite Binary,
+    Akin Parser Rewrite Semicolon
   )
 
 )
@@ -30,40 +31,21 @@ Akin Parser Rewrite do(
 Akin Parser Rewrite Level = Origin mimic
 Akin Parser Rewrite Level do(
 
-  initialize = method(rw,
-    @rw = rw
-    @stack = list
+  initialize = method(operators, rewriters,
+    @operators = operators
+    @rewriters = rewriters
   )
 
-  add = method(msg,
-    direction = nil
-    match = rw rewriters find(r, direction = r apply?(msg, self))
-    if(match,
-      rewriter = match mimic(msg, self)
-      if(direction == :fwd,
-        stack push!(rewriter),
-        stack unshift!(rewriter)
-      )
-    )
-  )
+  add = method(msg, rewriters map(add(msg, self)))
 
-  finish = method(
-    msg = nil
-    until(stack empty?, 
-      m = stack shift! rewrite!
-      if(m, msg = m)
-    )
-    msg && msg first
-  )
+  finish = method(rewriters each(finish(self)))
 
-  precedence = method(msg, rw operators precedence(msg))
+  precedence = method(msg, operators precedence(msg))
 
-  rightAssociative? = method(msg,
-    rw operators rightAssociative?(msg))
+  rightAssociative? = method(msg, operators rightAssociative?(msg))
 
-  leftUnary? = method(msg,
-    rw operators leftUnary?(msg))
+  leftUnary? = method(msg, operators leftUnary?(msg))
 
-  assign? = method(msg, rw operators assignment?(msg))
+  assign? = method(msg, operators assignment?(msg))
 
 )

@@ -52,16 +52,16 @@ Akin Parser Message do(
   
   identifier? = method(type == :identifier)
   comment? = method(type == :comment)
-  space? = method(type == :space)
+  space? = method(type == :space && body nil?)
   document? = method(type == :document)
   operator? = method(type == :operator)
-  
 
   call? = method(body nil? not)
   hasArgs? = method(argCount > 0)
 
   argCount = method(if(body nil? || body message nil?, return 0, body argCount))
 
+  block? = method(text == "\\")
   dot? = method(text == ".")
   colon? = method(text == ":")
   semicolon? = method(text == ";")
@@ -194,7 +194,7 @@ Akin Parser Message do(
     msg
   )
 
-  invisible? = method(space? || comment?)
+  invisible? = method(space? || comment? || eol?)
   visible? = method(invisible? not)
 
   white? = method(space? || comment? || eol?)
@@ -282,7 +282,7 @@ Akin Parser Message do(
 
   sameLine? = method(m, usePosition false,
     if(usePosition nil? && position && m position, usePosition = true)
-    if(usePosition, sameLine:withPosition(m), sameLine:noPosition(m))
+    if(usePosition, sameLine:withPosition?(m), sameLine:noPosition?(m))
   )
 
   sameLine:noPosition? = method(msg, 
@@ -309,11 +309,22 @@ Akin Parser Message do(
       position logical column == msg position logical column)
   )
 
+  lineComp = method(msg,
+    position logical line <=> msg position logical line
+  )
+
+  columnComp = method(msg,
+    position logical column <=> msg position logical column
+  )
+
   append = method(msg, 
-    if(msg bwd, msg bwd fwd = nil)
-    msg bwd = self
-    if(fwd, fwd bwd = nil)
-    @fwd = msg
+    if(msg nil?, 
+      @fwd = nil,
+      if(msg bwd, msg bwd fwd = nil)
+      msg bwd = self
+      if(fwd, fwd bwd = nil)
+      @fwd = msg
+    )
     msg
   )
 
@@ -329,6 +340,7 @@ Akin Parser Message do(
     if(msg type == :activation && expression? && body nil?,
       @body = msg body
       return self)
+    ;; =: =>  = :
     if(msg colonArgOp? && operator? && body nil?,
       space = Akin Parser Message mimic(:activation)
       space position = msg position
@@ -386,22 +398,29 @@ Akin Parser Message do(
     self
   )
 
-  appendArgument = method(arg, brackets  list("(", ")"),
-    if(body, 
-      if(body message, 
-        last = body message last 
-        if(last white?, last = last prec)
-        if(last comma?, 
+  appendArgument = method(fst, brackets  list("(", ")"), letSpaces: false,
+    arg = if(fst && fst comma?, fst next, fst)
+    if(body,
+      if(body message nil?,
+        body message = arg,
+        lst = body message last
+        lstv = lst
+        while(lstv bwd && lstv invisible?, lstv = lstv bwd)
+        last = if(letSpaces, lst, lstv)
+        if(lstv comma?, 
           last append(arg),
-          fst = if(arg comma?, arg, arg next)
-          if(fst && fst comma?,
-            last append(arg),
+          if(fst comma?,
+            last append(fst),
             comma = Akin Parser Message mimic(:punctuation, ",")
             comma position = arg position
-            last append(comma) append(arg)
+            if(letSpaces,
+              lstv insert(comma)
+              lst last append(arg),
+              lstv append(comma) append(arg)
+            )
           )
-        ),
-        body message = arg),
+        )
+      ),
       @body = Akin Parser Message Body mimic(arg, brackets)
     )
     self
@@ -467,7 +486,7 @@ Akin Parser Message Code do(
     rest(m, sb)
   )
   
-  code = cell(:activation)
+  block = cell(:activation)
   space = cell(:activation)
   identifier = cell(:activation)
   punctuation = cell(:activation)
@@ -582,8 +601,7 @@ Akin Parser Message Body do(
     list("(", ")"),
     list("[", "]"),
     list("{", "}"),
-    list("⟨", "⟩"),
-    list("¿", "?")
+    list("⟨", "⟩")
   )
 
 )

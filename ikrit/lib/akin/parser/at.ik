@@ -53,7 +53,7 @@ Akin Parser At do(
     items flatten any?(i, 
       if(i is?(Text) && i length > 1,
         m = self
-        i chars all?(c,
+        i asText chars all?(c,
           if(Akin Parser String charMatch?(m char, c),
             m = m fwd
             true,
@@ -80,11 +80,11 @@ Akin Parser At do(
   
   hexadecimal? = method(?("0".."9", "a".."f", "A".."F"))
 
-  eof? = method(?(-1))
+  eof? = method(char == -1)
   tab? = method(?("\t"))
 
   lineComment? = method( ?("#") && (fwd ?("!", "#") || fwd space?) )
-  codeStart? = method( ?("#") && fwd leftBracket?)
+  blockStart? = method( ?("\\") && fwd leftBracket?)
 
   docStart? = method( ?("/") && fwd ?("*"))
   docStart2? = method( ?("/") && fwd ?("*") && fwd fwd ?("*"))
@@ -96,14 +96,17 @@ Akin Parser At do(
   space? = method(?(" ", "\t", "\u0009","\u000b","\u000c") || escapedEol?)
   blank? = method(space? || lineComment?)
 
-  terminator? = method(eol? || (?(".") && fwd ?(".") not))
+  dot? = method(?("."))
+  dotTerminator? = method(dot? && fwd dot? not)
+  terminator? = method(eol? || dotTerminator?)
   enumerator? = method(?(",") && fwd ?(",") not)
-  separator? = method(?(";") && fwd ?(";") not)
-  colon? = method(?(":") && fwd ?(":") not)
+  separator? = method(?(";"))
+  colon? = method(?(":"))
+  colonSingle? = method(?(":") && fwd ?(":") not)
 
   punctuation? = method(terminator? || enumerator? || separator?)
 
-  symbolStart? = method(colon? && (fwd ?("\"") || fwd symbol?))
+  symbolStart? = method(colonSingle? && (fwd ?("\"") || fwd symbol?))
   symbol? = method(alpha? || decimal? || sub? || ?("?", "$"))
 
   backslash? = method(?("\\"))
@@ -131,6 +134,7 @@ Akin Parser At do(
   regexpFlags = list("u", "m", "i", "x", "s")
 
   identifier? = method(alpha? || decimal? || sub? || ?(":", "?", "$"))
+  identifierInner? = method(?(":", "$"))
 
   operator? = method(?(
       "°","!","\"","#","$",
@@ -143,7 +147,8 @@ Akin Parser At do(
       "“","”","µ","¬",
       "|","·","½","\\","¿",
       "'","+","*","^","`",
-      "̣̣¸","_","-", ":"))
+      "̣̣¸","_","-", ":", "."))
+
 
   bracket? = method(leftBracket? || rightBracket?)
 

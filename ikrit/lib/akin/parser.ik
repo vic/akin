@@ -18,10 +18,14 @@ Akin Parser do(
     Akin Parser MessageReader mimic(at, rw) readMessageChain
   )
 
-  parseURL = method(url,
-    sr = java:io:InputStreamReader new(url openStream)
+  parseURL = method(url, filename: url toString , line: 1, col: 1, pos: 1,
+    parseInputStream(url openStream, filename: filename , line: line, col: col, pos: pos)
+  )
+
+  parseInputStream = method(is, filename: "<InputStream:#{text hash}>" , line: 1, col: 1, pos: 1,
+    sr = java:io:InputStreamReader new(is)
     pos = Akin Parser position(
-      source: url, line: 1, column: 1, position: 1)
+      source: filename, line: line, column: col, position: pos)
     at = Akin Parser At mimic(sr, pos)
     rw = Akin Parser Rewrite mimic
     Akin Parser MessageReader mimic(at, rw) readMessageChain

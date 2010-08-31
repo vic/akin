@@ -18,22 +18,22 @@ describe("Akin Parser",
   )
 
 
-  it("",
+  it("should add single argument",
     msg = parse("foo: hello")
     msg code should == "foo(hello)"
   )
 
-  it("",
+  it("should add argument until colon",
     msg = parse("a b: c. d")
     msg code should == "a b(c). d"
   )
 
-  it("",
+  it("should add arugment until semicolon and continue chain",
     msg = parse("a b: c; d")
     msg code should == "a b(c) d"
   )
 
-  it("",
+  it("should add argument on next line until message on same column",
     msg = parse("a b:\n   c   \n  d")
     msg code should == "a b(c)\n  d"
   )
@@ -225,7 +225,7 @@ if:else(true,
     msg code should == "foo(bar, baz,bat)"
   )
 
-  it("should should not rewrite the message name if has parens", 
+  it("should not rewrite the message name if has parens", 
     msg = parse("
 case(n):
 match(a): hello
@@ -235,16 +235,29 @@ case(n,match(a), hello\n,is(b), bye)"
   )
 
 
-  it("should should not rewrite names already seen", 
+  it("should add double colon to names seen more than once", 
     msg = parse("
 bla(n):
 foo: hello
 foo: bye")
     msg code should == "
-bla:foo(n, hello\n, bye)"
+bla::foo(n, hello\n, bye)"
   )
 
-  it("should should not rewrite names already seen", 
+  it("should add double colon to names seen more than once", 
+    msg = parse("
+bla: n
+foo: hello
+foo: bye
+bar: yes
+bla: no
+bla: si
+bar: no")
+    msg code should == "
+bla::foo:bar::bla:bar(n\n, hello\n, bye\n, yes\n, no\n, si\n, no)"
+  )
+
+  it("should add nested arguments", 
     msg = parse("
 foo bar:
   baz: bat
@@ -407,6 +420,40 @@ import(foo).
   jojo(foo =(bar(aa),baz bat man))"
   )
 
+  it("should add arguments after new line as aditional arguments",
+    msg = parse("
+      if: a
+        b
+    ")
+    msg code println
+  )
+
+
+  it("should parse an if/else example",
+    msg = parse("
+      if: a
+        b
+      else:
+        c
+    ")
+    msg code println
+  )
+
+  it("should parse an if/elsif/else example",
+    msg = parse("
+      if: a == b
+        c = 22
+      elsif: a < b
+        c = 33
+      elsif: a > b + 1
+        c = 44
+      else:
+        c = 55
+      ")
+    msg code println
+    msg code should == "
+    "
+  )
 
 )
 

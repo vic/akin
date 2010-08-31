@@ -1,11 +1,11 @@
-use("ispec")
+puse("ispec")
 use("akin")
 use("akin/parser")
 use("akin/semantic/java")
 
 describe("Akin Java Semantic Analizer",
 
-  parse = fn(txt, Akin Parser parseText(txt))
+ parse = fn(txt, Akin Parser parseText(txt))
   context = fnx(Akin Semantic Java Context mimic)
   sa = fn(txt, context analyze(parse(txt)))
 
