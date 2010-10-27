@@ -398,8 +398,49 @@ Akin Parser Message do(
     self
   )
 
-  appendArgument = method(fst, brackets  list("(", ")"), letSpaces: false,
-    arg = if(fst && fst comma?, fst next, fst)
+  appendArgument = method(argument, brackets list("(", ")"),
+    if(body nil?, @body = Akin Parser Message Body mimic(nil, brackets))
+    unless(argument, return)
+
+    bodyComma = nil
+    argumentComma = nil
+    lastVisibleInBody = nil
+    firstVisibleInArg = nil
+    
+    if(body message, 
+      lastVisibleInBody = body message last
+      while(lastVisibleInBody bwd && lastVisibleInBody invisible?, 
+        lastVisibleInBody = lastVisibleInBody bwd)
+      bodyComma = lastVisibleInBody comma?
+    )
+
+    firstVisibleInArg = argument
+    while(firstVisibleInArg fwd && firstVisibleInArg invisible?, 
+      firstVisibleInArg = firstVisibleInArg fwd)
+    argumentComma = firstVisibleInArg comma?
+    
+    comma = Akin Parser Message mimic(:punctuation, ",")
+    comma position = argument position
+    
+    if(body message,
+      if(bodyComma || argumentComma,
+        if(bodyComma && argumentComma, lastVisibleInBody detach)
+        body message last append(argument),
+        body message last append(comma) append(argument)
+      ),
+      if(argumentComma, 
+        detached = argumentComma detach
+        body message = (detached first || detached last) first,
+        body message = argument
+      )
+    )
+
+    self
+  )
+
+  appendArgument2 = method(fst, brackets  list("(", ")"), letSpaces: false,
+    arg = fst
+    while(arg white? && arg fwd, arg = arg fwd)
     if(body,
       if(body message nil?,
         body message = arg,
@@ -409,14 +450,14 @@ Akin Parser Message do(
         last = if(letSpaces, lst, lstv)
         if(lstv comma?, 
           last append(arg),
-          if(fst comma?,
+          if(arg comma?,
             last append(fst),
             comma = Akin Parser Message mimic(:punctuation, ",")
-            comma position = arg position
+            comma position = fst position
             if(letSpaces,
               lstv insert(comma)
-              lst last append(arg),
-              lstv append(comma) append(arg)
+              lst last append(fst),
+              lstv append(comma) append(fst)
             )
           )
         )

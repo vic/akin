@@ -276,6 +276,72 @@ describe("Akin Parser Message",
     msg = parse(code)
     msg code should == code
   )
+
+  it("appendArgument should default to round brackets",
+    foo = parse("foo")
+    foo code should == "foo"
+    foo appendArgument(nil)
+    foo code should == "foo()"
+  )
+
+  it("appendArgument should default to round brackets",
+    foo = parse("foo")
+    foo code should == "foo"
+    bar = parse("bar")
+    foo appendArgument(bar)
+    foo code should == "foo(bar)"
+  )
+
+  it("appendArgument should add comma between last argument and appended one",
+    foo = parse("foo(bar)")
+    foo code should == "foo(bar)"
+    foo appendArgument(parse("baz"))
+    foo code should == "foo(bar,baz)"
+  )
  
+  it("appendArgument should add comma between two appended arguments",
+    foo = parse("foo")
+    foo code should == "foo"
+    foo appendArgument(parse("bar"))
+    foo appendArgument(parse("baz"))
+    foo code should == "foo(bar,baz)"
+  )
+ 
+  it("appendArgument should not add comma if body ends with one",
+    foo = parse("foo(bar,)")
+    foo code should == "foo(bar,)"
+    foo appendArgument(parse("baz"))
+    foo code should == "foo(bar,baz)"
+  )
+
+  it("appendArgument should not add comma if body ends with one with spaces",
+    foo = parse("foo(bar,  )")
+    foo code should == "foo(bar,  )"
+    foo appendArgument(parse("baz"))
+    foo code should == "foo(bar,  baz)"
+  )
+
+  it("appendArgument should not add comma if body ends with one with spaces",
+    foo = parse("foo(bar  ,  )")
+    foo code should == "foo(bar  ,  )"
+    foo appendArgument(parse("  ,  baz"))
+    foo code should == "foo(bar      ,  baz)"
+  )
+
+  it("appendArgument should not add comma if argument starts with one",
+    foo = parse("foo(bar)")
+    foo code should == "foo(bar)"
+    foo appendArgument(parse(", baz"))
+    foo code should == "foo(bar, baz)"
+  )
+
+  it("appendArgument should not add comma if argument starts with one",
+    foo = parse("foo(bar)")
+    foo code should == "foo(bar)"
+    foo appendArgument(parse("  ,  baz"))
+    foo code should == "foo(bar  ,  baz)"
+  )
+
+
 )
     
