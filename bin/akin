@@ -1,0 +1,7 @@
+#!/usr/bin/env rbx
+# -*- ruby -*-
+
+$LOAD_PATH << File.expand_path("../lib", File.dirname(__FILE__))
+
+require 'akin/cli'
+Akin::CLI.new.main
