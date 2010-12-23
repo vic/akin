@@ -4,7 +4,7 @@ class ParseAsMatcher
   end
 
   def matches?(actual)
-    @actual = Typhon::Parser.new.parse(actual)
+    @actual = Akin::Parser.new.parse(actual)
     @actual == @expected
   end
 
