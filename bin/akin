@@ -3,5 +3,9 @@
 
 $LOAD_PATH << File.expand_path("../lib", File.dirname(__FILE__))
 
+require 'akin/compiler'
 require 'akin/cli'
+
+Akin::Compiler.always_recompile = $0 == __FILE__
+
 Akin::CLI.new.main

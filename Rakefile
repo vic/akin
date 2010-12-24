@@ -19,7 +19,7 @@ spec = Gem::Specification.new do |s|
   require File.expand_path('../lib/akin/version', __FILE__)
 
   s.name                      = 'akin'
-  s.version                   = Akin::VERSION.to_s
+  s.version                   = Akin::Version.to_s
 
   s.specification_version     = 2 if s.respond_to? :specification_version=
 
@@ -28,7 +28,7 @@ spec = Gem::Specification.new do |s|
   s.date                      = %q{2010-12-23}
   s.email                     = %q{vic.borja@gmail.com}
   s.has_rdoc                  = true
-  s.extra_rdoc_files          = %w[ README.md ]
+  s.extra_rdoc_files          = FileList[ '**/*/README.md' ]
   s.executables               = ["akin"]
   s.files                     = FileList[ '{bin,lib,spec}/**/*.{yaml,txt,rb}', 'Rakefile', *s.extra_rdoc_files ]
   s.homepage                  = %q{http://github.com/vic/akin}

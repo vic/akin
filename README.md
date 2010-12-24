@@ -6,6 +6,8 @@ An Akin programming language optimized for fun.
 License
 =======
 
+BSD
+
 Contributors
 ============
 
