@@ -69,16 +69,16 @@ describe Akin::Parser::FilePosition do
       a.should_not eql(b)
     end
 
-    it "advances logical position by one line" do
+    it "advances logical position by one char" do
       a = from(:spec, 1, 3, 3)
       b = a.forward_esc_line
-      b.logical.pos.should == [2, 1, 4]
+      b.logical.pos.should == [1, 4, 4]
     end
 
-    it "advances physical position by one char" do
+    it "advances physical position by one line" do
       a = from(:spec, 1, 3, 3)
       b = a.forward_esc_line
-      b.physical.pos.should == [1, 4, 4]
+      b.physical.pos.should == [2, 1, 4]
     end
   end
 end

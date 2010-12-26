@@ -44,7 +44,7 @@ module Akin
         new filename, CharPosition.new(line, column, index)
       end
 
-      def initialize(filename, logical, physical = logical)
+      def initialize(filename, logical = CharPosition.default, physical = logical)
         @filename = filename
         @logical = logical
         @physical = physical
@@ -62,8 +62,8 @@ module Akin
         self.class.new(@filename, logical.incr(1, -1))
       end
 
-      def forward_esc_line(inc = 1)
-        self.class.new(@filename, logical.incr(1, -1), physical.incr(0, inc))
+      def forward_esc_line
+        self.class.new(@filename, logical.incr(0, 1), physical.incr(1, -1))
       end
     end
   end
