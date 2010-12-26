@@ -2,16 +2,16 @@ module Akin
   module Parser
     module CharReader
       def self.from_string(str)
-        StringCharReader.new(str)
+        UnicodeCharReader.new(str)
       end
 
-      class StringCharReader
+      class UnicodeCharReader
         include CharReader
 
-        attr_reader :index, :size
+        attr_reader :index, :size, :char
 
         def initialize(str)
-          @buffer = str.dup.freeze
+          @buffer = str.unpack('U*')
           @size = @buffer.size
           @index = 0
         end
@@ -19,7 +19,7 @@ module Akin
         def read
           return if @index >= @size
           idx, @index = @index, @index + 1
-          @buffer[idx,1]
+          @buffer[idx,1].pack('U*')
         end
       end
     end

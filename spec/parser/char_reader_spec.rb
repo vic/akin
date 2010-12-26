@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require File.expand_path("../../spec_helper", __FILE__)
 require 'akin/parser/char_reader'
 
@@ -39,6 +40,26 @@ describe Akin::Parser::CharReader do
     reader.index.should == 5
     reader.read.should be_nil
     reader.index.should == 5
+    reader.read.should be_nil
+  end
+
+  it "reports length by codepoints" do
+    reader = reader("árbol")
+    reader.size.should == 5
+  end
+
+  it "reads a codepoint at a time" do
+    reader = reader("árbol")
+    reader.read.should == "á"
+  end
+
+  it "reads a codepoint at a time" do
+    reader = reader 'こんにちは'
+    reader.read.should == 'こ'
+    reader.read.should == 'ん'
+    reader.read.should == 'に'
+    reader.read.should == 'ち'
+    reader.read.should == 'は'
     reader.read.should be_nil
   end
 end
