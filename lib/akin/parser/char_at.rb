@@ -3,6 +3,7 @@ module Akin
   module Parser
     class CharAt
       attr_accessor :position
+      attr_writer :char, :fwd
 
       def self.from(char_reader, position)
         new(char_reader, position)
@@ -27,19 +28,18 @@ module Akin
         char # make sure we have read the current char
         @fwd = self.class.new(@char_reader, position.forward_char)
       end
-      private :fwd
 
       def next
         return @next if @next
         @next = fwd
         if at_escaped_eol? && fwd.at_unix_eol?
-          @next = fwd.send(:fwd)
+          @next = fwd.fwd
           @next.position = position.forward_esc_line
         elsif at_escaped_eol? && fwd.at_win_eol?
-          @next = fwd.send(:fwd).send(:fwd)
+          @next = fwd.fwd.fwd
           @next.position = position.forward_esc_line
         elsif at_win_eol?
-          @next = fwd.send :fwd
+          @next = fwd.fwd
           @next.position = position.forward_line
         elsif at_unix_eol?
           @next.position = position.forward_line
