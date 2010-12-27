@@ -1,4 +1,4 @@
-require File.expand_path("../../spec_helper", __FILE__)
+require File.expand_path("../../../spec_helper", __FILE__)
 require 'akin/parser/message_reader'
 require 'akin/parser/char_at'
 require 'akin/parser/char_reader'
@@ -20,25 +20,25 @@ describe Akin::Parser::MessageReader do
     o.should_not be_nil
     o.kind_of?(Akin::Parser::Message).should be_true
     o.type.should == :space
-    o.text.should == "    "
+    o.data.should == "    "
   end
 
   it "parses tab as space" do
     o = read :space, " \t "
     o.type.should == :space
-    o.text.should == " \t "
+    o.data.should == " \t "
   end
 
   it "parses escaped unix-eol as space" do
     o = read :space, "  \\\n  "
     o.type.should == :space
-    o.text.should == "    "
+    o.data.should == "    "
   end
 
   it "parses escaped win-eol as space" do
     o = read :space, "  \\\r\n  "
     o.type.should == :space
-    o.text.should == "    "
+    o.data.should == "    "
   end
 
 end
