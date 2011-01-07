@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 require File.expand_path("../../spec_helper", __FILE__)
-require 'akin/parser/char_reader'
 
 describe Akin::Parser::CharReader do
 

@@ -5,6 +5,10 @@ module Akin
         UnicodeCharReader.new(str)
       end
 
+      def self.split(str)
+        UnicodeCharReader.new(str).split
+      end
+
       class UnicodeCharReader
         include CharReader
 
@@ -14,6 +18,10 @@ module Akin
           @buffer = str.unpack('U*')
           @size = @buffer.size
           @index = 0
+        end
+
+        def split
+          @buffer.map { |i| [i].pack('U*') }
         end
 
         def read

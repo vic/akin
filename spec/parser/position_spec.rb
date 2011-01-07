@@ -1,5 +1,4 @@
 require File.expand_path("../../spec_helper", __FILE__)
-require 'akin/parser/position'
 
 describe Akin::Parser::CharPosition do
   describe "#pos" do
