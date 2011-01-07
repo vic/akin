@@ -3,6 +3,7 @@ module Akin
     Language.syntax = Syntax.define do
 
       a(:eof)             .is nil
+      a(:any)             .is /./
 
       a(:dash)            .is "-"
       a(:slash)           .is "/"
@@ -19,7 +20,9 @@ module Akin
 
       a(:line_comment)    .is "#", ["#", "!", " "], a(:eol).but.any
 
-      a(:space).as(Space) .is a([/ \t/, :escaped_eol]).many
+      a(:tab).as(Tab/8)   .is "\t"
+      a(:whitespace)      .is " "
+      a(:space).as(Space) .is a([:whitespace, :tab, :escaped_eol]).many
 
       a(:alpha)           .is /[a-zA-Z]/
       a(:bin_digit)       .is /[01]/

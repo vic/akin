@@ -1,13 +1,66 @@
 require File.expand_path("../../spec_helper", __FILE__)
 
 describe Akin::Parser::Syntax do
+  def a(*a,&b)
+    Akin::Parser::Language.syntax.a(*a, &b)
+  end
+
   def parse(name, input)
     unless input.kind_of? Akin::Parser::MatchInput
       r = Akin::Parser::CharReader.from_string(input)
       f = Akin::Parser::FilePosition.new :eval, Akin::Parser::CharPosition.default
       input = Akin::Parser::MatchInput.new(r, f)
     end
-    Akin::Parser::Language.syntax.a(name).match(input)
+    unless name.kind_of? Akin::Parser::Matcher
+      name = a(name)
+    end
+    name.match(input)
+  end
+
+  describe "space" do
+    it "matches whitespace characters" do
+      parse(:space, "    ").positive?.should be_true
+    end
+
+    describe "tab" do
+      it "matches tab characters" do
+        parse(:space, "\t\t").positive?.should be_true
+      end
+
+      it "matches mixed tabs and whitespace characters" do
+        parse(:space, "  \t  ").positive?.should be_true
+      end
+
+      it "replaces tab with spaces" do
+        m = parse(:tab, "\t")
+        m.text.should == (" " * m.width)
+      end
+
+      it "replaces tab with proper number of spaces for tab-stop" do
+        m = parse a(a(:tab).but.many, :tab), "hola\t"
+        m.text.should == "hola    "
+      end
+
+      it "replaces tab with proper number of spaces for tab-stop" do
+        m = parse a(a(:tab).but.many, :tab), "hola \t"
+        m.text.should == "hola    "
+      end
+
+      it "replaces tab with proper number of spaces for tab-stop" do
+        m = parse a(a(:tab).but.many, :space), "hola \t"
+        m.text.should == "hola    "
+      end
+
+      it "reflects the correct fwd logical position" do
+        m = parse a(:tab), "\thola"
+        m.fwd.position.logical.pos.should == [1, 9, 9]
+      end
+
+      it "leaves the physical fwd logical position intact" do
+        m = parse a(:tab), "\thola"
+        m.fwd.position.physical.pos.should == [1, 2, 2]
+      end
+    end
   end
 
   describe "eol" do
@@ -106,9 +159,10 @@ describe Akin::Parser::Syntax do
       m.text.should == "DEADbeef"
     end
 
-    it "returns the binary value" do
+    it "returns the hex value" do
       m = parse(:integer, "0Xdead_beef")
       m.value.should == 3735928559
     end
-  end
+  end # hex integer
+
 end

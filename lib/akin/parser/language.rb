@@ -66,6 +66,28 @@ module Akin
 
     module Space
     end
+    module Tab
+      def self./(width)
+        Module.new do
+          include Tab
+          define_method(:width) { width }
+        end
+      end
+
+      def text
+        raise "Tab stop is lower than two spaces." if width < 2
+        n = width - (from.position.logical.column % width) + 1
+        " " * n
+      end
+
+      def fwd
+        return @tab_fwd if @tab_fwd
+        fwd = super
+        n = width - (from.position.logical.column % width)
+        fwd.position.logical.incr!(0, n, n)
+        @tab_fwd = fwd
+      end
+    end
 
     module Number
       def self./(base)

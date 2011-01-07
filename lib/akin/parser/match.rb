@@ -27,7 +27,13 @@ module Akin
         define_method(:with) do |map|
           Matcher.new(@lookup).tap do |m|
             attrs.each do |key|
-              value = if map.key?(key); map[key]; else; send(key); end
+              ivar = "@#{key}"
+              value = nil
+              if map.key?(key)
+                value = map[key]
+              else
+                value = instance_variable_get(ivar)
+              end
               m.instance_variable_set("@#{key}", value)
             end
           end
@@ -183,12 +189,12 @@ module Akin
         end
         if all.size == 1
           match = all.first
-          match.extend @mixin if @mixin && match.positive?
+          match.extend @mixin if @mixin && match.positive? && @but == true
         else
           match = match_positive(input, all.last.to, all.last.fwd) do |match|
             match.ary = all
             match.map = named
-            match.extend @mixin if @mixin
+            match.extend @mixin if @mixin && @but == true
           end
         end
         match
@@ -258,12 +264,15 @@ module Akin
       attr_accessor :name, :from, :to, :fwd, :ary, :map, :positive
 
       def text
-        return unless to
         buff = ""
-        at = from
-        while at != fwd
-          buff << at.char
-          at = at.fwd
+        if ary
+          buff = ary.map { |a| a.text }.join
+        elsif
+          at = from
+          while at != fwd
+            buff << at.char
+            at = at.fwd
+          end
         end
         buff
       end
