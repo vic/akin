@@ -56,7 +56,7 @@ describe Akin::Parser::Syntax do
         m.fwd.position.logical.pos.should == [1, 9, 9]
       end
 
-      it "leaves the physical fwd logical position intact" do
+      it "leaves the physical fwd position intact" do
         m = parse a(:tab), "\thola"
         m.fwd.position.physical.pos.should == [1, 2, 2]
       end
@@ -164,5 +164,34 @@ describe Akin::Parser::Syntax do
       m.value.should == 3735928559
     end
   end # hex integer
+
+
+  describe "string" do
+    it "matches a simple string literal" do
+      m = parse(:string, %q("hello"))
+      m.parts.count.should == 1
+      m.to.position.logical.pos.should == [1, 7, 7]
+    end
+
+    it "matches a string literal with escaped quotes" do
+      m = parse(:string, %q("hell\"o"))
+      m.parts.count.should == 1
+      m.to.position.logical.pos.should == [1, 9, 9]
+    end
+  end
+
+  describe "multi string" do
+    it "matches a simple string literal" do
+      m = parse(:mstring, %q("""hello"""))
+      m.parts.count.should == 1
+      m.to.position.logical.pos.should == [1, 11, 11]
+    end
+
+    it "matches a string literal with escaped quotes" do
+      m = parse(:mstring, %q("""hell\"""o"""))
+      m.parts.count.should == 1
+      m.to.position.logical.pos.should == [1, 15, 15]
+    end
+  end
 
 end

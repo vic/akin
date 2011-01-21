@@ -21,7 +21,7 @@ module Akin
 
     class Matcher
 
-      [ :name, :mixin, :block, :seq, :min, :max, :but, :true, :parse ].tap do |attrs|
+      [ :name, :mixin, :block, :seq, :min, :max, :pos, :true, :parse ].tap do |attrs|
         attr_reader *attrs
 
         define_method(:with) do |map|
@@ -43,7 +43,7 @@ module Akin
 
       def initialize(block)
         @lookup = block
-        @true, @but, @min, @max = true, true, 1, 1
+        @true, @pos, @min, @max = true, true, 1, 1
       end
 
       def lookup(name)
@@ -51,7 +51,7 @@ module Akin
       end
 
       def but
-        with :but => !@but
+        with :pos => !@pos
       end
 
       def not
@@ -120,7 +120,7 @@ module Akin
     private
 
       def positive?(bool)
-        if @but
+        if @pos
           bool
         else
           !bool
@@ -143,6 +143,7 @@ module Akin
           m.to = to
           m.fwd = fwd
           m.tap(&block) if block
+          m.expected = self unless positive
         end
       end
 
@@ -178,7 +179,7 @@ module Akin
         match, at = nil, input
         ary.each_with_index do |item, index|
           match = match_single(at, item)
-          if match.positive?
+          if @true && match.positive?
             at = match.fwd
             all << match
             named[match.name] = match if match.name
@@ -189,12 +190,12 @@ module Akin
         end
         if all.size == 1
           match = all.first
-          match.extend @mixin if @mixin && match.positive? && @but == true
+          match.extend @mixin if @mixin && match.positive? && @pos
         else
           match = match_positive(input, all.last.to, all.last.fwd) do |match|
             match.ary = all
             match.map = named
-            match.extend @mixin if @mixin && @but == true
+            match.extend @mixin if @mixin && @pos
           end
         end
         match
@@ -261,7 +262,7 @@ module Akin
     class Match
       include Enumerable
 
-      attr_accessor :name, :from, :to, :fwd, :ary, :map, :positive
+      attr_accessor :name, :from, :to, :fwd, :ary, :map, :positive, :expected
 
       def text
         buff = ""

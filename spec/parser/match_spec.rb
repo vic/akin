@@ -151,6 +151,14 @@ describe Akin::Parser::Match do
       m.to.should == nil
       m.fwd.should == i
     end
+
+    it "does not consume input on invalid sequence match" do
+      m = a("a", "b", "c").not.match i = input("foo")
+      m.positive?.should be_true
+      m.from.should == i
+      m.to.should == nil
+      m.fwd.should == i
+    end
   end
 
   describe "+ operator" do
@@ -328,6 +336,17 @@ describe Akin::Parser::Match do
       m.char.should == " "
       m.fwd.position.physical.pos.should == [2, 1, 4]
       m.fwd.position.logical.pos.should == [1, 2, 2]
+    end
+  end
+
+  
+  describe "composite rule" do
+    it "matches an enclosed text between abc" do
+      x = a("a", "b", "c")
+      y = a(x, a(x.not, /./).any, x)
+      y.match(input("abcabc")).positive?.should be_true
+      y.match(input("abc   abc")).positive?.should be_true
+      y.match(input("abcdefabc")).positive?.should be_true
     end
   end
 

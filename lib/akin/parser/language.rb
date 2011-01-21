@@ -89,10 +89,10 @@ module Akin
       end
     end
 
-    module Number
+    module NumberLiteral
       def self./(base)
         Module.new do
-          include Number
+          include NumberLiteral
           define_method(:base) { base }
         end
       end
@@ -104,6 +104,12 @@ module Akin
       def text
         text = if base == 10 then super else self[2].text end
         text.gsub('_', '')
+      end
+    end
+
+    module StringLiteral
+      def parts
+        self[1]
       end
     end
 
