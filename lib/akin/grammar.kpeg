@@ -1,0 +1,149 @@
+# -*- ruby -*-
+#
+# This is a KPEG grammar for Akin.
+# If you want to compile it into grammar.rb, you must use vic/kpeg.
+# 
+
+%% name = Akin::Grammar
+
+%% {
+    BRACES_ALIST = [
+                    ['(', ')'],
+                    ['{', '}'],
+                    ['[', ']'],
+                    ['\(', '\)'],
+                    ['\{', '\}'],
+                    ['\[', '\]']
+                   ]
+    
+    def braces
+      @braces ||= BRACES_ALIST.dup
+    end
+    
+    def brace(text)
+      braces.assoc(text) || braces.rassoc(text)
+    end
+    
+    def node(*a, &b)
+      Node.new(*a, &b)
+    end
+
+    alias_method :n, :node
+
+    def current_position(o = pos)
+      Position.new(current_line(o), current_column(o))
+    end
+
+    def h
+      Position.new(0, 0)
+    end 
+    
+
+    class Position
+      attr_accessor :line, :column
+      def initialize(line = nil, column = nil)
+        @line, @column = line, column
+      end
+      def |(other)
+        if @line.nil? || @line.zero?
+          other
+        else
+          self
+        end
+      end
+    end
+
+    class Node
+      def initialize(position = Position.new, name = nil, *args)
+        @pos, @name, @args = position, name, args
+      end
+
+      attr_reader :pos, :name, :args
+
+      def first
+        @args.first
+      end
+
+      def last
+        @args.last
+      end
+
+      def [](idx)
+        @args[idx]
+      end
+
+      def sexp
+        sexp = []
+        sexp << name if name
+        sexp.push *args.map { |a| a.respond_to?(:sexp) && a.sexp || a }
+        sexp
+      end
+    end    
+
+}
+
+nl = "\n" | "\r\n"
+sp = " " | "\t" | "\\" nl
+
+p = &. ~current_position
+
+sheebang = "#!" /.*?$/
+
+t = sheebang | nl | ";"
+n = t | sp | "."
+- = n*
+
+brace = < . . > &{ brace(text) } { brace(text) }
+      | < . > &{ brace(text) } { brace(text) }
+
+left_brace = <brace:b> &{ text == b.first} { b }
+right_brace(l) = <brace:b> &{ text == l.last } { l }
+
+ident = < /[a-z_]/ /[a-zA-Z0-9_]/* > {text}
+const = < /[A-Z]/ /[a-zA-Z0-9_]/* > {text}
+
+identifier = p:p ident:i ~n(p, :ident, i)
+constant = p:p const:c ~n(p, :const, c)
+
+keyword = ":" < (!&(n | ":" | left_brace) .)+ > !&":" &{text.size > 0} {text}
+
+value(h) = (msg(h) | args | identifier | constant):e
+          &{ e.pos.column > h.column } {e}
+
+comma(h) = block(h):a sp* "," - comma(h):b { b.unshift a ; b }
+         | block(h):a sp* "," - block(h):b { [a,b] }
+  
+tuple(h) = comma(h):c ~n(p, :tuple, *c)
+
+cons(h) = expr(h):a sp* ":" - cons(h):b ~n(p, :cons, a, b)
+        | expr(h):a sp* ":" - expr(h):b ~n(p, :cons, a, b)
+
+args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
+       ~n(p, l.join, *Array(a))
+
+msg(h) = part(h):a - msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
+       | part(h):a ~n(a.pos, :msg, a)
+
+part(h) = part(h):p sp* t - block(h | p.pos):e { p.args.push *Array(e) ; p }
+        | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p }
+        | p:p keyword:k args:a ~n(p, k, a.name, *a.args)
+        | p:p keyword:k ~n(p, k, "()")
+
+part_head(h) = sp+ !&keyword (ph_comma(h) | expr(h) | {[]})
+
+ph_comma(h) = expr(h):a sp* "," - ph_comma(h):b { b.unshift a ; b }
+            | expr(h):a sp* "," - expr(h):b { [a,b] }
+
+expr(h) = value(h)
+
+chain(h) = expr(h):a sp* chain(a.pos):b 
+           ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
+         | expr(h)
+
+block(h) = chain(h):a sp* t - block(h):b
+           ~n(a.pos, :block, a, *Array(b.name == :block && b.args || b))
+         | chain(h)
+
+root = - block(h) - eof
+unit = - chain(h) -
+eof = !.
