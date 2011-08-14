@@ -264,6 +264,16 @@ describe 'Akin grammar' do
         [:chain, [:text, "hi "],
          ["++", "()", [:ident, "world"]]]
     end
+
+    it 'parses multi string' do
+      s('"""hello "world" """', :literal).should ==
+        [:text, "hello \"world\" "]
+    end
+
+    it 'parses simple string' do
+      s("'foo \#{bar}'", :literal).should ==
+        [:text, 'foo #{bar}']
+    end
   end
 
   describe 'root' do
@@ -313,7 +323,7 @@ describe 'Akin grammar' do
       code = <<-CODE
       {
        hello: "world",
-       from: ["mars", moon]
+       from: ['mars', moon]
       }
       CODE
       s(code, :root).should ==
@@ -330,6 +340,22 @@ describe 'Akin grammar' do
       :e f
         :g
           h
+      CODE
+      s(code, :root).should ==
+        [:chain, [:ident, "a"],
+         [:msg, ["b", "()", [:ident, "c"], [:ident, "d"]],
+          ["e", "()", [:ident, "f"],
+           [:msg, ["g", "()", [:ident, "h"]]]]]]
+    end
+    
+    it 'parses messages with args' do
+      code = <<-CODE
+      a :b(
+        c, d
+      ):e(f,
+        :g
+          h
+      )
       CODE
       s(code, :root).should ==
         [:chain, [:ident, "a"],

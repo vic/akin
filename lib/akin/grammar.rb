@@ -1286,7 +1286,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # str = (mstr | sstr)
+  # str = (mstr | sstr | qstr)
   def _str
 
     _save = self.pos
@@ -1297,10 +1297,89 @@ class Akin::Grammar
       _tmp = apply(:_sstr)
       break if _tmp
       self.pos = _save
+      _tmp = apply(:_qstr)
+      break if _tmp
+      self.pos = _save
       break
     end # end choice
 
     set_failed_rule :_str unless _tmp
+    return _tmp
+  end
+
+  # qstr = p:p "'" < ("\\'" | !(&"'") .)* > "'" {n(p, :text, text)}
+  def _qstr
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("'")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _text_start = self.pos
+      while true
+
+        _save2 = self.pos
+        while true # choice
+          _tmp = match_string("\\'")
+          break if _tmp
+          self.pos = _save2
+
+          _save3 = self.pos
+          while true # sequence
+            _save4 = self.pos
+            _save5 = self.pos
+            _tmp = match_string("'")
+            self.pos = _save5
+            _tmp = _tmp ? nil : true
+            self.pos = _save4
+            unless _tmp
+              self.pos = _save3
+              break
+            end
+            _tmp = get_byte
+            unless _tmp
+              self.pos = _save3
+            end
+            break
+          end # end sequence
+
+          break if _tmp
+          self.pos = _save2
+          break
+        end # end choice
+
+        break unless _tmp
+      end
+      _tmp = true
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("'")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :text, text); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_qstr unless _tmp
     return _tmp
   end
 
@@ -3056,7 +3135,8 @@ class Akin::Grammar
   Rules[:_binary] = rule_info("binary", "sign:s bin:d {(s+d).to_i(2)}")
   Rules[:_octal] = rule_info("octal", "sign:s oct:d {(s+d).to_i(8)}")
   Rules[:_decimal] = rule_info("decimal", "sign:s dec:d {(s+d).to_i(10)}")
-  Rules[:_str] = rule_info("str", "(mstr | sstr)")
+  Rules[:_str] = rule_info("str", "(mstr | sstr | qstr)")
+  Rules[:_qstr] = rule_info("qstr", "p:p \"'\" < (\"\\\\'\" | !(&\"'\") .)* > \"'\" {n(p, :text, text)}")
   Rules[:_sstr] = rule_info("sstr", "p:p quoted(:text, &\"\\\"\"):b {text_node(p, b)}")
   Rules[:_quoted] = rule_info("quoted", "q quoted_inner(t, q)*:b q {b}")
   Rules[:_quoted_inner] = rule_info("quoted_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\" q | \"\\\\\#\" | &(!(q | \"\#{\")) .)+ > {n(p, t, text)})")

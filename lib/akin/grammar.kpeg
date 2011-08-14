@@ -134,7 +134,9 @@ binary = sign:s bin:d {(s+d).to_i(2)}
 octal = sign:s oct:d {(s+d).to_i(8)}
 decimal = sign:s dec:d {(s+d).to_i(10)}
 
-str = (mstr | sstr)
+str = (mstr | sstr | qstr)
+
+qstr = p:p "'" <( "\\'" | !&"'" .)*> "'" ~n(p, :text, text)
 
 sstr = p:p quoted(:text, & "\""):b ~text_node(p, b)
 
