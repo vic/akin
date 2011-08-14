@@ -86,16 +86,6 @@ describe 'Akin grammar' do
     end    
   end
 
-  describe 'chain' do
-    it 'parses single value' do
-      s('foo', :chain).should == [:ident, "foo"]
-    end
-
-    it 'parses two values' do
-      s('foo bar', :chain).should == [:chain, [:ident, "foo"], [:ident, "bar"]]
-    end    
-  end
-
   describe 'message' do
     it 'parses one part' do
       s(':foo', :msg).should == [:msg, ["foo", "()"]]
@@ -191,6 +181,22 @@ describe 'Akin grammar' do
     end
   end
 
+  describe 'chain' do
+    it 'parses single value' do
+      s('foo', :chain).should == [:ident, "foo"]
+    end
+
+    it 'parses two values' do
+      s('foo bar', :chain).should == [:chain, [:ident, "foo"], [:ident, "bar"]]
+    end
+
+    it 'parses until dot is found' do
+      code = ":foo ."
+      s(code, :chain).should ==
+        [:msg, ["foo", "()"]]
+    end    
+  end
+
   describe 'block' do
     it 'parses a single identifier as itself' do
       s('foo', :block).should ==
@@ -250,6 +256,23 @@ describe 'Akin grammar' do
                    ["bar", "()", [:ident, "b"]]]],
          [:ident, "baz"],
          [:msg, ["bat", "()", [:ident, "c"]]]]
+    end
+
+    it 'parses message until semicolon-dot is found' do
+      code = "a :b c :. d"
+      s(code, :block).should ==
+        [:chain, [:ident, "a"],
+         [:msg, ["b", "()", [:ident, "c"]]],
+         [:ident, "d"]]
+    end
+
+    it 'parses message until semicolon-colon is found' do
+      code = "a :b c :; d"
+      s(code, :block).should ==
+        [:block, 
+         [:chain, [:ident, "a"],
+          [:msg, ["b", "()", [:ident, "c"]]]],
+         [:ident, "d"]]
     end    
   end
 

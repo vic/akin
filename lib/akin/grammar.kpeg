@@ -157,7 +157,7 @@ const = < /[A-Z]/ /[a-zA-Z0-9_]/* > {text}
 identifier = p:p ident:i ~n(p, :ident, i)
 constant = p:p const:c ~n(p, :const, c)
 
-keyword = ":" < (!&(n | ":" | left_brace) .)+ > !&":" &{text.size > 0} {text}
+keyword = ":" < (!&(n | ":" | left_brace) .)+ > !&(":"|";"|".") &{text.size > 0} {text}
 
 value(h) = (msg(h) | args | constant | literal | identifier):e
           &{ e.pos.column > h.column } {e}
@@ -167,7 +167,7 @@ comma(h) = block(h):a sp* "," - comma(h):b { b.unshift a ; b }
   
 tuple(h) = comma(h):c ~n(p, :tuple, *c)
 
-cons_left(h) = expr(h):a sp* ":" {a}
+cons_left(h) = expr(h):a sp* ":" !&(":"|";"|".")  {a}
 
 cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
         | cons_left(h):a - expr(h):b ~n(p, :cons, a, b)
@@ -175,7 +175,8 @@ cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
 args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
 
-msg(h) = part(h):a - msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
+msg(h) = msg(h):a sp* ":" &(":"|";"|".") {a}
+       | part(h):a - msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
        | part(h):a ~n(a.pos, :msg, a)
 
 part(h) = part(h):p sp* t - block(h | p.pos):e { p.args.push *Array(e) ; p }
@@ -190,7 +191,9 @@ ph_comma(h) = expr(h):a sp* "," - ph_comma(h):b { b.unshift a ; b }
 
 expr(h) = value(h)
 
-chain(h) = expr(h):a sp* chain(a.pos):b 
+chain(h) = chain(h):a sp* "." - chain(h)?:b
+           { b && n(a.pos, :chain, a, b) || a }
+         | expr(h):a sp* chain(a.pos):b 
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
          | cons(h) | expr(h)
 
