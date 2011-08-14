@@ -29,6 +29,10 @@ describe 'Akin grammar' do
     it 'parses a cons of two values with no spaces in between' do
       s('a:b', :cons).should == [:cons, [:ident, "a"], [:ident, "b"]]
     end
+    
+    it 'parses a cons of two values with no space at right side' do
+      s('a: b', :cons).should == [:cons, [:ident, "a"], [:ident, "b"]]
+    end
 
     it 'parses a cons of three values' do
       s('a :b: c', :cons).should == [:cons, [:ident, "a"],
@@ -41,7 +45,6 @@ describe 'Akin grammar' do
                                           [:cons, [:ident, "c"],
                                            [:ident, "d"]]]]
     end
-
   end
 
   describe 'tuple' do
@@ -237,6 +240,102 @@ describe 'Akin grammar' do
         [:chain, [:ident, "m"],
          [:msg, ["foo", "()", [:ident, "a"]],
           ["bar", "()", [:ident, "b"]]]]
+    end
+
+    it 'parses two parts on same column as single message until non-part' do
+      code = "m :foo a\n:bar b\nbaz\n:bat c"
+      s(code, :block).should ==
+        [:block, [:chain, [:ident, "m"],
+                  [:msg, ["foo", "()", [:ident, "a"]],
+                   ["bar", "()", [:ident, "b"]]]],
+         [:ident, "baz"],
+         [:msg, ["bat", "()", [:ident, "c"]]]]
+    end    
+  end
+
+  describe 'text' do
+    it 'is parsed by literal rule' do
+      s('"hi"', :literal).should ==
+        [:text, "hi"]
+    end
+
+    it 'allows interpolation' do
+      s('"hi #{world}"', :literal).should ==
+        [:chain, [:text, "hi "],
+         ["++", "()", [:ident, "world"]]]
+    end
+  end
+
+  describe 'root' do
+    it 'ignores sheebangs' do
+      code = "#!/usr/bin/akin"
+      s(code, :root).should be_nil
+    end
+
+    it 'does not include sheebang on block' do
+      code = <<-CODE
+      #!/usr/bin/akin
+      foo
+      bar
+      CODE
+      s(code, :root).should ==
+        [:block, [:ident, "foo"],
+                 [:ident, "bar"]]
+    end
+
+    it 'parses an object clone' do
+      code = <<-CODE
+      Point :x a :y b
+      CODE
+      s(code, :root).should ==
+        [:chain, [:const, "Point"],
+         [:msg, ["x", "()", [:ident, "a"]],
+                ["y", "()", [:ident, "b"]]]]
+    end
+
+    it 'parses a pair of two identifiers' do
+      code = <<-CODE
+      foo: bar
+      CODE
+      s(code, :root).should ==
+        [:cons, [:ident, "foo"], [:ident, "bar"]]
+    end
+
+    it 'parses an square message' do
+      code = <<-CODE
+      ["foo", bar]
+      CODE
+      s(code, :root).should ==
+        ["[]", [:text, "foo"], [:ident, "bar"]]
+    end
+
+    it 'parses a json object' do
+      code = <<-CODE
+      {
+       hello: "world",
+       from: ["mars", moon]
+      }
+      CODE
+      s(code, :root).should ==
+        ["{}",
+         [:cons, [:ident, "hello"], [:text, "world"]],
+         [:cons, [:ident, "from"], ["[]", [:text, "mars"], [:ident, "moon"]]]
+         ]
+    end
+
+    it 'parses nested blocks' do
+      code = <<-CODE
+      a :b c
+        d
+      :e f
+        :g
+          h
+      CODE
+      s(code, :root).should ==
+        [:chain, [:ident, "a"],
+         [:msg, ["b", "()", [:ident, "c"], [:ident, "d"]],
+          ["e", "()", [:ident, "f"],
+           [:msg, ["g", "()", [:ident, "h"]]]]]]
     end
   end
   

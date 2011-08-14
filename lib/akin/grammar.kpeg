@@ -38,7 +38,6 @@
       Position.new(0, 0)
     end 
     
-
     class Position
       attr_accessor :line, :column
       def initialize(line = nil, column = nil)
@@ -78,7 +77,21 @@
         sexp.push *args.map { |a| a.respond_to?(:sexp) && a.sexp || a }
         sexp
       end
-    end    
+    end
+
+    def text_node(p, parts)
+      parts = parts.compact
+      return node(p, :text, "") if parts.empty?
+      ary = parts.dup
+      m = ary.shift
+      if ary.empty?
+        unless m.name == :text
+          m = node(p, :chain, m, node(p, :ident, "to_s"))
+        end
+        return m
+      end
+      node(p, :chain, m, *ary.map { |a| node(p, "++", "()", a) })
+    end
 
 }
 
@@ -98,7 +111,44 @@ brace = < . . > &{ brace(text) } { brace(text) }
 
 left_brace = <brace:b> &{ text == b.first} { b }
 right_brace(l) = <brace:b> &{ text == l.last } { l }
+  
+literal = float | fixnum | str | regexp
 
+regexp = p:p quoted(:text, & "/"):b ~n(p, :regexp, text_node(p, b))
+
+float = p:p sign:s dec:n "." dec:f ~n(p, :float, (s+n+"."+f).to_f)
+
+fixnum = p:p (hexadec | binary | octal | decimal):n ~n(p, :fixnum, n)
+
+digits(d) = < d+ ("_" d+)* > { text.gsub('_', '') }
+
+sign = "+" {"+"} | "-" { "-"} | {"+"}
+
+dec = digits(&/[0-9]/):d {d}
+oct = "0" /[oO]/? digits(&/[0-7]/):d {d}
+hex = "0" /[xX]/ digits(&/[0-9a-fA-F]/):d {d}
+bin = "0" /[bB]/ digits(&/[0-1]/):d {d}
+
+hexadec = sign:s hex:d {(s+d).to_i(16)}
+binary = sign:s bin:d {(s+d).to_i(2)}
+octal = sign:s oct:d {(s+d).to_i(8)}
+decimal = sign:s dec:d {(s+d).to_i(10)}
+
+str = (mstr | sstr)
+
+sstr = p:p quoted(:text, & "\""):b ~text_node(p, b)
+
+quoted(t,q) = q quoted_inner(t,q)*:b q {b}
+
+quoted_inner(t,q) = p:p "#{" - block(h)?:b - "}" {b}
+                  | p:p < ("\\" q | "\\#" | &!((q | "#{")) .)+ > ~n(p, t, text)
+
+mstr = p:p "\"\"\"" mstr_inner*:b "\"\"\"" ~text_node(p, b)
+
+mstr_inner = p:p "#{" - block(h)?:b - "}" {b}
+          | p:p < ("\\\"\"\"" | 
+             !&("\"\"\"" | "#{") . | . &("\"\"\""))+ > ~n(p, :text, text)
+  
 ident = < /[a-z_]/ /[a-zA-Z0-9_]/* > {text}
 const = < /[A-Z]/ /[a-zA-Z0-9_]/* > {text}
 
@@ -107,7 +157,7 @@ constant = p:p const:c ~n(p, :const, c)
 
 keyword = ":" < (!&(n | ":" | left_brace) .)+ > !&":" &{text.size > 0} {text}
 
-value(h) = (msg(h) | args | identifier | constant):e
+value(h) = (msg(h) | args | constant | literal | identifier):e
           &{ e.pos.column > h.column } {e}
 
 comma(h) = block(h):a sp* "," - comma(h):b { b.unshift a ; b }
@@ -115,8 +165,10 @@ comma(h) = block(h):a sp* "," - comma(h):b { b.unshift a ; b }
   
 tuple(h) = comma(h):c ~n(p, :tuple, *c)
 
-cons(h) = expr(h):a sp* ":" - cons(h):b ~n(p, :cons, a, b)
-        | expr(h):a sp* ":" - expr(h):b ~n(p, :cons, a, b)
+cons_left(h) = expr(h):a sp* ":" {a}
+
+cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
+        | cons_left(h):a - expr(h):b ~n(p, :cons, a, b)
 
 args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
@@ -138,12 +190,12 @@ expr(h) = value(h)
 
 chain(h) = expr(h):a sp* chain(a.pos):b 
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
-         | expr(h)
+         | cons(h) | expr(h)
 
 block(h) = chain(h):a sp* t - block(h):b
            ~n(a.pos, :block, a, *Array(b.name == :block && b.args || b))
          | chain(h)
 
-root = - block(h) - eof
-unit = - chain(h) -
+root = - block(h)?:b - eof {b}
+unit = - chain(h):c {c}
 eof = !.

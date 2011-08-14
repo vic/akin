@@ -16,7 +16,8 @@ shared_context 'grammar' do
   end
   
   def s(code, rule = :script, *args)
-    c(code, rule, true, *args).sexp
+    n = c(code, rule, true, *args)
+    n.sexp if n
   end
 
 end
