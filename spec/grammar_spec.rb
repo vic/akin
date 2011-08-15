@@ -95,7 +95,7 @@ describe 'Akin grammar' do
     it 'parses space act' do
       s('foo (bar)', :chain).should ==
         [:chain, [:name, "foo"],
-         [:act, [:name, ""], "()", [:name, "bar"]]]
+         [:act, nil, "()", [:name, "bar"]]]
     end        
 
     it 'parses chained activation' do
@@ -176,7 +176,7 @@ describe 'Akin grammar' do
       s(':foo :baz (a: b) :bat c', :msg).should ==
         [:msg, ["foo", "()"],
          ["baz", "()",
-          [:act, [:name, ""], "()", [:cons, [:name, "a"], [:name, "b"]]]],
+          [:act, nil, "()", [:cons, [:name, "a"], [:name, "b"]]]],
          ["bat", "()", [:name, "c"]]]
     end
 
@@ -394,7 +394,7 @@ describe 'Akin grammar' do
       ["foo", bar]
       CODE
       s(code, :root).should ==
-        [:act, [:name, ""], "[]", [:text, "foo"], [:name, "bar"]]
+        [:act, nil, "[]", [:text, "foo"], [:name, "bar"]]
     end
 
     it 'parses a json object' do
@@ -405,10 +405,10 @@ describe 'Akin grammar' do
       }
       CODE
       s(code, :root).should ==
-        [:act, [:name, ""], "{}",
+        [:act, nil, "{}",
          [:cons, [:name, "hello"], [:text, "world"]],
          [:cons, [:name, "from"],
-          [:act, [:name, ""], "[]", [:text, "mars"], [:name, "moon"]]]
+          [:act, nil, "[]", [:text, "mars"], [:name, "moon"]]]
         ]
     end
 

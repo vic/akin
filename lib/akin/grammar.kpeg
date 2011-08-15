@@ -162,7 +162,7 @@ keyword = ":" < (!&(n | ":" | brace) .)+ > !&(":"|";"|".") &{text.size > 0} {tex
 
 value(h) = msg(h)
          | value(h):v args:a ~n(v.pos, :act, v, a.name, *a.args)
-         | args:a ~n(a.pos, :act, n(a.pos, :name, ""), a.name, *a.args)
+         | args:a ~n(a.pos, :act, nil, a.name, *a.args)
          | literal | operator | name
 
 comma(h) = block(h):a sp* "," - comma(h):b { b.unshift a ; b }

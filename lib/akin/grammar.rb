@@ -2306,7 +2306,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # value = (msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, n(a.pos, :name, ""), a.name, *a.args)} | literal | operator | name)
+  # value = (msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | operator | name)
   def _value(h)
 
     _save = self.pos
@@ -2348,7 +2348,7 @@ class Akin::Grammar
           self.pos = _save2
           break
         end
-        @result = begin; n(a.pos, :act, n(a.pos, :name, ""), a.name, *a.args); end
+        @result = begin; n(a.pos, :act, nil, a.name, *a.args); end
         _tmp = true
         unless _tmp
           self.pos = _save2
@@ -3453,7 +3453,7 @@ class Akin::Grammar
   Rules[:_operator] = rule_info("operator", "p:p oper:o {n(p, :oper, o)}")
   Rules[:_name] = rule_info("name", "p:p < (&(!(sp | nl | brace | opchr | \":\" | \";\" | \",\" | \".\")) .)+ > {n(p, :name, text)}")
   Rules[:_keyword] = rule_info("keyword", "\":\" < (!(&(n | \":\" | brace)) .)+ > !(&(\":\" | \";\" | \".\")) &{text.size > 0} {text}")
-  Rules[:_value] = rule_info("value", "(msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, n(a.pos, :name, \"\"), a.name, *a.args)} | literal | operator | name)")
+  Rules[:_value] = rule_info("value", "(msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | operator | name)")
   Rules[:_comma] = rule_info("comma", "(block(h):a sp* \",\" - comma(h):b { b.unshift a ; b } | block(h):a sp* \",\" - block(h):b { [a,b] })")
   Rules[:_tuple] = rule_info("tuple", "comma(h):c {n(p, :tuple, *c)}")
   Rules[:_cons_left] = rule_info("cons_left", "expr(h):a sp* \":\" !(&(\":\" | \";\" | \".\")) {a}")
