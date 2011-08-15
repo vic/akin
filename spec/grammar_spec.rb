@@ -481,6 +481,51 @@ describe 'Akin grammar' do
          [:oper, "-"], [:name, "c"]]
     end
 
+    it 'allows nested block' do
+      code = <<-CODE
+      a foo
+        bar
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:act, [:name, "foo"], "()", [:name, "bar"]]]
+    end
+
+    it 'allows nested block' do
+      code = <<-CODE
+      a foo .
+        bar
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:name, "foo"],
+         [:name, "bar"]]
+    end
+    
+    it 'allows nested block' do
+      code = <<-CODE
+      a foo ;
+        bar
+      CODE
+      s(code, :root).should ==
+        [:block,
+         [:chain, [:name, "a"], [:name, "foo"]],
+         [:name, "bar"]]
+    end
+
+    it 'allows nested block', :pending => true do
+      code = <<-CODE
+      a foo(baz)
+        bar
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:act, [:name, "foo"], "()", [:name, "baz"], [:name, "bar"]]]
+    end
+
   end
   
 end

@@ -50,6 +50,9 @@
           self
         end
       end
+      def incr(line = 0, column = 1)
+        self.class.new @line + line, @column + column
+      end
     end
 
     class Node
@@ -196,11 +199,15 @@ expr(h) = value(h):e &{ e.pos.column > h.column } {e}
 
 chain(h) = chain(h):a sp* "." - chain(h)?:b
            { b && n(a.pos, :chain, a, b) || a }
-         | operator:a !&brace - chain(h):b
+         | operator:a !&brace sp* t - chain(h):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
          | expr(h):a sp* chain(a.pos):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
-         | cons(h) | expr(h)
+         | (cons(h) | expr(h)):a sp* (nl|sheebang) - block((h | a.pos || h()).incr):b
+           {
+             n(a.pos, :act, a, "()", b)
+           }
+         | (cons(h) | expr(h))
 
 block(h) = chain(h):a sp* t - block(h):b
            ~n(a.pos, :block, a, *Array(b.name == :block && b.args || b))
