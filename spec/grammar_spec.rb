@@ -1,4 +1,5 @@
-# -*- coding: undecided -*-
+# -*- coding: utf-8 -*-
+
 require File.expand_path('../spec_helper', __FILE__)
 
 describe 'Akin grammar' do
@@ -425,5 +426,3 @@ describe 'Akin grammar' do
   end
   
 end
-
-
