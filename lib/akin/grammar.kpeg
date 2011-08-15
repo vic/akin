@@ -90,7 +90,7 @@
         end
         return m
       end
-      node(p, :chain, m, *ary.map { |a| [n(p, :oper, "++"), n(p, "()", a)] }.flatten)
+      node(p, :chain, m, *ary.map { |a| [n(p, :oper, "++"), a] }.flatten)
     end
 
 }
@@ -151,20 +151,19 @@ mstr_inner = p:p "#{" - block(h)?:b - "}" {b}
           | p:p < ("\\\"\"\"" | 
              !&("\"\"\"" | "#{") . | . &("\"\"\""))+ > ~n(p, :text, text)
 
-opstart = /[\~\!@\#\$%\^\&\|\?\<\>*\/+-]/
-opchr = < opstart /[\~\!@\#\$%\^\&\|\?\<=\>*\/+:-]*/ > {text}
+opchr = /[\~\!@\#\$%\^\&\|\?\<\>*\/+-]/
+oper = < opchr (opchr | /[=]/)* > {text}
 
-name = p:p <(&(!(sp|nl|opstart|brace|":"|"."|";"|",")) .)+> ~n(p, :name, text)
+operator = p:p oper:o ~n(p, :oper, o)
 
-operator = p:p opchr:o ~n(p, :oper, o)
+name = p:p <(&(!(sp|nl|brace|opchr|":"|";"|","|".")) .)+> ~n(p, :name, text)
 
-opapply(h) = operator:o args:a ~n(o.pos, :chain, o, a)
-           | operator:o - value(h):c ~n(o.pos, :chain, o, n(c.pos, "()", c))
+keyword = ":" < (!&(n | ":" | brace) .)+ > !&(":"|";"|".") &{text.size > 0} {text}
 
-keyword = ":" < (!&(n | ":" | left_brace) .)+ > !&(":"|";"|".") &{text.size > 0} {text}
-
-value(h) = (msg(h) | args | literal | opapply(h) | operator | name):e
-          &{ e.pos.column > h.column } {e}
+value(h) = msg(h)
+         | value(h):v args:a ~n(v.pos, :act, v, a.name, *a.args)
+         | args:a ~n(a.pos, :act, n(a.pos, :name, ""), a.name, *a.args)
+         | literal | operator | name
 
 comma(h) = block(h):a sp* "," - comma(h):b { b.unshift a ; b }
          | block(h):a sp* "," - block(h):b { [a,b] }
@@ -193,11 +192,13 @@ part_head(h) = sp+ !&keyword (ph_comma(h) | expr(h) | {[]})
 ph_comma(h) = expr(h):a sp* "," - ph_comma(h):b { b.unshift a ; b }
             | expr(h):a sp* "," - expr(h):b { [a,b] }
 
-expr(h) = value(h)
+expr(h) = value(h):e &{ e.pos.column > h.column } {e}
 
 chain(h) = chain(h):a sp* "." - chain(h)?:b
            { b && n(a.pos, :chain, a, b) || a }
-         | expr(h):a sp* chain(a.pos):b 
+         | operator:a !&brace - chain(h):b
+           ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
+         | expr(h):a sp* chain(a.pos):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
          | cons(h) | expr(h)
 

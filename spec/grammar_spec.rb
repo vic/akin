@@ -53,6 +53,7 @@ describe 'Akin grammar' do
     it 'parses two values' do
       s('a, b', :tuple).should == [:tuple, [:name, "a"], [:name, "b"]]
     end
+    
     it 'parses three values' do
       s('a, b, c', :tuple).should == [:tuple, [:name, "a"],
                                               [:name, "b"],
@@ -64,28 +65,43 @@ describe 'Akin grammar' do
     it 'parses empty args' do
       s('()', :args).should == ["()"]
     end
+    
     it 'parses one arg' do
       s('(foo)', :args).should == ["()", [:name, "foo"]]
     end
+    
     it 'parses two args' do
       s('(foo, bar)', :args).should == ["()", [:name, "foo"], [:name, "bar"]]
     end
   end
 
-  describe 'call' do
+  describe 'act' do
     it 'parses round' do
-      s('foo()', :chain).should == [:chain, [:name, "foo"], ["()"]]
+      s('foo()', :chain).should == [:act, [:name, "foo"], "()"]
     end
+    
     it 'parses curly' do
-      s('foo{}', :chain).should == [:chain, [:name, "foo"], ["{}"]]
+      s('foo{}', :chain).should == [:act, [:name, "foo"], "{}"]
     end
+    
     it 'parses square' do
-      s('foo[]', :chain).should == [:chain, [:name, "foo"], ["[]"]]
-    end    
+      s('foo[]', :chain).should == [:act, [:name, "foo"], "[]"]
+    end
+    
     it 'parses activation with arguments' do
-      s('foo(bar)', :chain).should == [:chain, [:name, "foo"],
-                                          ["()", [:name, "bar"]]]
-    end    
+      s('foo(bar)', :chain).should == [:act, [:name, "foo"], "()", [:name, "bar"]]
+    end
+    
+    it 'parses space act' do
+      s('foo (bar)', :chain).should ==
+        [:chain, [:name, "foo"],
+         [:act, [:name, ""], "()", [:name, "bar"]]]
+    end        
+
+    it 'parses chained activation' do
+      s('foo[]()', :chain).should ==
+        [:act, [:act, [:name, "foo"], "[]"], "()"]
+    end
   end
 
   describe 'message' do
@@ -201,13 +217,13 @@ describe 'Akin grammar' do
     it 'parses binary op' do
       code = "a < b"
       s(code, :chain).should ==
-        [:chain, [:name, "a"], [:oper, "<"], ["()", [:name, "b"]]]
+        [:chain, [:name, "a"], [:oper, "<"], [:name, "b"]]
     end
 
     it 'parses binary op with args' do
       code = "a <(b, c)"
       s(code, :chain).should ==
-        [:chain, [:name, "a"], [:oper, "<"], ["()", [:name, "b"], [:name, "c"]]]
+        [:chain, [:name, "a"], [:act, [:oper, "<"], "()", [:name, "b"], [:name, "c"]]]
     end
   end
 
@@ -307,7 +323,7 @@ describe 'Akin grammar' do
 
     it 'allows interpolation' do
       s('"hi #{world}"', :literal).should ==
-        [:chain, [:text, "hi "], [:oper, "++"], ["()", [:name, "world"]]]
+        [:chain, [:text, "hi "], [:oper, "++"], [:name, "world"]]
     end
 
     it 'parses only interpolation as to_s message' do
@@ -318,17 +334,17 @@ describe 'Akin grammar' do
     it 'allows many interpolations' do
       s('"hi #{world} hola #{mundo}"', :literal).should ==
         [:chain, [:text, "hi "],
-         [:oper, "++"], ["()", [:name, "world"]],
-         [:oper, "++"], ["()", [:text, " hola "]],
-         [:oper, "++"], ["()", [:name, "mundo"]]]
+         [:oper, "++"], [:name, "world"],
+         [:oper, "++"], [:text, " hola "],
+         [:oper, "++"], [:name, "mundo"]]
     end
     
     it 'allows many interpolations from start' do
       s('"#{world} hola #{mundo} hi"', :literal).should ==
         [:chain, [:name, "world"],
-         [:oper, "++"], ["()", [:text, " hola "]],
-         [:oper, "++"], ["()", [:name, "mundo"]],
-         [:oper, "++"], ["()", [:text, " hi"]]]
+         [:oper, "++"], [:text, " hola "],
+         [:oper, "++"], [:name, "mundo"],
+         [:oper, "++"], [:text, " hi"]]
     end
 
     it 'parses multi string' do
@@ -382,7 +398,7 @@ describe 'Akin grammar' do
       ["foo", bar]
       CODE
       s(code, :root).should ==
-        ["[]", [:text, "foo"], [:name, "bar"]]
+        [:act, [:name, ""], "[]", [:text, "foo"], [:name, "bar"]]
     end
 
     it 'parses a json object' do
@@ -393,10 +409,11 @@ describe 'Akin grammar' do
       }
       CODE
       s(code, :root).should ==
-        ["{}",
+        [:act, [:name, ""], "{}",
          [:cons, [:name, "hello"], [:text, "world"]],
-         [:cons, [:name, "from"], ["[]", [:text, "mars"], [:name, "moon"]]]
-         ]
+         [:cons, [:name, "from"],
+          [:act, [:name, ""], "[]", [:text, "mars"], [:name, "moon"]]]
+        ]
     end
 
     it 'parses nested blocks' do
@@ -444,16 +461,28 @@ describe 'Akin grammar' do
         [:chain, [:name, "मूल"], [:name, "नकल"]]
     end
 
-    it 'allows operators argument to be on next line', :pending => true do
+    it 'allows operators chaining' do
+      code = <<-CODE
+      a + b - c
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:oper, "+"], [:name, "b"],
+         [:oper, "-"], [:name, "c"]]
+    end
+
+    it 'allows operators arguments to be on nested line' do
       code = <<-CODE
       a +
         b -
           c
       CODE
       s(code, :root).should ==
-        [:chain, [:name, "a"],
-         [:oper, "+"], ["()", [:name, "b"]],
-         [:oper, "-"], ["()", [:name, "c"]]]
+        [:chain,
+         [:name, "a"],
+         [:oper, "+"], [:name, "b"],
+         [:oper, "-"], [:name, "c"]]
     end
   end
   
