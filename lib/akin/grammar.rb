@@ -1939,6 +1939,46 @@ class Akin::Grammar
     return _tmp
   end
 
+  # opchr = < /[\~\!@\#\$%\^\&\|\?\<\>*\/+-]/ /[\~\!@\#\$%\^\&\|\?\<=\>*\/+:-]*/ > {text}
+  def _opchr
+
+    _save = self.pos
+    while true # sequence
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = scan(/\A(?-mix:[\~\!@\#\$%\^\&\|\?\<\>*\/+-])/)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = scan(/\A(?-mix:[\~\!@\#\$%\^\&\|\?\<=\>*\/+:-]*)/)
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; text; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_opchr unless _tmp
+    return _tmp
+  end
+
   # ident = < /[a-z_]/ /[a-zA-Z0-9_]/* > {text}
   def _ident
 
@@ -2024,6 +2064,102 @@ class Akin::Grammar
     end # end sequence
 
     set_failed_rule :_const unless _tmp
+    return _tmp
+  end
+
+  # operator = p:p opchr:o {n(p, :oper, o)}
+  def _operator
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_opchr)
+      o = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :oper, o); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_operator unless _tmp
+    return _tmp
+  end
+
+  # opapply = (operator:o args:a {n(o.pos, :chain, o, a)} | operator:o - value(h):c {n(o.pos, :chain, o, n(c.pos, "()", c))})
+  def _opapply(h)
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply(:_operator)
+        o = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:_args)
+        a = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; n(o.pos, :chain, o, a); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save2 = self.pos
+      while true # sequence
+        _tmp = apply(:_operator)
+        o = @result
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _tmp = apply_with_args(:_value, h)
+        c = @result
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        @result = begin; n(o.pos, :chain, o, n(c.pos, "()", c)); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_opapply unless _tmp
     return _tmp
   end
 
@@ -2223,7 +2359,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # value = (msg(h) | args | constant | literal | identifier):e &{ e.pos.column > h.column } {e}
+  # value = (msg(h) | args | constant | literal | opapply(h) | operator | identifier):e &{ e.pos.column > h.column } {e}
   def _value(h)
 
     _save = self.pos
@@ -2241,6 +2377,12 @@ class Akin::Grammar
         break if _tmp
         self.pos = _save1
         _tmp = apply(:_literal)
+        break if _tmp
+        self.pos = _save1
+        _tmp = apply_with_args(:_opapply, h)
+        break if _tmp
+        self.pos = _save1
+        _tmp = apply(:_operator)
         break if _tmp
         self.pos = _save1
         _tmp = apply(:_identifier)
@@ -2594,7 +2736,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # msg = (msg(h):a sp* ":" &(":" | ";" | ".") {a} | part(h):a - msg(h | a.pos):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})
+  # msg = (msg(h):a sp* ":" &(";" | ".") {a} | part(h):a - msg(h | a.pos):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})
   def _msg(h)
 
     _save = self.pos
@@ -2626,9 +2768,6 @@ class Akin::Grammar
 
         _save4 = self.pos
         while true # choice
-          _tmp = match_string(":")
-          break if _tmp
-          self.pos = _save4
           _tmp = match_string(";")
           break if _tmp
           self.pos = _save4
@@ -3284,18 +3423,21 @@ class Akin::Grammar
   Rules[:_quoted_inner] = rule_info("quoted_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\" q | \"\\\\\#\" | &(!(q | \"\#{\")) .)+ > {n(p, t, text)})")
   Rules[:_mstr] = rule_info("mstr", "p:p \"\\\"\\\"\\\"\" mstr_inner*:b \"\\\"\\\"\\\"\" {text_node(p, b)}")
   Rules[:_mstr_inner] = rule_info("mstr_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\\\"\\\"\\\"\" | !(&(\"\\\"\\\"\\\"\" | \"\#{\")) . | . &\"\\\"\\\"\\\"\")+ > {n(p, :text, text)})")
+  Rules[:_opchr] = rule_info("opchr", "< /[\\~\\!@\\\#\\$%\\^\\&\\|\\?\\<\\>*\\/+-]/ /[\\~\\!@\\\#\\$%\\^\\&\\|\\?\\<=\\>*\\/+:-]*/ > {text}")
   Rules[:_ident] = rule_info("ident", "< /[a-z_]/ /[a-zA-Z0-9_]/* > {text}")
   Rules[:_const] = rule_info("const", "< /[A-Z]/ /[a-zA-Z0-9_]/* > {text}")
+  Rules[:_operator] = rule_info("operator", "p:p opchr:o {n(p, :oper, o)}")
+  Rules[:_opapply] = rule_info("opapply", "(operator:o args:a {n(o.pos, :chain, o, a)} | operator:o - value(h):c {n(o.pos, :chain, o, n(c.pos, \"()\", c))})")
   Rules[:_identifier] = rule_info("identifier", "p:p ident:i {n(p, :ident, i)}")
   Rules[:_constant] = rule_info("constant", "p:p const:c {n(p, :const, c)}")
   Rules[:_keyword] = rule_info("keyword", "\":\" < (!(&(n | \":\" | left_brace)) .)+ > !(&(\":\" | \";\" | \".\")) &{text.size > 0} {text}")
-  Rules[:_value] = rule_info("value", "(msg(h) | args | constant | literal | identifier):e &{ e.pos.column > h.column } {e}")
+  Rules[:_value] = rule_info("value", "(msg(h) | args | constant | literal | opapply(h) | operator | identifier):e &{ e.pos.column > h.column } {e}")
   Rules[:_comma] = rule_info("comma", "(block(h):a sp* \",\" - comma(h):b { b.unshift a ; b } | block(h):a sp* \",\" - block(h):b { [a,b] })")
   Rules[:_tuple] = rule_info("tuple", "comma(h):c {n(p, :tuple, *c)}")
   Rules[:_cons_left] = rule_info("cons_left", "expr(h):a sp* \":\" !(&(\":\" | \";\" | \".\")) {a}")
   Rules[:_cons] = rule_info("cons", "(cons_left(h):a - cons(h):b {n(p, :cons, a, b)} | cons_left(h):a - expr(h):b {n(p, :cons, a, b)})")
   Rules[:_args] = rule_info("args", "p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}")
-  Rules[:_msg] = rule_info("msg", "(msg(h):a sp* \":\" &(\":\" | \";\" | \".\") {a} | part(h):a - msg(h | a.pos):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})")
+  Rules[:_msg] = rule_info("msg", "(msg(h):a sp* \":\" &(\";\" | \".\") {a} | part(h):a - msg(h | a.pos):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})")
   Rules[:_part] = rule_info("part", "(part(h):p sp* t - block(h | p.pos):e { p.args.push *Array(e) ; p } | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p keyword:k args:a {n(p, k, a.name, *a.args)} | p:p keyword:k {n(p, k, \"()\")})")
   Rules[:_part_head] = rule_info("part_head", "sp+ !(&keyword) (ph_comma(h) | expr(h) | {[]})")
   Rules[:_ph_comma] = rule_info("ph_comma", "(expr(h):a sp* \",\" - ph_comma(h):b { b.unshift a ; b } | expr(h):a sp* \",\" - expr(h):b { [a,b] })")

@@ -150,16 +150,23 @@ mstr = p:p "\"\"\"" mstr_inner*:b "\"\"\"" ~text_node(p, b)
 mstr_inner = p:p "#{" - block(h)?:b - "}" {b}
           | p:p < ("\\\"\"\"" | 
              !&("\"\"\"" | "#{") . | . &("\"\"\""))+ > ~n(p, :text, text)
+
+opchr = </[\~\!@\#\$%\^\&\|\?\<\>*\/+-]/ /[\~\!@\#\$%\^\&\|\?\<=\>*\/+:-]*/ > {text}
   
 ident = < /[a-z_]/ /[a-zA-Z0-9_]/* > {text}
 const = < /[A-Z]/ /[a-zA-Z0-9_]/* > {text}
+
+operator = p:p opchr:o ~n(p, :oper, o)
+
+opapply(h) = operator:o args:a ~n(o.pos, :chain, o, a)
+           | operator:o - value(h):c ~n(o.pos, :chain, o, n(c.pos, "()", c))
 
 identifier = p:p ident:i ~n(p, :ident, i)
 constant = p:p const:c ~n(p, :const, c)
 
 keyword = ":" < (!&(n | ":" | left_brace) .)+ > !&(":"|";"|".") &{text.size > 0} {text}
 
-value(h) = (msg(h) | args | constant | literal | identifier):e
+value(h) = (msg(h) | args | constant | literal | opapply(h) | operator | identifier):e
           &{ e.pos.column > h.column } {e}
 
 comma(h) = block(h):a sp* "," - comma(h):b { b.unshift a ; b }
@@ -175,7 +182,7 @@ cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
 args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
 
-msg(h) = msg(h):a sp* ":" &(":"|";"|".") {a}
+msg(h) = msg(h):a sp* ":" &(";"|".") {a}
        | part(h):a - msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
        | part(h):a ~n(a.pos, :msg, a)
 

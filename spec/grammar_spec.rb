@@ -194,7 +194,19 @@ describe 'Akin grammar' do
       code = ":foo ."
       s(code, :chain).should ==
         [:msg, ["foo", "()"]]
-    end    
+    end
+
+    it 'parses binary op' do
+      code = "a < b"
+      s(code, :chain).should ==
+        [:chain, [:ident, "a"], [:oper, "<"], ["()", [:ident, "b"]]]
+    end
+
+    it 'parses binary op with args' do
+      code = "a <(b, c)"
+      s(code, :chain).should ==
+        [:chain, [:ident, "a"], [:oper, "<"], ["()", [:ident, "b"], [:ident, "c"]]]
+    end
   end
 
   describe 'block' do
@@ -273,7 +285,16 @@ describe 'Akin grammar' do
          [:chain, [:ident, "a"],
           [:msg, ["b", "()", [:ident, "c"]]]],
          [:ident, "d"]]
-    end    
+    end
+
+    it 'parses message until semicolon-semicolon is found', :pending => true do
+      code = "a :b c :: d"
+      s(code, :block).should ==
+        [:cons, 
+         [:chain, [:ident, "a"],
+          [:msg, ["b", "()", [:ident, "c"]]]],
+         [:ident, "d"]]
+    end        
   end
 
   describe 'text' do
@@ -386,6 +407,14 @@ describe 'Akin grammar' do
           ["e", "()", [:ident, "f"],
            [:msg, ["g", "()", [:ident, "h"]]]]]]
     end
+
+    it 'parses message with opchars' do
+      code = "a :< b :> c"
+      s(code, :chain).should ==
+        [:chain, [:ident, "a"],
+         [:msg, ["<", "()", [:ident, "b"]],
+                [">", "()", [:ident, "c"]]]]
+    end    
   end
   
 end
