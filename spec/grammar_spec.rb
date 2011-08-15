@@ -172,14 +172,12 @@ describe 'Akin grammar' do
                 [:name, "c"]]]
     end
 
-    it 'parses second arg having cons', :pending => true do
-      s(':foo :baz a: b :bat c', :msg).should ==
+    it 'parses second arg having cons' do
+      s(':foo :baz (a: b) :bat c', :msg).should ==
         [:msg, ["foo", "()"],
-               ["baz", "()",
-                [:cons, [:name, "a"],
-                 [:name, "b"]]],
-               ["bat", "()",
-                [:name, "c"]]]
+         ["baz", "()",
+          [:act, [:name, ""], "()", [:cons, [:name, "a"], [:name, "b"]]]],
+         ["bat", "()", [:name, "c"]]]
     end
 
     it 'allow head to have commas' do
@@ -305,13 +303,11 @@ describe 'Akin grammar' do
          [:name, "d"]]
     end
 
-    it 'parses message until semicolon-semicolon is found', :pending => true do
+    it 'parses message until semicolon-semicolon is found' do
       code = "a :b c :: d"
-      s(code, :block).should ==
-        [:cons, 
-         [:chain, [:name, "a"],
-          [:msg, ["b", "()", [:name, "c"]]]],
-         [:name, "d"]]
+      s(code, :root).should ==
+        [:chain, [:name, "a"],
+         [:cons, [:msg, ["b", "()", [:name, "c"]]], [:name, "d"]]]
     end        
   end
 
@@ -484,6 +480,7 @@ describe 'Akin grammar' do
          [:oper, "+"], [:name, "b"],
          [:oper, "-"], [:name, "c"]]
     end
+
   end
   
 end

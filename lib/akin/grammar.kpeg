@@ -178,7 +178,7 @@ cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
 args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
 
-msg(h) = msg(h):a sp* ":" &(";"|".") {a}
+msg(h) = msg(h):a sp* ":" &(":"|";"|".") {a}
        | part(h):a - msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
        | part(h):a ~n(a.pos, :msg, a)
 
