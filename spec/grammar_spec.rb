@@ -307,8 +307,28 @@ describe 'Akin grammar' do
 
     it 'allows interpolation' do
       s('"hi #{world}"', :literal).should ==
+        [:chain, [:text, "hi "], [:oper, "++"], ["()", [:name, "world"]]]
+    end
+
+    it 'parses only interpolation as to_s message' do
+      s('"#{world}"', :literal).should ==
+        [:chain, [:name, "world"], [:name, "to_s"]]
+    end
+
+    it 'allows many interpolations' do
+      s('"hi #{world} hola #{mundo}"', :literal).should ==
         [:chain, [:text, "hi "],
-         ["++", "()", [:name, "world"]]]
+         [:oper, "++"], ["()", [:name, "world"]],
+         [:oper, "++"], ["()", [:text, " hola "]],
+         [:oper, "++"], ["()", [:name, "mundo"]]]
+    end
+    
+    it 'allows many interpolations from start' do
+      s('"#{world} hola #{mundo} hi"', :literal).should ==
+        [:chain, [:name, "world"],
+         [:oper, "++"], ["()", [:text, " hola "]],
+         [:oper, "++"], ["()", [:name, "mundo"]],
+         [:oper, "++"], ["()", [:text, " hi"]]]
     end
 
     it 'parses multi string' do
@@ -412,7 +432,7 @@ describe 'Akin grammar' do
 
     it 'parses message with opchars' do
       code = "a :< b :> c"
-      s(code, :chain).should ==
+      s(code, :root).should ==
         [:chain, [:name, "a"],
          [:msg, ["<", "()", [:name, "b"]],
                 [">", "()", [:name, "c"]]]]
@@ -420,8 +440,20 @@ describe 'Akin grammar' do
 
     it 'parses a chain of unicode names' do
       code = "मूल नकल"
-      s(code, :chain).should ==
+      s(code, :root).should ==
         [:chain, [:name, "मूल"], [:name, "नकल"]]
+    end
+
+    it 'allows operators argument to be on next line', :pending => true do
+      code = <<-CODE
+      a +
+        b -
+          c
+      CODE
+      s(code, :root).should ==
+        [:chain, [:name, "a"],
+         [:oper, "+"], ["()", [:name, "b"]],
+         [:oper, "-"], ["()", [:name, "c"]]]
     end
   end
   

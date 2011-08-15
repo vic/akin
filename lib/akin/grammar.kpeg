@@ -86,11 +86,11 @@
       m = ary.shift
       if ary.empty?
         unless m.name == :text
-          m = node(p, :chain, m, node(p, :ident, "to_s"))
+          m = node(p, :chain, m, n(p, :name, "to_s"))
         end
         return m
       end
-      node(p, :chain, m, *ary.map { |a| node(p, "++", "()", a) })
+      node(p, :chain, m, *ary.map { |a| [n(p, :oper, "++"), n(p, "()", a)] }.flatten)
     end
 
 }
