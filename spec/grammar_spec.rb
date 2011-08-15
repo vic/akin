@@ -1,3 +1,4 @@
+# -*- coding: undecided -*-
 require File.expand_path('../spec_helper', __FILE__)
 
 describe 'Akin grammar' do
@@ -414,7 +415,13 @@ describe 'Akin grammar' do
         [:chain, [:name, "a"],
          [:msg, ["<", "()", [:name, "b"]],
                 [">", "()", [:name, "c"]]]]
-    end    
+    end
+
+    it 'parses a chain of unicode names' do
+      code = "मूल नकल"
+      s(code, :chain).should ==
+        [:chain, [:name, "मूल"], [:name, "नकल"]]
+    end
   end
   
 end
