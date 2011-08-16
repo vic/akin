@@ -441,6 +441,20 @@ describe 'Akin grammar' do
 
     end
     
+    it 'parses nested blocks until semicolon' do
+      code = <<-CODE
+      a :b u
+      :c e
+      .
+      :d
+      CODE
+      s(code, :root).should ==
+        [:block, [:chain, [:name, "a"],
+                  [:msg, ["b", "()", [:name, "u"]], ["c", "()", [:name, "e"]]]],
+         [:msg, ["d", "()"]]]
+
+    end
+    
     it 'parses messages with args' do
       code = <<-CODE
       a :b(
