@@ -1,5 +1,8 @@
-module Akin
-end
+%w{
 
-require File.expand_path('../akin/grammar', __FILE__)
+ parser
+ grammar
+ shuffle
+
+}.each { |f| require File.expand_path("../akin/#{f}", __FILE__) }
 

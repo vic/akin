@@ -467,8 +467,10 @@ describe 'Akin grammar' do
          [:oper, "+"], [:name, "b"],
          [:oper, "-"], [:name, "c"]]
     end
+  end
 
-    it 'allows operators arguments to be on nested line' do
+  describe 'nested args' do
+    it 'for operators can be continued on next line' do
       code = <<-CODE
       a +
         b -
@@ -481,7 +483,7 @@ describe 'Akin grammar' do
          [:oper, "-"], [:name, "c"]]
     end
 
-    it 'allows nested block' do
+    it 'can be indicated on next line' do
       code = <<-CODE
       a foo
         bar
@@ -492,7 +494,7 @@ describe 'Akin grammar' do
          [:act, [:name, "foo"], "()", [:name, "bar"]]]
     end
 
-    it 'allows nested block' do
+    it 'are not parsed if found dot terminator' do
       code = <<-CODE
       a foo .
         bar
@@ -504,7 +506,7 @@ describe 'Akin grammar' do
          [:name, "bar"]]
     end
     
-    it 'allows nested block' do
+    it 'are not parsed if found semicolon terminator' do
       code = <<-CODE
       a foo ;
         bar
@@ -515,7 +517,7 @@ describe 'Akin grammar' do
          [:name, "bar"]]
     end
 
-    it 'allows nested block with args' do
+    it 'appends nested block to activation args' do
       code = <<-CODE
       a foo(baz)
         bar
@@ -526,7 +528,7 @@ describe 'Akin grammar' do
          [:act, [:name, "foo"], "()", [:name, "baz"], [:name, "bar"]]]
     end
 
-    it 'allows nested block with comma' do
+    it 'appends args from end' do
       code = <<-CODE
       a foo bar, baz
       CODE
@@ -536,7 +538,7 @@ describe 'Akin grammar' do
          [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
     end
 
-    it 'allows nested block with comma' do
+    it 'allows args to have many lines' do
       code = <<-CODE
       a foo bar,
         baz
@@ -547,7 +549,7 @@ describe 'Akin grammar' do
          [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
     end
 
-    it 'allows nested block with comma' do
+    it 'allows nested block with curly act' do
       code = <<-CODE
       a foo{} bar,
         baz,
@@ -559,5 +561,4 @@ describe 'Akin grammar' do
          [:act, [:name, "foo"], "{}", [:name, "bar"], [:name, "baz"], [:name, "bat"]]]
     end
   end
-  
 end
