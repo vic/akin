@@ -2377,7 +2377,44 @@ class Akin::Grammar
     return _tmp
   end
 
-  # comma = (block(h):a sp* "," - comma(h):b { b.unshift a ; b } | block(h):a sp* "," - block(h):b { [a,b] })
+  # comma_left = block(h):a sp* "," {a}
+  def _comma_left(h)
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply_with_args(:_block, h)
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      while true
+        _tmp = apply(:_sp)
+        break unless _tmp
+      end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(",")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; a; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_comma_left unless _tmp
+    return _tmp
+  end
+
+  # comma = (comma_left(h):a - comma(h):b { b.unshift a ; b } | comma_left(h):a - block(h):b { [a,b] })
   def _comma(h)
 
     _save = self.pos
@@ -2385,22 +2422,8 @@ class Akin::Grammar
 
       _save1 = self.pos
       while true # sequence
-        _tmp = apply_with_args(:_block, h)
+        _tmp = apply_with_args(:_comma_left, h)
         a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = match_string(",")
         unless _tmp
           self.pos = _save1
           break
@@ -2427,43 +2450,29 @@ class Akin::Grammar
       break if _tmp
       self.pos = _save
 
-      _save3 = self.pos
+      _save2 = self.pos
       while true # sequence
-        _tmp = apply_with_args(:_block, h)
+        _tmp = apply_with_args(:_comma_left, h)
         a = @result
         unless _tmp
-          self.pos = _save3
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        _tmp = match_string(",")
-        unless _tmp
-          self.pos = _save3
+          self.pos = _save2
           break
         end
         _tmp = apply(:__hyphen_)
         unless _tmp
-          self.pos = _save3
+          self.pos = _save2
           break
         end
         _tmp = apply_with_args(:_block, h)
         b = @result
         unless _tmp
-          self.pos = _save3
+          self.pos = _save2
           break
         end
         @result = begin;  [a,b] ; end
         _tmp = true
         unless _tmp
-          self.pos = _save3
+          self.pos = _save2
         end
         break
       end # end sequence
@@ -3136,7 +3145,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # chain = (chain(h):a sp* "." - chain(h)?:b { b && n(a.pos, :chain, a, b) || a } | operator:a !(&brace) sp* t - chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | expr(h):a sp* chain(a.pos):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | (cons(h) | expr(h)):a sp* (nl | sheebang) - block((h | a.pos || h()).incr):b {              n(a.pos, :act, a, "()", b)            } | (cons(h) | expr(h)))
+  # chain = (chain(h):a sp* "." - chain(h)?:b { b && n(a.pos, :chain, a, b) || a } | operator:a !(&brace) sp* t - chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_cont(h) | expr(h):a sp* chain(a.pos):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h))
   def _chain(h)
 
     _save = self.pos
@@ -3245,6 +3254,9 @@ class Akin::Grammar
 
       break if _tmp
       self.pos = _save
+      _tmp = apply_with_args(:_chain_cont, h)
+      break if _tmp
+      self.pos = _save
 
       _save8 = self.pos
       while true # sequence
@@ -3279,92 +3291,123 @@ class Akin::Grammar
 
       break if _tmp
       self.pos = _save
-
-      _save10 = self.pos
-      while true # sequence
-
-        _save11 = self.pos
-        while true # choice
-          _tmp = apply_with_args(:_cons, h)
-          break if _tmp
-          self.pos = _save11
-          _tmp = apply_with_args(:_expr, h)
-          break if _tmp
-          self.pos = _save11
-          break
-        end # end choice
-
-        a = @result
-        unless _tmp
-          self.pos = _save10
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save10
-          break
-        end
-
-        _save13 = self.pos
-        while true # choice
-          _tmp = apply(:_nl)
-          break if _tmp
-          self.pos = _save13
-          _tmp = apply(:_sheebang)
-          break if _tmp
-          self.pos = _save13
-          break
-        end # end choice
-
-        unless _tmp
-          self.pos = _save10
-          break
-        end
-        _tmp = apply(:__hyphen_)
-        unless _tmp
-          self.pos = _save10
-          break
-        end
-        _tmp = apply_with_args(:_block, (h | a.pos || h()).incr)
-        b = @result
-        unless _tmp
-          self.pos = _save10
-          break
-        end
-        @result = begin; 
-             n(a.pos, :act, a, "()", b)
-           ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save10
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save14 = self.pos
-      while true # choice
-        _tmp = apply_with_args(:_cons, h)
-        break if _tmp
-        self.pos = _save14
-        _tmp = apply_with_args(:_expr, h)
-        break if _tmp
-        self.pos = _save14
-        break
-      end # end choice
-
+      _tmp = apply_with_args(:_chain_val, h)
       break if _tmp
       self.pos = _save
       break
     end # end choice
 
     set_failed_rule :_chain unless _tmp
+    return _tmp
+  end
+
+  # chain_cont = chain_val(h):a {(h | a.pos || h()).incr}:i sp* (comma(h) | (nl | sheebang) - block(i)):c {                 if a.name == :act                    a.args.push *Array(c); a                 else                    n(a.pos, :act, a, "()", *Array(c))                 end               }
+  def _chain_cont(h)
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply_with_args(:_chain_val, h)
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; (h | a.pos || h()).incr; end
+      _tmp = true
+      i = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      while true
+        _tmp = apply(:_sp)
+        break unless _tmp
+      end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+        break
+      end
+
+      _save2 = self.pos
+      while true # choice
+        _tmp = apply_with_args(:_comma, h)
+        break if _tmp
+        self.pos = _save2
+
+        _save3 = self.pos
+        while true # sequence
+
+          _save4 = self.pos
+          while true # choice
+            _tmp = apply(:_nl)
+            break if _tmp
+            self.pos = _save4
+            _tmp = apply(:_sheebang)
+            break if _tmp
+            self.pos = _save4
+            break
+          end # end choice
+
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply(:__hyphen_)
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply_with_args(:_block, i)
+          unless _tmp
+            self.pos = _save3
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save2
+        break
+      end # end choice
+
+      c = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; 
+                if a.name == :act
+                   a.args.push *Array(c); a
+                else
+                   n(a.pos, :act, a, "()", *Array(c))
+                end
+              ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_chain_cont unless _tmp
+    return _tmp
+  end
+
+  # chain_val = (cons(h) | expr(h))
+  def _chain_val(h)
+
+    _save = self.pos
+    while true # choice
+      _tmp = apply_with_args(:_cons, h)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply_with_args(:_expr, h)
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_chain_val unless _tmp
     return _tmp
   end
 
@@ -3547,7 +3590,8 @@ class Akin::Grammar
   Rules[:_name] = rule_info("name", "p:p < (&(!(sp | nl | brace | opchr | \":\" | \";\" | \",\" | \".\")) .)+ > {n(p, :name, text)}")
   Rules[:_keyword] = rule_info("keyword", "\":\" < (!(&(n | \":\" | brace)) .)+ > !(&(\":\" | \";\" | \".\")) &{text.size > 0} {text}")
   Rules[:_value] = rule_info("value", "(msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | operator | name)")
-  Rules[:_comma] = rule_info("comma", "(block(h):a sp* \",\" - comma(h):b { b.unshift a ; b } | block(h):a sp* \",\" - block(h):b { [a,b] })")
+  Rules[:_comma_left] = rule_info("comma_left", "block(h):a sp* \",\" {a}")
+  Rules[:_comma] = rule_info("comma", "(comma_left(h):a - comma(h):b { b.unshift a ; b } | comma_left(h):a - block(h):b { [a,b] })")
   Rules[:_tuple] = rule_info("tuple", "comma(h):c {n(p, :tuple, *c)}")
   Rules[:_cons_left] = rule_info("cons_left", "expr(h):a sp* \":\" !(&(\":\" | \";\" | \".\")) {a}")
   Rules[:_cons] = rule_info("cons", "(cons_left(h):a - cons(h):b {n(p, :cons, a, b)} | cons_left(h):a - expr(h):b {n(p, :cons, a, b)})")
@@ -3557,7 +3601,9 @@ class Akin::Grammar
   Rules[:_part_head] = rule_info("part_head", "sp+ !(&keyword) (ph_comma(h) | expr(h) | {[]})")
   Rules[:_ph_comma] = rule_info("ph_comma", "(expr(h):a sp* \",\" - ph_comma(h):b { b.unshift a ; b } | expr(h):a sp* \",\" - expr(h):b { [a,b] })")
   Rules[:_expr] = rule_info("expr", "value(h):e &{ e.pos.column > h.column } {e}")
-  Rules[:_chain] = rule_info("chain", "(chain(h):a sp* \".\" - chain(h)?:b { b && n(a.pos, :chain, a, b) || a } | operator:a !(&brace) sp* t - chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | expr(h):a sp* chain(a.pos):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | (cons(h) | expr(h)):a sp* (nl | sheebang) - block((h | a.pos || h()).incr):b {              n(a.pos, :act, a, \"()\", b)            } | (cons(h) | expr(h)))")
+  Rules[:_chain] = rule_info("chain", "(chain(h):a sp* \".\" - chain(h)?:b { b && n(a.pos, :chain, a, b) || a } | operator:a !(&brace) sp* t - chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_cont(h) | expr(h):a sp* chain(a.pos):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h))")
+  Rules[:_chain_cont] = rule_info("chain_cont", "chain_val(h):a {(h | a.pos || h()).incr}:i sp* (comma(h) | (nl | sheebang) - block(i)):c {                 if a.name == :act                    a.args.push *Array(c); a                 else                    n(a.pos, :act, a, \"()\", *Array(c))                 end               }")
+  Rules[:_chain_val] = rule_info("chain_val", "(cons(h) | expr(h))")
   Rules[:_block] = rule_info("block", "(chain(h):a sp* t - block(h):b {n(a.pos, :block, a, *Array(b.name == :block && b.args || b))} | chain(h))")
   Rules[:_root] = rule_info("root", "- block(h)?:b - eof {b}")
   Rules[:_unit] = rule_info("unit", "- chain(h):c {c}")

@@ -515,7 +515,7 @@ describe 'Akin grammar' do
          [:name, "bar"]]
     end
 
-    it 'allows nested block', :pending => true do
+    it 'allows nested block with args' do
       code = <<-CODE
       a foo(baz)
         bar
@@ -526,6 +526,38 @@ describe 'Akin grammar' do
          [:act, [:name, "foo"], "()", [:name, "baz"], [:name, "bar"]]]
     end
 
+    it 'allows nested block with comma' do
+      code = <<-CODE
+      a foo bar, baz
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
+    end
+
+    it 'allows nested block with comma' do
+      code = <<-CODE
+      a foo bar,
+        baz
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
+    end
+
+    it 'allows nested block with comma' do
+      code = <<-CODE
+      a foo{} bar,
+        baz,
+        bat
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:act, [:name, "foo"], "{}", [:name, "bar"], [:name, "baz"], [:name, "bat"]]]
+    end
   end
   
 end

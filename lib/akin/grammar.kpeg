@@ -168,8 +168,10 @@ value(h) = msg(h)
          | args:a ~n(a.pos, :act, nil, a.name, *a.args)
          | literal | operator | name
 
-comma(h) = block(h):a sp* "," - comma(h):b { b.unshift a ; b }
-         | block(h):a sp* "," - block(h):b { [a,b] }
+comma_left(h) = block(h):a sp* "," {a}
+
+comma(h) = comma_left(h):a - comma(h):b { b.unshift a ; b }
+         | comma_left(h):a - block(h):b { [a,b] }
   
 tuple(h) = comma(h):c ~n(p, :tuple, *c)
 
@@ -201,13 +203,22 @@ chain(h) = chain(h):a sp* "." - chain(h)?:b
            { b && n(a.pos, :chain, a, b) || a }
          | operator:a !&brace sp* t - chain(h):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
+         | chain_cont(h)
          | expr(h):a sp* chain(a.pos):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
-         | (cons(h) | expr(h)):a sp* (nl|sheebang) - block((h | a.pos || h()).incr):b
-           {
-             n(a.pos, :act, a, "()", b)
-           }
-         | (cons(h) | expr(h))
+         | chain_val(h)
+
+chain_cont(h) = chain_val(h):a {(h | a.pos || h()).incr}:i sp*
+                (comma(h) | (nl|sheebang) - block(i)):c
+              {
+                if a.name == :act
+                   a.args.push *Array(c); a
+                else
+                   n(a.pos, :act, a, "()", *Array(c))
+                end
+              }
+
+chain_val(h) = cons(h) | expr(h)
 
 block(h) = chain(h):a sp* t - block(h):b
            ~n(a.pos, :block, a, *Array(b.name == :block && b.args || b))
