@@ -14,7 +14,9 @@ p = &. ~current_position
 
 sheebang = "#!" /.*?$/
 
-t = sheebang | nl | ";"
+w = (sp | sheebang | nl)*
+o = sp* (sheebang | nl)
+t = ";" | sheebang | nl
 n = t | sp | "."
 - = n*
 
@@ -77,10 +79,11 @@ value(h) = msg(h)
          | args:a ~n(a.pos, :act, nil, a.name, *a.args)
          | literal | operator | name
 
-comma_left(h) = block(h):a sp* "," {a}
+comma_left(h) = block(h):a w "," {a}
 
-comma(h) = comma_left(h):a - comma(h):b { b.unshift a ; b }
-         | comma_left(h):a - block(h):b { [a,b] }
+comma(h) = comma_left(h):a w comma(h):b { b.unshift a ; b }
+         | comma_left(h):a w block(h):b { [a,b] }
+         | comma_left(h):a &(sp* ("."|","|t|brace)) {[a]}
   
 tuple(h) = comma(h):c ~n(p, :tuple, *c)
 
@@ -93,24 +96,24 @@ args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
 
 msg(h) = msg(h):a sp* ":" &(":"|";"|".") {a}
-       | part(h):a - msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
+       | part(h):a w msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
        | part(h):a ~n(a.pos, :msg, a)
 
-part(h) = part(h):p sp* t - block(h | p.pos):e { p.args.push *Array(e) ; p }
+part(h) = part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
         | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p }
         | p:p keyword:k args:a ~n(p, k, a.name, *a.args)
         | p:p keyword:k ~n(p, k, "()")
 
 part_head(h) = sp+ !&keyword (ph_comma(h) | expr(h) | {[]})
 
-ph_comma(h) = expr(h):a sp* "," - ph_comma(h):b { b.unshift a ; b }
-            | expr(h):a sp* "," - expr(h):b { [a,b] }
+ph_comma(h) = expr(h):a w "," - ph_comma(h):b { b.unshift a ; b }
+            | expr(h):a w "," - expr(h):b { [a,b] }
 
 expr(h) = value(h):e &{ e.pos.column > h.column } {e}
 
 chain(h) = chain(h):a sp* "." - chain(h)?:b
            { b && n(a.pos, :chain, a, b) || a }
-         | operator:a !&brace sp* t - chain(h):b
+         | operator:a !&brace o w chain(h):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
          | chain_cont(h)
          | expr(h):a sp* chain(a.pos):b

@@ -427,6 +427,20 @@ describe 'Akin grammar' do
            [:msg, ["g", "()", [:name, "h"]]]]]]
     end
     
+    it 'parses nested blocks until semicolon' do
+      code = <<-CODE
+      a :b u
+      :c e
+      ;
+      :d
+      CODE
+      s(code, :root).should ==
+        [:block, [:chain, [:name, "a"],
+                  [:msg, ["b", "()", [:name, "u"]], ["c", "()", [:name, "e"]]]],
+         [:msg, ["d", "()"]]]
+
+    end
+    
     it 'parses messages with args' do
       code = <<-CODE
       a :b(
@@ -528,7 +542,7 @@ describe 'Akin grammar' do
          [:act, [:name, "foo"], "()", [:name, "baz"], [:name, "bar"]]]
     end
 
-    it 'appends args from end' do
+    it 'takes last tuple as arguments' do
       code = <<-CODE
       a foo bar, baz
       CODE
@@ -538,9 +552,32 @@ describe 'Akin grammar' do
          [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
     end
 
+
+    it 'takes last one-tuple-ending-with-dot as argument' do
+      code = <<-CODE
+      a foo bar ,.
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:act, [:name, "foo"], "()", [:name, "bar"]]]
+    end
+
     it 'allows args to have many lines' do
       code = <<-CODE
       a foo bar,
+        baz
+      CODE
+      s(code, :root).should ==
+        [:chain,
+         [:name, "a"],
+         [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
+    end
+
+    it 'allows args to have many lines ignoring white space between comma' do
+      code = <<-CODE
+      a foo bar
+      ,
         baz
       CODE
       s(code, :root).should ==
