@@ -441,7 +441,7 @@ describe 'Akin grammar' do
 
     end
     
-    it 'parses nested blocks until semicolon' do
+    it 'parses nested blocks until dot' do
       code = <<-CODE
       a :b u
       :c e
