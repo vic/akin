@@ -449,7 +449,7 @@ describe 'Akin grammar' do
       :d
       CODE
       s(code, :root).should ==
-        [:block, [:chain, [:name, "a"],
+        [:chain, [:chain, [:name, "a"],
                   [:msg, ["b", "()", [:name, "u"]], ["c", "()", [:name, "e"]]]],
          [:msg, ["d", "()"]]]
 
