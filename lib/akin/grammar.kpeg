@@ -102,7 +102,7 @@ msg(h) = msg(h):a sp* ":" &(":"|";"|".") {a}
 part(h) = part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
         | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p }
         | p:p keyword:k args:a ~n(p, k, a.name, *a.args)
-        | p:p keyword:k ~n(p, k, "()")
+        | p:p keyword:k ~n(p, k, nil)
 
 part_head(h) = sp+ !&keyword (ph_comma(h) | expr(h) | {[]})
 
@@ -126,7 +126,7 @@ chain_cont(h) = chain_val(h):a {(h | a.pos || h()).incr}:i sp*
                 if a.name == :act
                    a.args.push *Array(c); a
                 else
-                   n(a.pos, :act, a, "()", *Array(c))
+                   n(a.pos, :act, a, nil, *Array(c))
                 end
               }
 

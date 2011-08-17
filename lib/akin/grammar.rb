@@ -2850,7 +2850,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # part = (part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p keyword:k args:a {n(p, k, a.name, *a.args)} | p:p keyword:k {n(p, k, "()")})
+  # part = (part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p keyword:k args:a {n(p, k, a.name, *a.args)} | p:p keyword:k {n(p, k, nil)})
   def _part(h)
 
     _save = self.pos
@@ -2961,7 +2961,7 @@ class Akin::Grammar
           self.pos = _save4
           break
         end
-        @result = begin; n(p, k, "()"); end
+        @result = begin; n(p, k, nil); end
         _tmp = true
         unless _tmp
           self.pos = _save4
@@ -3343,7 +3343,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # chain_cont = chain_val(h):a {(h | a.pos || h()).incr}:i sp* (comma(h) | (nl | sheebang) - block(i)):c {                 if a.name == :act                    a.args.push *Array(c); a                 else                    n(a.pos, :act, a, "()", *Array(c))                 end               }
+  # chain_cont = chain_val(h):a {(h | a.pos || h()).incr}:i sp* (comma(h) | (nl | sheebang) - block(i)):c {                 if a.name == :act                    a.args.push *Array(c); a                 else                    n(a.pos, :act, a, nil, *Array(c))                 end               }
   def _chain_cont(h)
 
     _save = self.pos
@@ -3421,7 +3421,7 @@ class Akin::Grammar
                 if a.name == :act
                    a.args.push *Array(c); a
                 else
-                   n(a.pos, :act, a, "()", *Array(c))
+                   n(a.pos, :act, a, nil, *Array(c))
                 end
               ; end
       _tmp = true
@@ -3641,12 +3641,12 @@ class Akin::Grammar
   Rules[:_cons] = rule_info("cons", "(cons_left(h):a - cons(h):b {n(p, :cons, a, b)} | cons_left(h):a - expr(h):b {n(p, :cons, a, b)})")
   Rules[:_args] = rule_info("args", "p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}")
   Rules[:_msg] = rule_info("msg", "(msg(h):a sp* \":\" &(\":\" | \";\" | \".\") {a} | part(h):a w msg(h | a.pos):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})")
-  Rules[:_part] = rule_info("part", "(part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p keyword:k args:a {n(p, k, a.name, *a.args)} | p:p keyword:k {n(p, k, \"()\")})")
+  Rules[:_part] = rule_info("part", "(part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p keyword:k args:a {n(p, k, a.name, *a.args)} | p:p keyword:k {n(p, k, nil)})")
   Rules[:_part_head] = rule_info("part_head", "sp+ !(&keyword) (ph_comma(h) | expr(h) | {[]})")
   Rules[:_ph_comma] = rule_info("ph_comma", "(expr(h):a w \",\" - ph_comma(h):b { b.unshift a ; b } | expr(h):a w \",\" - expr(h):b { [a,b] })")
   Rules[:_expr] = rule_info("expr", "value(h):e &{ e.pos.column > h.column } {e}")
   Rules[:_chain] = rule_info("chain", "(chain(h):a w \".\" - chain(h):b {n(a.pos, :chain, a, b)} | chain(h):a sp* \".\" - chain(h)?:b { b && n(a.pos, :chain, a, b) || a } | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_cont(h) | expr(h):a sp* chain(a.pos):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h))")
-  Rules[:_chain_cont] = rule_info("chain_cont", "chain_val(h):a {(h | a.pos || h()).incr}:i sp* (comma(h) | (nl | sheebang) - block(i)):c {                 if a.name == :act                    a.args.push *Array(c); a                 else                    n(a.pos, :act, a, \"()\", *Array(c))                 end               }")
+  Rules[:_chain_cont] = rule_info("chain_cont", "chain_val(h):a {(h | a.pos || h()).incr}:i sp* (comma(h) | (nl | sheebang) - block(i)):c {                 if a.name == :act                    a.args.push *Array(c); a                 else                    n(a.pos, :act, a, nil, *Array(c))                 end               }")
   Rules[:_chain_val] = rule_info("chain_val", "(cons(h) | expr(h))")
   Rules[:_block] = rule_info("block", "(chain(h):a sp* t - block(h):b {n(a.pos, :block, a, *Array(b.name == :block && b.args || b))} | chain(h))")
   Rules[:_root] = rule_info("root", "- block(h)?:b - eof {b}")

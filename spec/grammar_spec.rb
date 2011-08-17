@@ -106,7 +106,7 @@ describe 'Akin grammar' do
 
   describe 'message' do
     it 'parses one part' do
-      s(':foo', :msg).should == [:msg, ["foo", "()"]]
+      s(':foo', :msg).should == [:msg, ["foo", nil]]
     end
 
     it 'parses a part with args' do
@@ -114,11 +114,11 @@ describe 'Akin grammar' do
     end
 
     it 'parses a part with head' do
-      s(':foo bar', :msg).should == [:msg, ["foo", "()", [:name, "bar"]]]
+      s(':foo bar', :msg).should == [:msg, ["foo", nil, [:name, "bar"]]]
     end
 
     it 'parses a part with head and commas' do
-      s(':foo bar, baz', :msg).should == [:msg, ["foo", "()",
+      s(':foo bar, baz', :msg).should == [:msg, ["foo", nil,
                                                  [:name, "bar"],
                                                  [:name, "baz"]]]
     end
@@ -138,52 +138,52 @@ describe 'Akin grammar' do
 
     it 'parses a two parts message' do
       s(':foo bar :baz bat', :msg).should ==
-        [:msg, ["foo", "()", [:name, "bar"]],
-               ["baz", "()", [:name, "bat"]]]
+        [:msg, ["foo", nil, [:name, "bar"]],
+               ["baz", nil, [:name, "bat"]]]
     end
 
     it 'parses an empty part and second path with head' do
       s(':foo :baz bat', :msg).should ==
-        [:msg, ["foo", "()"],
-               ["baz", "()", [:name, "bat"]]]
+        [:msg, ["foo", nil],
+               ["baz", nil, [:name, "bat"]]]
     end
     
     it 'parses three empty parts' do
       s(':foo :baz :bat', :msg).should ==
-        [:msg, ["foo", "()"],
-               ["baz", "()"],
-               ["bat", "()"]]
+        [:msg, ["foo", nil],
+               ["baz", nil],
+               ["bat", nil]]
     end
         
     it 'parses three empty parts second having args' do
       s(':foo :baz(a, b) :bat', :msg).should ==
-        [:msg, ["foo", "()"],
+        [:msg, ["foo", nil],
                ["baz", "()", [:name, "a"], [:name, "b"]],
-               ["bat", "()"]]
+               ["bat", nil]]
     end
     
     it 'parses second arg having commas' do
       s(':foo :baz a, b :bat c', :msg).should ==
-        [:msg, ["foo", "()"],
-               ["baz", "()",
+        [:msg, ["foo", nil],
+               ["baz", nil,
                 [:name, "a"],
                 [:name, "b"]],
-               ["bat", "()",
+               ["bat", nil,
                 [:name, "c"]]]
     end
 
     it 'parses second arg having cons' do
       s(':foo :baz (a: b) :bat c', :msg).should ==
-        [:msg, ["foo", "()"],
-         ["baz", "()",
+        [:msg, ["foo", nil],
+         ["baz", nil,
           [:act, nil, "()", [:cons, [:name, "a"], [:name, "b"]]]],
-         ["bat", "()", [:name, "c"]]]
+         ["bat", nil, [:name, "c"]]]
     end
 
     it 'allow head to have commas' do
       code = ":foo a,\n b"
       s(code, :msg).should ==
-        [:msg, ["foo", "()",
+        [:msg, ["foo", nil,
                [:name, "a"],
                [:name, "b"]]]
     end
@@ -191,7 +191,7 @@ describe 'Akin grammar' do
     it 'parses head on same line as a single argument' do
       code = ":foo a\n b"
       s(code, :msg).should ==
-        [:msg, ["foo", "()",
+        [:msg, ["foo", nil,
                [:name, "a"],
                [:name, "b"]]]
     end
@@ -209,7 +209,7 @@ describe 'Akin grammar' do
     it 'parses until dot is found' do
       code = ":foo ."
       s(code, :chain).should ==
-        [:msg, ["foo", "()"]]
+        [:msg, ["foo", nil]]
     end
 
     it 'parses binary op' do
@@ -250,47 +250,47 @@ describe 'Akin grammar' do
     it 'parses a message but doesnt include non-nested identifier' do
       code = "d :foo a\nb"
       s(code, :block).should ==
-        [:block, [:chain, [:name, "d"], [:msg, ["foo", "()", [:name, "a"]]]],
+        [:block, [:chain, [:name, "d"], [:msg, ["foo", nil, [:name, "a"]]]],
                  [:name, "b"]]
     end
 
     it 'parses first message but doesnt include non-nested identifier' do
       code = ":foo a\nb"
       s(code, :block).should ==
-        [:block, [:msg, ["foo", "()", [:name, "a"]]],
+        [:block, [:msg, ["foo", nil, [:name, "a"]]],
                  [:name, "b"]]
     end
 
     it 'parses two parts on same column as single message' do
       code = ":foo a\n:bar b"
       s(code, :block).should ==
-        [:msg, ["foo", "()", [:name, "a"]],
-               ["bar", "()", [:name, "b"]]]
+        [:msg, ["foo", nil, [:name, "a"]],
+               ["bar", nil, [:name, "b"]]]
     end    
 
     it 'parses two parts on same column as single message' do
       code = "m :foo a\n:bar b"
       s(code, :block).should ==
         [:chain, [:name, "m"],
-         [:msg, ["foo", "()", [:name, "a"]],
-          ["bar", "()", [:name, "b"]]]]
+         [:msg, ["foo", nil, [:name, "a"]],
+          ["bar", nil, [:name, "b"]]]]
     end
 
     it 'parses two parts on same column as single message until non-part' do
       code = "m :foo a\n:bar b\nbaz\n:bat c"
       s(code, :block).should ==
         [:block, [:chain, [:name, "m"],
-                  [:msg, ["foo", "()", [:name, "a"]],
-                   ["bar", "()", [:name, "b"]]]],
+                  [:msg, ["foo", nil, [:name, "a"]],
+                   ["bar", nil, [:name, "b"]]]],
          [:name, "baz"],
-         [:msg, ["bat", "()", [:name, "c"]]]]
+         [:msg, ["bat", nil, [:name, "c"]]]]
     end
 
     it 'parses message until semicolon-dot is found' do
       code = "a :b c :. d"
       s(code, :block).should ==
         [:chain, [:name, "a"],
-         [:msg, ["b", "()", [:name, "c"]]],
+         [:msg, ["b", nil, [:name, "c"]]],
          [:name, "d"]]
     end
 
@@ -299,7 +299,7 @@ describe 'Akin grammar' do
       s(code, :block).should ==
         [:block, 
          [:chain, [:name, "a"],
-          [:msg, ["b", "()", [:name, "c"]]]],
+          [:msg, ["b", nil, [:name, "c"]]]],
          [:name, "d"]]
     end
 
@@ -307,7 +307,7 @@ describe 'Akin grammar' do
       code = "a :b c :: d"
       s(code, :root).should ==
         [:chain, [:name, "a"],
-         [:cons, [:msg, ["b", "()", [:name, "c"]]], [:name, "d"]]]
+         [:cons, [:msg, ["b", nil, [:name, "c"]]], [:name, "d"]]]
     end        
   end
 
@@ -377,8 +377,8 @@ describe 'Akin grammar' do
       CODE
       s(code, :root).should ==
         [:chain, [:name, "Point"],
-         [:msg, ["x", "()", [:name, "a"]],
-                ["y", "()", [:name, "b"]]]]
+         [:msg, ["x", nil, [:name, "a"]],
+                ["y", nil, [:name, "b"]]]]
     end
 
     it 'parses a pair of two identifiers' do
@@ -422,9 +422,9 @@ describe 'Akin grammar' do
       CODE
       s(code, :root).should ==
         [:chain, [:name, "a"],
-         [:msg, ["b", "()", [:name, "c"], [:name, "d"]],
-          ["e", "()", [:name, "f"],
-           [:msg, ["g", "()", [:name, "h"]]]]]]
+         [:msg, ["b", nil, [:name, "c"], [:name, "d"]],
+          ["e", nil, [:name, "f"],
+           [:msg, ["g", nil, [:name, "h"]]]]]]
     end
     
     it 'parses nested blocks until semicolon' do
@@ -436,8 +436,8 @@ describe 'Akin grammar' do
       CODE
       s(code, :root).should ==
         [:block, [:chain, [:name, "a"],
-                  [:msg, ["b", "()", [:name, "u"]], ["c", "()", [:name, "e"]]]],
-         [:msg, ["d", "()"]]]
+                  [:msg, ["b", nil, [:name, "u"]], ["c", nil, [:name, "e"]]]],
+         [:msg, ["d", nil]]]
 
     end
     
@@ -450,8 +450,8 @@ describe 'Akin grammar' do
       CODE
       s(code, :root).should ==
         [:chain, [:chain, [:name, "a"],
-                  [:msg, ["b", "()", [:name, "u"]], ["c", "()", [:name, "e"]]]],
-         [:msg, ["d", "()"]]]
+                  [:msg, ["b", nil, [:name, "u"]], ["c", nil, [:name, "e"]]]],
+         [:msg, ["d", nil]]]
 
     end
     
@@ -468,15 +468,15 @@ describe 'Akin grammar' do
         [:chain, [:name, "a"],
          [:msg, ["b", "()", [:name, "c"], [:name, "d"]],
           ["e", "()", [:name, "f"],
-           [:msg, ["g", "()", [:name, "h"]]]]]]
+           [:msg, ["g", nil, [:name, "h"]]]]]]
     end
 
     it 'parses message with opchars' do
       code = "a :< b :> c"
       s(code, :root).should ==
         [:chain, [:name, "a"],
-         [:msg, ["<", "()", [:name, "b"]],
-                [">", "()", [:name, "c"]]]]
+         [:msg, ["<", nil, [:name, "b"]],
+                [">", nil, [:name, "c"]]]]
     end
 
     it 'parses a chain of unicode names' do
@@ -519,7 +519,7 @@ describe 'Akin grammar' do
       s(code, :root).should ==
         [:chain,
          [:name, "a"],
-         [:act, [:name, "foo"], "()", [:name, "bar"]]]
+         [:act, [:name, "foo"], nil, [:name, "bar"]]]
     end
 
     it 'are not parsed if found dot terminator' do
@@ -563,7 +563,7 @@ describe 'Akin grammar' do
       s(code, :root).should ==
         [:chain,
          [:name, "a"],
-         [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
+         [:act, [:name, "foo"], nil, [:name, "bar"], [:name, "baz"]]]
     end
 
 
@@ -574,7 +574,7 @@ describe 'Akin grammar' do
       s(code, :root).should ==
         [:chain,
          [:name, "a"],
-         [:act, [:name, "foo"], "()", [:name, "bar"]]]
+         [:act, [:name, "foo"], nil, [:name, "bar"]]]
     end
 
     it 'allows args to have many lines' do
@@ -585,7 +585,7 @@ describe 'Akin grammar' do
       s(code, :root).should ==
         [:chain,
          [:name, "a"],
-         [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
+         [:act, [:name, "foo"], nil, [:name, "bar"], [:name, "baz"]]]
     end
 
     it 'allows args to have many lines ignoring white space between comma' do
@@ -597,7 +597,7 @@ describe 'Akin grammar' do
       s(code, :root).should ==
         [:chain,
          [:name, "a"],
-         [:act, [:name, "foo"], "()", [:name, "bar"], [:name, "baz"]]]
+         [:act, [:name, "foo"], nil, [:name, "bar"], [:name, "baz"]]]
     end
 
     it 'allows nested block with curly act' do
