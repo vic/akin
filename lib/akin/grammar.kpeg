@@ -28,6 +28,8 @@ right_brace(l) = <brace:b> &{ text == l.last } { l }
   
 literal = float | fixnum | str | regexp
 
+symbol(h) = p:p ":" value(h):v ~n(p, :symbol, v)
+
 regexp = p:p quoted(:text, & "/"):b ~n(p, :regexp, text_node(p, b))
 
 float = p:p sign:s dec:n "." dec:f ~n(p, :float, (s+n+"."+f).to_f)
@@ -79,7 +81,7 @@ keypart = keyword | keyargs
 value(h) = msg(h)
          | value(h):v args:a ~n(v.pos, :act, v, a.name, *a.args)
          | args:a ~n(a.pos, :act, nil, a.name, *a.args)
-         | literal | operator | name
+         | literal | operator | name | symbol(h)
 
 comma_left(h) = block(h):a w "," {a}
 

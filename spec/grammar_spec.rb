@@ -23,6 +23,26 @@ describe 'Akin grammar' do
     end
   end
 
+  describe 'symbol'do
+    it 'starts with a semicolon char' do
+      s(':foo', :symbol).should == [:symbol, [:name, "foo"]]
+    end
+    
+    it 'can be an string' do
+      s(':"foo"', :symbol).should == [:symbol, [:text, "foo"]]
+    end
+    
+    it 'can be a number' do
+      s(':22', :symbol).should == [:symbol, [:fixnum, 22]]
+    end
+
+    it 'can be an activation' do
+      s(':(a, b)', :symbol).should == [:symbol, [:act, nil, "()",
+                                                 [:name, "a"],
+                                                 [:name, "b"]]]
+    end    
+  end
+
   describe 'cons' do
     it 'parses a cons of two values' do
       s('a :: b', :cons).should == [:cons, [:name, "a"], [:name, "b"]]
@@ -611,5 +631,28 @@ describe 'Akin grammar' do
          [:name, "a"],
          [:act, [:name, "foo"], "{}", [:name, "bar"], [:name, "baz"], [:name, "bat"]]]
     end
+
+    it 'doesnt confuse symbols with keyword messages' do
+      code = <<-CODE
+      foo: :bar baz: :bat
+      CODE
+      s(code, :root).should ==
+        [:msg,
+         ["foo", nil, [:symbol, [:name, "bar"]]],
+         ["baz", nil, [:symbol, [:name, "bat"]]]]
+    end
+
+    it 'allows a symbol to be made of a keyword send' do
+      code = <<-CODE
+      foo: :bar :baz: :bat
+      CODE
+      s(code, :root).should ==
+        [:msg,
+         ["foo", nil,
+          [:symbol, [:name, "bar"]],
+          [:symbol, 
+           [:msg, ["baz", nil, [:symbol, [:name, "bat"]]]]]]]
+    end
+    
   end
 end

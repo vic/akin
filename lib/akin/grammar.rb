@@ -751,6 +751,40 @@ class Akin::Grammar
     return _tmp
   end
 
+  # symbol = p:p ":" value(h):v {n(p, :symbol, v)}
+  def _symbol(h)
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(":")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply_with_args(:_value, h)
+      v = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :symbol, v); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_symbol unless _tmp
+    return _tmp
+  end
+
   # regexp = p:p quoted(:text, &"/"):b {n(p, :regexp, text_node(p, b))}
   def _regexp
 
@@ -2411,7 +2445,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # value = (msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | operator | name)
+  # value = (msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | operator | name | symbol(h))
   def _value(h)
 
     _save = self.pos
@@ -2470,6 +2504,9 @@ class Akin::Grammar
       break if _tmp
       self.pos = _save
       _tmp = apply(:_name)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply_with_args(:_symbol, h)
       break if _tmp
       self.pos = _save
       break
@@ -3705,6 +3742,7 @@ class Akin::Grammar
   Rules[:_left_brace] = rule_info("left_brace", "< brace:b > &{ text == b.first} { b }")
   Rules[:_right_brace] = rule_info("right_brace", "< brace:b > &{ text == l.last } { l }")
   Rules[:_literal] = rule_info("literal", "(float | fixnum | str | regexp)")
+  Rules[:_symbol] = rule_info("symbol", "p:p \":\" value(h):v {n(p, :symbol, v)}")
   Rules[:_regexp] = rule_info("regexp", "p:p quoted(:text, &\"/\"):b {n(p, :regexp, text_node(p, b))}")
   Rules[:_float] = rule_info("float", "p:p sign:s dec:n \".\" dec:f {n(p, :float, (s+n+\".\"+f).to_f)}")
   Rules[:_fixnum] = rule_info("fixnum", "p:p (hexadec | binary | octal | decimal):n {n(p, :fixnum, n)}")
@@ -3732,7 +3770,7 @@ class Akin::Grammar
   Rules[:_keyword] = rule_info("keyword", "< (!(&(n | \":\" | brace)) .)+ > \":\" &{text.size > 0} !(&(\":\" | \";\" | \".\")) {text}")
   Rules[:_keyargs] = rule_info("keyargs", "< (!(&(n | \":\" | brace)) .)+ > args:a \":\" {[text, a]}")
   Rules[:_keypart] = rule_info("keypart", "(keyword | keyargs)")
-  Rules[:_value] = rule_info("value", "(msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | operator | name)")
+  Rules[:_value] = rule_info("value", "(msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | operator | name | symbol(h))")
   Rules[:_comma_left] = rule_info("comma_left", "block(h):a w \",\" {a}")
   Rules[:_comma] = rule_info("comma", "(comma_left(h):a w comma(h):b { b.unshift a ; b } | comma_left(h):a w block(h):b { [a,b] } | comma_left(h):a &(sp* (\".\" | \",\" | t | brace)) {[a]})")
   Rules[:_tuple] = rule_info("tuple", "comma(h):c {n(p, :tuple, *c)}")
