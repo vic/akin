@@ -72,7 +72,9 @@ operator = p:p oper:o ~n(p, :oper, o)
 
 name = p:p <(&(!(sp|nl|brace|opchr|":"|";"|","|".")) .)+> ~n(p, :name, text)
 
-keyword = ":" < (!&(n | ":" | brace) .)+ > !&(":"|";"|".") &{text.size > 0} {text}
+keyword = < (!&(n | ":" | brace) .)+ > ":" &{text.size > 0} !&(":"|";"|".") {text}
+keyargs = < (!&(n | ":" | brace) .)+ > args:a ":" {[text, a]}
+keypart = keyword | keyargs
 
 value(h) = msg(h)
          | value(h):v args:a ~n(v.pos, :act, v, a.name, *a.args)
@@ -87,7 +89,7 @@ comma(h) = comma_left(h):a w comma(h):b { b.unshift a ; b }
   
 tuple(h) = comma(h):c ~n(p, :tuple, *c)
 
-cons_left(h) = expr(h):a sp* ":" !&(":"|";"|".")  {a}
+cons_left(h) = expr(h):a sp* "::" !&(":"|";"|".")  {a}
 
 cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
         | cons_left(h):a - expr(h):b ~n(p, :cons, a, b)
@@ -95,16 +97,16 @@ cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
 args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
 
-msg(h) = msg(h):a sp* ":" &(":"|";"|".") {a}
+msg(h) = msg(h):a sp* (&"::" | ":" &(":"|";"|".")) {a}
        | part(h):a w msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
        | part(h):a ~n(a.pos, :msg, a)
 
 part(h) = part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
         | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p }
-        | p:p keyword:k args:a ~n(p, k, a.name, *a.args)
+        | p:p keyargs:k ~n(p, k.first, k.last.name, *k.last.args)
         | p:p keyword:k ~n(p, k, nil)
 
-part_head(h) = sp+ !&keyword (ph_comma(h) | expr(h) | {[]})
+part_head(h) = sp+ !&keypart (ph_comma(h) | expr(h) | {[]})
 
 ph_comma(h) = expr(h):a w "," - ph_comma(h):b { b.unshift a ; b }
             | expr(h):a w "," - expr(h):b { [a,b] }
