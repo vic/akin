@@ -12,8 +12,7 @@ describe 'Akin operator shuffling' do
   
   describe 'basic math opers' do
     it 'associates correctly + and *' do
-      n = c('a + b * c - d')
-      n.shuffle.sexp.should ==
+      n('a + b * c - d').should ==
         [:chain,
          [:name, "a"],
          [:act, "+", nil,
@@ -24,14 +23,12 @@ describe 'Akin operator shuffling' do
 
   describe 'assignment' do
     it 'takes lhs and rhs' do
-      n = c('a = b')
-      n.shuffle.sexp.should ==
+      n('a = b').should ==
         [:act, "=", nil, [:name, "a"], [:name, "b"]]
     end
 
     it 'has higher precedence than +' do
-      n = c('a = b + c')
-      n.shuffle.sexp.should ==
+      n('a = b + c').should ==
         [:act, "=", nil,
          [:name, "a"],
          [:chain, [:name, "b"],
@@ -39,8 +36,7 @@ describe 'Akin operator shuffling' do
     end
 
     it 'has higher precedence than both + and *' do
-      n = c('a * d = b + c')
-      n.shuffle.sexp.should ==
+      n('a * d = b + c').should ==
         [:act, "=", nil,
          [:chain, [:name, "a"],
           [:act, "*", nil, [:name, "d"]]],
@@ -51,22 +47,19 @@ describe 'Akin operator shuffling' do
 
   describe 'unary negation' do
     it 'binds to right' do
-      n = c('!b')
-      n.shuffle.sexp.should ==
+      n('!b').should ==
         [:chain, [:name, "b"], [:act, "!", nil]]
     end
     
     it 'binds chain to right' do
-      n = c('!b c d')
-      n.shuffle.sexp.should ==
+      n('!b c d').should ==
         [:chain,
          [:name, "b"], [:name, "c"], [:name, "d"],
          [:act, "!", nil]]
     end
 
     it 'binds chain to right till oper' do
-      n = c('!b c + d')
-      n.shuffle.sexp.should ==
+      n('!b c + d').should ==
         [:chain,
          [:name, "b"], [:name, "c"],
          [:act, "!", nil],
@@ -74,8 +67,7 @@ describe 'Akin operator shuffling' do
     end    
 
     it 'binds chain to right till oper' do
-      n = c('b + ! c d')
-      n.shuffle.sexp.should ==
+      n('b + ! c d').should ==
         [:chain,
          [:name, "b"], 
          [:act, "+", nil,

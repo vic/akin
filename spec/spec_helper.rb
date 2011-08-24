@@ -22,6 +22,6 @@ shared_context 'grammar' do
   
   def n(code, rule = :root, *args)
     n = c(code, rule, true, *args)
-    n.shuffle if n
+    n.shuffle.sexp if n
   end
 end
