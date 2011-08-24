@@ -99,7 +99,7 @@ cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
 args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
 
-msg(h) = msg(h):a sp* (&"::" | ":" &(":"|";"|".")) {a}
+msg(h) = msg(h):a sp* (&("::") | ":" &(":"|";"|".")) {a}
        | part(h):a w msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
        | part(h):a ~n(a.pos, :msg, a)
 
@@ -119,7 +119,7 @@ chain(h) = chain(h):a w "." - chain(h):b ~n(a.pos, :chain, a, b)
          | operator:a !&brace o w chain(h):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
          | chain_cont(h)
-         | expr(h):a sp* chain(a.pos):b
+         | chain_val(h):a sp* chain(a.pos):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
          | chain_val(h)
 

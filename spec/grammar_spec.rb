@@ -505,6 +505,19 @@ describe 'Akin grammar' do
         [:chain, [:name, "मूल"], [:name, "नकल"]]
     end
 
+    it 'parses a unicode keyword message' do
+      code = "浪: 人"
+      s(code, :root).should ==
+        [:msg,
+         ["浪", nil, [:name, "人"]]]
+    end
+
+    it 'parses a unicode cons' do
+      code = "浪::人"
+      s(code, :root).should ==
+        [:cons, [:name, "浪"], [:name, "人"]]
+    end
+
     it 'allows operators chaining' do
       code = <<-CODE
       a + b - c
