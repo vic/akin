@@ -93,8 +93,7 @@ tuple(h) = comma(h):c ~n(p, :tuple, *c)
 
 cons_left(h) = expr(h):a sp* "::" !&(":"|";"|".")  {a}
 
-cons(h) = cons_left(h):a - cons(h):b ~n(p, :cons, a, b)
-        | cons_left(h):a - expr(h):b ~n(p, :cons, a, b)
+cons(h) = cons_left(h):a - chain_val(h):b ~n(p, :cons, a, b)
 
 args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))

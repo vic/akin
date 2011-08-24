@@ -2766,73 +2766,35 @@ class Akin::Grammar
     return _tmp
   end
 
-  # cons = (cons_left(h):a - cons(h):b {n(p, :cons, a, b)} | cons_left(h):a - expr(h):b {n(p, :cons, a, b)})
+  # cons = cons_left(h):a - chain_val(h):b {n(p, :cons, a, b)}
   def _cons(h)
 
     _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_cons_left, h)
-        a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:__hyphen_)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_cons, h)
-        b = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin; n(p, :cons, a, b); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
+    while true # sequence
+      _tmp = apply_with_args(:_cons_left, h)
+      a = @result
+      unless _tmp
+        self.pos = _save
         break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save2 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_cons_left, h)
-        a = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply(:__hyphen_)
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply_with_args(:_expr, h)
-        b = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        @result = begin; n(p, :cons, a, b); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save2
-        end
+      end
+      _tmp = apply(:__hyphen_)
+      unless _tmp
+        self.pos = _save
         break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
+      end
+      _tmp = apply_with_args(:_chain_val, h)
+      b = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :cons, a, b); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
       break
-    end # end choice
+    end # end sequence
 
     set_failed_rule :_cons unless _tmp
     return _tmp
@@ -3775,7 +3737,7 @@ class Akin::Grammar
   Rules[:_comma] = rule_info("comma", "(comma_left(h):a w comma(h):b { b.unshift a ; b } | comma_left(h):a w block(h):b { [a,b] } | comma_left(h):a &(sp* (\".\" | \",\" | t | brace)) {[a]})")
   Rules[:_tuple] = rule_info("tuple", "comma(h):c {n(p, :tuple, *c)}")
   Rules[:_cons_left] = rule_info("cons_left", "expr(h):a sp* \"::\" !(&(\":\" | \";\" | \".\")) {a}")
-  Rules[:_cons] = rule_info("cons", "(cons_left(h):a - cons(h):b {n(p, :cons, a, b)} | cons_left(h):a - expr(h):b {n(p, :cons, a, b)})")
+  Rules[:_cons] = rule_info("cons", "cons_left(h):a - chain_val(h):b {n(p, :cons, a, b)}")
   Rules[:_args] = rule_info("args", "p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}")
   Rules[:_msg] = rule_info("msg", "(msg(h):a sp* (&\"::\" | \":\" &(\":\" | \";\" | \".\")) {a} | part(h):a w msg(h | a.pos):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})")
   Rules[:_part] = rule_info("part", "(part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})")
