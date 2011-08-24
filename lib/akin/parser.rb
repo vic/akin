@@ -78,7 +78,7 @@ module Akin
 
       def sexp
         sexp = []
-        sexp << name if name
+        sexp << name
         sexp.push *args.map { |a| a.respond_to?(:sexp) && a.sexp || a }
         sexp
       end

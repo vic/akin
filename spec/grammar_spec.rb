@@ -626,6 +626,62 @@ describe 'Akin grammar' do
                                              [:name, "bar"],
                                              [:name, "baz"]]
     end
+    
+    it 'parses an empty keyword message with braces' do
+      s('foo (): bar', :root).should ==
+        [:chain,
+         [:name, "foo"],
+         [:msg, [nil, "()", [:name, "bar"]]]]
+    end
+
+    it 'parses an empty keyword message' do
+      s('foo : bar', :root).should ==
+        [:chain,
+         [:name, "foo"],
+         [:msg, [nil, nil, [:name, "bar"]]]]
+    end
+    
+    it 'parses an empty keyword message' do
+      s('foo : bar : baz', :root).should ==
+        [:chain,
+         [:name, "foo"],
+         [:msg, [nil, nil,
+                 [:name, "bar"],
+                 [:msg, [nil, nil, [:name, "baz"]]]]]]
+    end
+
+    it 'parses an empty keyword message' do
+      s('foo : bar baz: bat', :root).should ==
+        [:chain,
+         [:name, "foo"],
+         [:msg, [nil, nil,
+                 [:name, "bar"],
+                 [:msg, ["baz", nil, [:name, "bat"]]]]]]
+    end
+
+    it 'parses an empty keyword message' do
+      s('foo: : bat', :root).should ==
+        [:msg, ["foo", nil,
+                [:msg, [nil, nil, [:name, "bat"]]]]]
+    end
+
+    it 'parses an empty keyword message' do
+      s('foo: (a,b):', :root).should ==
+        [:msg, ["foo", nil,
+                [:msg, [nil, "()", [:name, "a"], [:name, "b"]]]]]
+    end
+
+    it 'parses an empty keyword message' do
+      s('foo: (a,b):.', :root).should ==
+        [:msg, ["foo", nil,
+                [:msg, [nil, "()", [:name, "a"], [:name, "b"]]]]]
+    end
+
+    it 'parses an empty keyword message' do
+      s('foo: (a,b):;', :root).should ==
+        [:msg, ["foo", nil,
+                [:msg, [nil, "()", [:name, "a"], [:name, "b"]]]]]
+    end
 
   end
 end

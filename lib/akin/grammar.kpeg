@@ -28,7 +28,7 @@ right_brace(l) = <brace:b> &{ text == l.last } { l }
   
 literal = float | fixnum | str | regexp
 
-symbol(h) = p:p ":" value(h):v ~n(p, :symbol, v)
+symbol(h) = p:p ":" !&":" value(h):v ~n(p, :symbol, v)
 
 regexp = p:p quoted(:text, & "/"):b ~n(p, :regexp, text_node(p, b))
 
@@ -74,7 +74,7 @@ operator = p:p oper:o ~n(p, :oper, o)
 
 name = p:p <(&(!(sp|nl|brace|opchr|":"|";"|","|".")) .)+> ~n(p, :name, text)
 
-keyword = < (!&(n | ":" | brace) .)+ > ":" &{text.size > 0} !&(":"|";"|".") {text}
+keyword = < (!&(n | ":" | brace) .)+ > ":" !&(":"|";"|".") {text}
 keyargs = < (!&(n | ":" | brace) .)+ > args:a ":" {[text, a]}
 keypart = keyword | keyargs
 
@@ -98,19 +98,34 @@ cons(h) = cons_left(h):a - chain_val(h):b ~n(p, :cons, a, b)
 args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
 
-msg(h) = msg(h):a sp* (&("::") | ":" &(":"|";"|".")) {a}
-       | part(h):a w msg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
-       | part(h):a ~n(a.pos, :msg, a)
+msg(h) = kmsg(h) | emsg(h)
+
+kmsg(h) = kmsg(h):a sp* (&("::") | ":" &(";"|".")) {a}
+        | part(h):a w kmsg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
+        | part(h):a ~n(a.pos, :msg, a)
 
 part(h) = part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
-        | part(h):p part_head(h | p.pos):e { p.args.push *Array(e) ; p }
+        | part(h):p sp+ part_head(h | p.pos):e { p.args.push *Array(e) ; p }
         | p:p keyargs:k ~n(p, k.first, k.last.name, *k.last.args)
         | p:p keyword:k ~n(p, k, nil)
 
-part_head(h) = sp+ !&keypart (ph_comma(h) | expr(h) | {[]})
+part_head(h) = !&keypart (ph_comma(h) | expr(h) | {[]})
 
 ph_comma(h) = expr(h):a w "," - ph_comma(h):b { b.unshift a ; b }
             | expr(h):a w "," - expr(h):b { [a,b] }
+
+emsg(h) = emsg(h):a sp* (&("::") | ":" &(";"|".")) {a}
+        | (epart(h) | spart(h)):a ~n(a.pos, :msg, a)
+
+epart(h) = epart(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
+         | epart(h):p sp+ epart_head(h | p.pos):e { p.args.push *Array(e) ; p }
+         | args:a ":" !&":" ~n(a.pos, nil, a.name, *a.args)
+
+spart(h) = spart(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
+         | spart(h):p sp* epart_head(h | p.pos):e { p.args.push *Array(e) ; p }
+         | p:p ":" (sp|nl|sheebang) ~n(p, nil, nil)
+
+epart_head(h) = ph_comma(h) | expr(h) | {[]}
 
 expr(h) = value(h):e &{ e.pos.column > h.column } {e}
 
