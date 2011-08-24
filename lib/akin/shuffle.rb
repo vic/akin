@@ -33,21 +33,30 @@ module Akin
     def opers(ary)
       ops = []
       ary.each_with_index do |node, idx|
-        if node.name == :oper
-          ops.push Oper.new(idx, node, info(node.args.first))
-        end
+        o = Oper.new(idx, node)
+        ops.push o if o.oper?
       end
       ops.sort
     end
 
-
     class Oper
       include Comparable
       
-      attr_reader :idx, :node, :info
-      def initialize(idx, node, info)
-        @idx, @node, @info = idx, node, info
+      attr_reader :idx, :node
+      def initialize(idx, node)
+        @idx, @node = idx, node
       end
+
+      def info
+        @info ||= OPERATORS[node.args.first] || Info.new
+      end
+
+      def oper?(node = self.node)
+        node.args.size == 1 &&
+          node.name == :oper ||
+          (node.name == :name && OPERATORS[node.args.first])
+      end
+
 
       def lhs?
         info.assoc <= 0
@@ -75,7 +84,7 @@ module Akin
         lhs, rhs = nil, nil
         pre, post = ary[0...ary.index(node)], ary[ary.index(node)+1..-1]
         if lhs? && pre
-          lhs = pre.reverse.take_while { |i| i.name != :oper }.reverse
+          lhs = pre.reverse.take_while { |i| !oper?(i) }.reverse
           unless lhs.empty?
             pre = ary[0...ary.index(lhs.first)]
             if lhs.size == 1
@@ -86,7 +95,7 @@ module Akin
           end
         end
         if rhs? && post
-          rhs = post.take_while { |i| i.name != :oper }
+          rhs = post.take_while { |i| !oper?(i) }
           unless rhs.empty?
             post = ary[ary.index(rhs.last)+1..-1]
             if rhs.size == 1
@@ -113,7 +122,7 @@ module Akin
             prec <=> other.prec
           end
         end
-      end
+      end      
     end
 
     OPERATORS = {
@@ -122,10 +131,6 @@ module Akin
       "-" => Oper::Info.new(6),
       "=" => Oper::Info.new(16, 0)
     }
-
-    def info(op)
-      OPERATORS[op] || Oper::Info.new
-    end
 
   end
 end
