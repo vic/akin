@@ -1325,7 +1325,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # qstr = p:p "'" < ("\\'" | !(&"'") .)* > "'" {n(p, :text, text)}
+  # qstr = p:p "'" < ("\\" escape | "\\'" | !(&"'") .)* > "'" {n(p, :text, text)}
   def _qstr
 
     _save = self.pos
@@ -1346,25 +1346,42 @@ class Akin::Grammar
 
         _save2 = self.pos
         while true # choice
-          _tmp = match_string("\\'")
-          break if _tmp
-          self.pos = _save2
 
           _save3 = self.pos
           while true # sequence
-            _save4 = self.pos
-            _save5 = self.pos
-            _tmp = match_string("'")
-            self.pos = _save5
-            _tmp = _tmp ? nil : true
-            self.pos = _save4
+            _tmp = match_string("\\")
             unless _tmp
               self.pos = _save3
               break
             end
-            _tmp = get_byte
+            _tmp = apply(:_escape)
             unless _tmp
               self.pos = _save3
+            end
+            break
+          end # end sequence
+
+          break if _tmp
+          self.pos = _save2
+          _tmp = match_string("\\'")
+          break if _tmp
+          self.pos = _save2
+
+          _save4 = self.pos
+          while true # sequence
+            _save5 = self.pos
+            _save6 = self.pos
+            _tmp = match_string("'")
+            self.pos = _save6
+            _tmp = _tmp ? nil : true
+            self.pos = _save5
+            unless _tmp
+              self.pos = _save4
+              break
+            end
+            _tmp = get_byte
+            unless _tmp
+              self.pos = _save4
             end
             break
           end # end sequence
@@ -1473,7 +1490,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # quoted_inner = (p:p "#{" - block(h)?:b - "}" {b} | p:p < ("\\" q | "\\#" | &(!(q | "#{")) .)+ > {n(p, t, text)})
+  # quoted_inner = (p:p "#{" - block(h)?:b - "}" {b} | p:p < ("\\" escape | ("\\" q | "\\#" | &(!(q | "#{")) .))+ > {n(p, t, text)})
   def _quoted_inner(t,q)
 
     _save = self.pos
@@ -1551,7 +1568,7 @@ class Akin::Grammar
               self.pos = _save6
               break
             end
-            _tmp = q.call()
+            _tmp = apply(:_escape)
             unless _tmp
               self.pos = _save6
             end
@@ -1560,39 +1577,64 @@ class Akin::Grammar
 
           break if _tmp
           self.pos = _save5
-          _tmp = match_string("\\#")
-          break if _tmp
-          self.pos = _save5
 
           _save7 = self.pos
-          while true # sequence
+          while true # choice
+
             _save8 = self.pos
-            _save9 = self.pos
-
-            _save10 = self.pos
-            while true # choice
+            while true # sequence
+              _tmp = match_string("\\")
+              unless _tmp
+                self.pos = _save8
+                break
+              end
               _tmp = q.call()
-              break if _tmp
-              self.pos = _save10
-              _tmp = match_string("\#{")
-              break if _tmp
-              self.pos = _save10
+              unless _tmp
+                self.pos = _save8
+              end
               break
-            end # end choice
+            end # end sequence
 
-            _tmp = _tmp ? nil : true
-            self.pos = _save9
-            self.pos = _save8
-            unless _tmp
-              self.pos = _save7
+            break if _tmp
+            self.pos = _save7
+            _tmp = match_string("\\#")
+            break if _tmp
+            self.pos = _save7
+
+            _save9 = self.pos
+            while true # sequence
+              _save10 = self.pos
+              _save11 = self.pos
+
+              _save12 = self.pos
+              while true # choice
+                _tmp = q.call()
+                break if _tmp
+                self.pos = _save12
+                _tmp = match_string("\#{")
+                break if _tmp
+                self.pos = _save12
+                break
+              end # end choice
+
+              _tmp = _tmp ? nil : true
+              self.pos = _save11
+              self.pos = _save10
+              unless _tmp
+                self.pos = _save9
+                break
+              end
+              _tmp = get_byte
+              unless _tmp
+                self.pos = _save9
+              end
               break
-            end
-            _tmp = get_byte
-            unless _tmp
-              self.pos = _save7
-            end
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save7
             break
-          end # end sequence
+          end # end choice
 
           break if _tmp
           self.pos = _save5
@@ -1602,61 +1644,86 @@ class Akin::Grammar
         if _tmp
           while true
 
-            _save11 = self.pos
+            _save13 = self.pos
             while true # choice
 
-              _save12 = self.pos
+              _save14 = self.pos
               while true # sequence
                 _tmp = match_string("\\")
                 unless _tmp
-                  self.pos = _save12
+                  self.pos = _save14
                   break
                 end
-                _tmp = q.call()
+                _tmp = apply(:_escape)
                 unless _tmp
-                  self.pos = _save12
+                  self.pos = _save14
                 end
                 break
               end # end sequence
 
               break if _tmp
-              self.pos = _save11
-              _tmp = match_string("\\#")
-              break if _tmp
-              self.pos = _save11
+              self.pos = _save13
 
-              _save13 = self.pos
-              while true # sequence
-                _save14 = self.pos
-                _save15 = self.pos
+              _save15 = self.pos
+              while true # choice
 
                 _save16 = self.pos
-                while true # choice
+                while true # sequence
+                  _tmp = match_string("\\")
+                  unless _tmp
+                    self.pos = _save16
+                    break
+                  end
                   _tmp = q.call()
-                  break if _tmp
-                  self.pos = _save16
-                  _tmp = match_string("\#{")
-                  break if _tmp
-                  self.pos = _save16
+                  unless _tmp
+                    self.pos = _save16
+                  end
                   break
-                end # end choice
+                end # end sequence
 
-                _tmp = _tmp ? nil : true
+                break if _tmp
                 self.pos = _save15
-                self.pos = _save14
-                unless _tmp
-                  self.pos = _save13
+                _tmp = match_string("\\#")
+                break if _tmp
+                self.pos = _save15
+
+                _save17 = self.pos
+                while true # sequence
+                  _save18 = self.pos
+                  _save19 = self.pos
+
+                  _save20 = self.pos
+                  while true # choice
+                    _tmp = q.call()
+                    break if _tmp
+                    self.pos = _save20
+                    _tmp = match_string("\#{")
+                    break if _tmp
+                    self.pos = _save20
+                    break
+                  end # end choice
+
+                  _tmp = _tmp ? nil : true
+                  self.pos = _save19
+                  self.pos = _save18
+                  unless _tmp
+                    self.pos = _save17
+                    break
+                  end
+                  _tmp = get_byte
+                  unless _tmp
+                    self.pos = _save17
+                  end
                   break
-                end
-                _tmp = get_byte
-                unless _tmp
-                  self.pos = _save13
-                end
+                end # end sequence
+
+                break if _tmp
+                self.pos = _save15
                 break
-              end # end sequence
+              end # end choice
 
               break if _tmp
-              self.pos = _save11
+              self.pos = _save13
               break
             end # end choice
 
@@ -1736,7 +1803,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # mstr_inner = (p:p "#{" - block(h)?:b - "}" {b} | p:p < ("\\\"\"\"" | !(&("\"\"\"" | "#{")) . | . &"\"\"\"")+ > {n(p, :text, text)})
+  # mstr_inner = (p:p "#{" - block(h)?:b - "}" {b} | p:p < ("\\" escape | ("\\\"\"\"" | !(&("\"\"\"" | "#{")) . | . &"\"\"\""))+ > {n(p, :text, text)})
   def _mstr_inner
 
     _save = self.pos
@@ -1806,34 +1873,15 @@ class Akin::Grammar
 
         _save5 = self.pos
         while true # choice
-          _tmp = match_string("\\\"\"\"")
-          break if _tmp
-          self.pos = _save5
 
           _save6 = self.pos
           while true # sequence
-            _save7 = self.pos
-            _save8 = self.pos
-
-            _save9 = self.pos
-            while true # choice
-              _tmp = match_string("\"\"\"")
-              break if _tmp
-              self.pos = _save9
-              _tmp = match_string("\#{")
-              break if _tmp
-              self.pos = _save9
-              break
-            end # end choice
-
-            self.pos = _save8
-            _tmp = _tmp ? nil : true
-            self.pos = _save7
+            _tmp = match_string("\\")
             unless _tmp
               self.pos = _save6
               break
             end
-            _tmp = get_byte
+            _tmp = apply(:_escape)
             unless _tmp
               self.pos = _save6
             end
@@ -1843,21 +1891,65 @@ class Akin::Grammar
           break if _tmp
           self.pos = _save5
 
-          _save10 = self.pos
-          while true # sequence
-            _tmp = get_byte
-            unless _tmp
+          _save7 = self.pos
+          while true # choice
+            _tmp = match_string("\\\"\"\"")
+            break if _tmp
+            self.pos = _save7
+
+            _save8 = self.pos
+            while true # sequence
+              _save9 = self.pos
+              _save10 = self.pos
+
+              _save11 = self.pos
+              while true # choice
+                _tmp = match_string("\"\"\"")
+                break if _tmp
+                self.pos = _save11
+                _tmp = match_string("\#{")
+                break if _tmp
+                self.pos = _save11
+                break
+              end # end choice
+
               self.pos = _save10
+              _tmp = _tmp ? nil : true
+              self.pos = _save9
+              unless _tmp
+                self.pos = _save8
+                break
+              end
+              _tmp = get_byte
+              unless _tmp
+                self.pos = _save8
+              end
               break
-            end
-            _save11 = self.pos
-            _tmp = match_string("\"\"\"")
-            self.pos = _save11
-            unless _tmp
-              self.pos = _save10
-            end
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save7
+
+            _save12 = self.pos
+            while true # sequence
+              _tmp = get_byte
+              unless _tmp
+                self.pos = _save12
+                break
+              end
+              _save13 = self.pos
+              _tmp = match_string("\"\"\"")
+              self.pos = _save13
+              unless _tmp
+                self.pos = _save12
+              end
+              break
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save7
             break
-          end # end sequence
+          end # end choice
 
           break if _tmp
           self.pos = _save5
@@ -1867,63 +1959,88 @@ class Akin::Grammar
         if _tmp
           while true
 
-            _save12 = self.pos
+            _save14 = self.pos
             while true # choice
-              _tmp = match_string("\\\"\"\"")
-              break if _tmp
-              self.pos = _save12
 
-              _save13 = self.pos
+              _save15 = self.pos
               while true # sequence
-                _save14 = self.pos
-                _save15 = self.pos
+                _tmp = match_string("\\")
+                unless _tmp
+                  self.pos = _save15
+                  break
+                end
+                _tmp = apply(:_escape)
+                unless _tmp
+                  self.pos = _save15
+                end
+                break
+              end # end sequence
 
-                _save16 = self.pos
-                while true # choice
+              break if _tmp
+              self.pos = _save14
+
+              _save16 = self.pos
+              while true # choice
+                _tmp = match_string("\\\"\"\"")
+                break if _tmp
+                self.pos = _save16
+
+                _save17 = self.pos
+                while true # sequence
+                  _save18 = self.pos
+                  _save19 = self.pos
+
+                  _save20 = self.pos
+                  while true # choice
+                    _tmp = match_string("\"\"\"")
+                    break if _tmp
+                    self.pos = _save20
+                    _tmp = match_string("\#{")
+                    break if _tmp
+                    self.pos = _save20
+                    break
+                  end # end choice
+
+                  self.pos = _save19
+                  _tmp = _tmp ? nil : true
+                  self.pos = _save18
+                  unless _tmp
+                    self.pos = _save17
+                    break
+                  end
+                  _tmp = get_byte
+                  unless _tmp
+                    self.pos = _save17
+                  end
+                  break
+                end # end sequence
+
+                break if _tmp
+                self.pos = _save16
+
+                _save21 = self.pos
+                while true # sequence
+                  _tmp = get_byte
+                  unless _tmp
+                    self.pos = _save21
+                    break
+                  end
+                  _save22 = self.pos
                   _tmp = match_string("\"\"\"")
-                  break if _tmp
-                  self.pos = _save16
-                  _tmp = match_string("\#{")
-                  break if _tmp
-                  self.pos = _save16
+                  self.pos = _save22
+                  unless _tmp
+                    self.pos = _save21
+                  end
                   break
-                end # end choice
+                end # end sequence
 
-                self.pos = _save15
-                _tmp = _tmp ? nil : true
-                self.pos = _save14
-                unless _tmp
-                  self.pos = _save13
-                  break
-                end
-                _tmp = get_byte
-                unless _tmp
-                  self.pos = _save13
-                end
+                break if _tmp
+                self.pos = _save16
                 break
-              end # end sequence
+              end # end choice
 
               break if _tmp
-              self.pos = _save12
-
-              _save17 = self.pos
-              while true # sequence
-                _tmp = get_byte
-                unless _tmp
-                  self.pos = _save17
-                  break
-                end
-                _save18 = self.pos
-                _tmp = match_string("\"\"\"")
-                self.pos = _save18
-                unless _tmp
-                  self.pos = _save17
-                end
-                break
-              end # end sequence
-
-              break if _tmp
-              self.pos = _save12
+              self.pos = _save14
               break
             end # end choice
 
@@ -1957,14 +2074,14 @@ class Akin::Grammar
     return _tmp
   end
 
-  # opchr = /[\~\!@\#\$%\^\&\|\?\<\>*\/+-]/
+  # opchr = /[\~\!@\#\$%\^\&\|\?\<\>*\/+=-]/
   def _opchr
-    _tmp = scan(/\A(?-mix:[\~\!@\#\$%\^\&\|\?\<\>*\/+-])/)
+    _tmp = scan(/\A(?-mix:[\~\!@\#\$%\^\&\|\?\<\>*\/+=-])/)
     set_failed_rule :_opchr unless _tmp
     return _tmp
   end
 
-  # oper = < opchr (opchr | /[=]/)* > {text}
+  # oper = < opchr opchr* > {text}
   def _oper
 
     _save = self.pos
@@ -1979,18 +2096,7 @@ class Akin::Grammar
           break
         end
         while true
-
-          _save3 = self.pos
-          while true # choice
-            _tmp = apply(:_opchr)
-            break if _tmp
-            self.pos = _save3
-            _tmp = scan(/\A(?-mix:[=])/)
-            break if _tmp
-            self.pos = _save3
-            break
-          end # end choice
-
+          _tmp = apply(:_opchr)
           break unless _tmp
         end
         _tmp = true
@@ -3913,6 +4019,983 @@ class Akin::Grammar
     return _tmp
   end
 
+  # escape = (number_escapes | escapes)
+  def _escape
+
+    _save = self.pos
+    while true # choice
+      _tmp = apply(:_number_escapes)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply(:_escapes)
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_escape unless _tmp
+    return _tmp
+  end
+
+  # escapes = ("n" { "\n" } | "s" { " " } | "r" { "\r" } | "t" { "\t" } | "v" { "\v" } | "f" { "\f" } | "b" { "\b" } | "a" { "\a" } | "e" { "\e" } | "\\" { "\\" } | "\"" { "\"" } | "BS" { "\b" } | "HT" { "\t" } | "LF" { "\n" } | "VT" { "\v" } | "FF" { "\f" } | "CR" { "\r" } | "SO" { "\016" } | "SI" { "\017" } | "EM" { "\031" } | "FS" { "\034" } | "GS" { "\035" } | "RS" { "\036" } | "US" { "\037" } | "SP" { " " } | "NUL" { "\000" } | "SOH" { "\001" } | "STX" { "\002" } | "ETX" { "\003" } | "EOT" { "\004" } | "ENQ" { "\005" } | "ACK" { "\006" } | "BEL" { "\a" } | "DLE" { "\020" } | "DC1" { "\021" } | "DC2" { "\022" } | "DC3" { "\023" } | "DC4" { "\024" } | "NAK" { "\025" } | "SYN" { "\026" } | "ETB" { "\027" } | "CAN" { "\030" } | "SUB" { "\032" } | "ESC" { "\e" } | "DEL" { "\177" } | < . > { "\\" + text })
+  def _escapes
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = match_string("n")
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin;  "\n" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save2 = self.pos
+      while true # sequence
+        _tmp = match_string("s")
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        @result = begin;  " " ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save3 = self.pos
+      while true # sequence
+        _tmp = match_string("r")
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        @result = begin;  "\r" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save3
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save4 = self.pos
+      while true # sequence
+        _tmp = match_string("t")
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        @result = begin;  "\t" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save4
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save5 = self.pos
+      while true # sequence
+        _tmp = match_string("v")
+        unless _tmp
+          self.pos = _save5
+          break
+        end
+        @result = begin;  "\v" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save5
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save6 = self.pos
+      while true # sequence
+        _tmp = match_string("f")
+        unless _tmp
+          self.pos = _save6
+          break
+        end
+        @result = begin;  "\f" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save6
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save7 = self.pos
+      while true # sequence
+        _tmp = match_string("b")
+        unless _tmp
+          self.pos = _save7
+          break
+        end
+        @result = begin;  "\b" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save7
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save8 = self.pos
+      while true # sequence
+        _tmp = match_string("a")
+        unless _tmp
+          self.pos = _save8
+          break
+        end
+        @result = begin;  "\a" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save8
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save9 = self.pos
+      while true # sequence
+        _tmp = match_string("e")
+        unless _tmp
+          self.pos = _save9
+          break
+        end
+        @result = begin;  "\e" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save9
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save10 = self.pos
+      while true # sequence
+        _tmp = match_string("\\")
+        unless _tmp
+          self.pos = _save10
+          break
+        end
+        @result = begin;  "\\" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save10
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save11 = self.pos
+      while true # sequence
+        _tmp = match_string("\"")
+        unless _tmp
+          self.pos = _save11
+          break
+        end
+        @result = begin;  "\"" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save11
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save12 = self.pos
+      while true # sequence
+        _tmp = match_string("BS")
+        unless _tmp
+          self.pos = _save12
+          break
+        end
+        @result = begin;  "\b" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save12
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save13 = self.pos
+      while true # sequence
+        _tmp = match_string("HT")
+        unless _tmp
+          self.pos = _save13
+          break
+        end
+        @result = begin;  "\t" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save13
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save14 = self.pos
+      while true # sequence
+        _tmp = match_string("LF")
+        unless _tmp
+          self.pos = _save14
+          break
+        end
+        @result = begin;  "\n" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save14
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save15 = self.pos
+      while true # sequence
+        _tmp = match_string("VT")
+        unless _tmp
+          self.pos = _save15
+          break
+        end
+        @result = begin;  "\v" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save15
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save16 = self.pos
+      while true # sequence
+        _tmp = match_string("FF")
+        unless _tmp
+          self.pos = _save16
+          break
+        end
+        @result = begin;  "\f" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save16
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save17 = self.pos
+      while true # sequence
+        _tmp = match_string("CR")
+        unless _tmp
+          self.pos = _save17
+          break
+        end
+        @result = begin;  "\r" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save17
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save18 = self.pos
+      while true # sequence
+        _tmp = match_string("SO")
+        unless _tmp
+          self.pos = _save18
+          break
+        end
+        @result = begin;  "\016" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save18
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save19 = self.pos
+      while true # sequence
+        _tmp = match_string("SI")
+        unless _tmp
+          self.pos = _save19
+          break
+        end
+        @result = begin;  "\017" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save19
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save20 = self.pos
+      while true # sequence
+        _tmp = match_string("EM")
+        unless _tmp
+          self.pos = _save20
+          break
+        end
+        @result = begin;  "\031" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save20
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save21 = self.pos
+      while true # sequence
+        _tmp = match_string("FS")
+        unless _tmp
+          self.pos = _save21
+          break
+        end
+        @result = begin;  "\034" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save21
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save22 = self.pos
+      while true # sequence
+        _tmp = match_string("GS")
+        unless _tmp
+          self.pos = _save22
+          break
+        end
+        @result = begin;  "\035" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save22
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save23 = self.pos
+      while true # sequence
+        _tmp = match_string("RS")
+        unless _tmp
+          self.pos = _save23
+          break
+        end
+        @result = begin;  "\036" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save23
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save24 = self.pos
+      while true # sequence
+        _tmp = match_string("US")
+        unless _tmp
+          self.pos = _save24
+          break
+        end
+        @result = begin;  "\037" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save24
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save25 = self.pos
+      while true # sequence
+        _tmp = match_string("SP")
+        unless _tmp
+          self.pos = _save25
+          break
+        end
+        @result = begin;  " " ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save25
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save26 = self.pos
+      while true # sequence
+        _tmp = match_string("NUL")
+        unless _tmp
+          self.pos = _save26
+          break
+        end
+        @result = begin;  "\000" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save26
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save27 = self.pos
+      while true # sequence
+        _tmp = match_string("SOH")
+        unless _tmp
+          self.pos = _save27
+          break
+        end
+        @result = begin;  "\001" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save27
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save28 = self.pos
+      while true # sequence
+        _tmp = match_string("STX")
+        unless _tmp
+          self.pos = _save28
+          break
+        end
+        @result = begin;  "\002" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save28
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save29 = self.pos
+      while true # sequence
+        _tmp = match_string("ETX")
+        unless _tmp
+          self.pos = _save29
+          break
+        end
+        @result = begin;  "\003" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save29
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save30 = self.pos
+      while true # sequence
+        _tmp = match_string("EOT")
+        unless _tmp
+          self.pos = _save30
+          break
+        end
+        @result = begin;  "\004" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save30
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save31 = self.pos
+      while true # sequence
+        _tmp = match_string("ENQ")
+        unless _tmp
+          self.pos = _save31
+          break
+        end
+        @result = begin;  "\005" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save31
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save32 = self.pos
+      while true # sequence
+        _tmp = match_string("ACK")
+        unless _tmp
+          self.pos = _save32
+          break
+        end
+        @result = begin;  "\006" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save32
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save33 = self.pos
+      while true # sequence
+        _tmp = match_string("BEL")
+        unless _tmp
+          self.pos = _save33
+          break
+        end
+        @result = begin;  "\a" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save33
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save34 = self.pos
+      while true # sequence
+        _tmp = match_string("DLE")
+        unless _tmp
+          self.pos = _save34
+          break
+        end
+        @result = begin;  "\020" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save34
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save35 = self.pos
+      while true # sequence
+        _tmp = match_string("DC1")
+        unless _tmp
+          self.pos = _save35
+          break
+        end
+        @result = begin;  "\021" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save35
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save36 = self.pos
+      while true # sequence
+        _tmp = match_string("DC2")
+        unless _tmp
+          self.pos = _save36
+          break
+        end
+        @result = begin;  "\022" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save36
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save37 = self.pos
+      while true # sequence
+        _tmp = match_string("DC3")
+        unless _tmp
+          self.pos = _save37
+          break
+        end
+        @result = begin;  "\023" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save37
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save38 = self.pos
+      while true # sequence
+        _tmp = match_string("DC4")
+        unless _tmp
+          self.pos = _save38
+          break
+        end
+        @result = begin;  "\024" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save38
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save39 = self.pos
+      while true # sequence
+        _tmp = match_string("NAK")
+        unless _tmp
+          self.pos = _save39
+          break
+        end
+        @result = begin;  "\025" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save39
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save40 = self.pos
+      while true # sequence
+        _tmp = match_string("SYN")
+        unless _tmp
+          self.pos = _save40
+          break
+        end
+        @result = begin;  "\026" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save40
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save41 = self.pos
+      while true # sequence
+        _tmp = match_string("ETB")
+        unless _tmp
+          self.pos = _save41
+          break
+        end
+        @result = begin;  "\027" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save41
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save42 = self.pos
+      while true # sequence
+        _tmp = match_string("CAN")
+        unless _tmp
+          self.pos = _save42
+          break
+        end
+        @result = begin;  "\030" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save42
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save43 = self.pos
+      while true # sequence
+        _tmp = match_string("SUB")
+        unless _tmp
+          self.pos = _save43
+          break
+        end
+        @result = begin;  "\032" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save43
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save44 = self.pos
+      while true # sequence
+        _tmp = match_string("ESC")
+        unless _tmp
+          self.pos = _save44
+          break
+        end
+        @result = begin;  "\e" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save44
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save45 = self.pos
+      while true # sequence
+        _tmp = match_string("DEL")
+        unless _tmp
+          self.pos = _save45
+          break
+        end
+        @result = begin;  "\177" ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save45
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save46 = self.pos
+      while true # sequence
+        _text_start = self.pos
+        _tmp = get_byte
+        if _tmp
+          text = get_text(_text_start)
+        end
+        unless _tmp
+          self.pos = _save46
+          break
+        end
+        @result = begin;  "\\" + text ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save46
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_escapes unless _tmp
+    return _tmp
+  end
+
+  # number_escapes = (/[xX]/ < /[0-9a-fA-F]{1,5}/ > { [text.to_i(16)].pack("U") } | < /\d{1,6}/ > { [text.to_i].pack("U") } | /[oO]/ < /[0-7]{1,7}/ > { [text.to_i(16)].pack("U") } | /[uU]/ < /[0-9a-fA-F]{4}/ > { [text.to_i(16)].pack("U") })
+  def _number_escapes
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = scan(/\A(?-mix:[xX])/)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _text_start = self.pos
+        _tmp = scan(/\A(?-mix:[0-9a-fA-F]{1,5})/)
+        if _tmp
+          text = get_text(_text_start)
+        end
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin;  [text.to_i(16)].pack("U") ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save2 = self.pos
+      while true # sequence
+        _text_start = self.pos
+        _tmp = scan(/\A(?-mix:\d{1,6})/)
+        if _tmp
+          text = get_text(_text_start)
+        end
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        @result = begin;  [text.to_i].pack("U") ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save3 = self.pos
+      while true # sequence
+        _tmp = scan(/\A(?-mix:[oO])/)
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        _text_start = self.pos
+        _tmp = scan(/\A(?-mix:[0-7]{1,7})/)
+        if _tmp
+          text = get_text(_text_start)
+        end
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        @result = begin;  [text.to_i(16)].pack("U") ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save3
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save4 = self.pos
+      while true # sequence
+        _tmp = scan(/\A(?-mix:[uU])/)
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        _text_start = self.pos
+        _tmp = scan(/\A(?-mix:[0-9a-fA-F]{4})/)
+        if _tmp
+          text = get_text(_text_start)
+        end
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        @result = begin;  [text.to_i(16)].pack("U") ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save4
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_number_escapes unless _tmp
+    return _tmp
+  end
+
   # root = - block(h)?:b - eof {b}
   def _root
 
@@ -4024,14 +5107,14 @@ class Akin::Grammar
   Rules[:_octal] = rule_info("octal", "sign:s oct:d {(s+d).to_i(8)}")
   Rules[:_decimal] = rule_info("decimal", "sign:s dec:d {(s+d).to_i(10)}")
   Rules[:_str] = rule_info("str", "(mstr | sstr | qstr)")
-  Rules[:_qstr] = rule_info("qstr", "p:p \"'\" < (\"\\\\'\" | !(&\"'\") .)* > \"'\" {n(p, :text, text)}")
+  Rules[:_qstr] = rule_info("qstr", "p:p \"'\" < (\"\\\\\" escape | \"\\\\'\" | !(&\"'\") .)* > \"'\" {n(p, :text, text)}")
   Rules[:_sstr] = rule_info("sstr", "p:p quoted(:text, &\"\\\"\"):b {text_node(p, b)}")
   Rules[:_quoted] = rule_info("quoted", "q quoted_inner(t, q)*:b q {b}")
-  Rules[:_quoted_inner] = rule_info("quoted_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\" q | \"\\\\\#\" | &(!(q | \"\#{\")) .)+ > {n(p, t, text)})")
+  Rules[:_quoted_inner] = rule_info("quoted_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\" escape | (\"\\\\\" q | \"\\\\\#\" | &(!(q | \"\#{\")) .))+ > {n(p, t, text)})")
   Rules[:_mstr] = rule_info("mstr", "p:p \"\\\"\\\"\\\"\" mstr_inner*:b \"\\\"\\\"\\\"\" {text_node(p, b)}")
-  Rules[:_mstr_inner] = rule_info("mstr_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\\\"\\\"\\\"\" | !(&(\"\\\"\\\"\\\"\" | \"\#{\")) . | . &\"\\\"\\\"\\\"\")+ > {n(p, :text, text)})")
-  Rules[:_opchr] = rule_info("opchr", "/[\\~\\!@\\\#\\$%\\^\\&\\|\\?\\<\\>*\\/+-]/")
-  Rules[:_oper] = rule_info("oper", "< opchr (opchr | /[=]/)* > {text}")
+  Rules[:_mstr_inner] = rule_info("mstr_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\" escape | (\"\\\\\\\"\\\"\\\"\" | !(&(\"\\\"\\\"\\\"\" | \"\#{\")) . | . &\"\\\"\\\"\\\"\"))+ > {n(p, :text, text)})")
+  Rules[:_opchr] = rule_info("opchr", "/[\\~\\!@\\\#\\$%\\^\\&\\|\\?\\<\\>*\\/+=-]/")
+  Rules[:_oper] = rule_info("oper", "< opchr opchr* > {text}")
   Rules[:_operator] = rule_info("operator", "p:p oper:o {n(p, :oper, o)}")
   Rules[:_name] = rule_info("name", "p:p < (&(!(sp | nl | brace | opchr | \":\" | \";\" | \",\" | \".\")) .)+ > {n(p, :name, text)}")
   Rules[:_keyword] = rule_info("keyword", "< (!(&(n | \":\" | brace)) .)+ > \":\" !(&(\":\" | \";\" | \".\")) {text}")
@@ -4057,6 +5140,9 @@ class Akin::Grammar
   Rules[:_chain] = rule_info("chain", "(chain(h):a w \".\" - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(a.pos):b {chain_cont(a, b)} | chain_val(h))")
   Rules[:_chain_val] = rule_info("chain_val", "(cons(h) | expr(h))")
   Rules[:_block] = rule_info("block", "(chain(h):a sp* t - block(h):b {n(a.pos, :block, a, *Array(b.name == :block && b.args || b))} | chain(h))")
+  Rules[:_escape] = rule_info("escape", "(number_escapes | escapes)")
+  Rules[:_escapes] = rule_info("escapes", "(\"n\" { \"\\n\" } | \"s\" { \" \" } | \"r\" { \"\\r\" } | \"t\" { \"\\t\" } | \"v\" { \"\\v\" } | \"f\" { \"\\f\" } | \"b\" { \"\\b\" } | \"a\" { \"\\a\" } | \"e\" { \"\\e\" } | \"\\\\\" { \"\\\\\" } | \"\\\"\" { \"\\\"\" } | \"BS\" { \"\\b\" } | \"HT\" { \"\\t\" } | \"LF\" { \"\\n\" } | \"VT\" { \"\\v\" } | \"FF\" { \"\\f\" } | \"CR\" { \"\\r\" } | \"SO\" { \"\\016\" } | \"SI\" { \"\\017\" } | \"EM\" { \"\\031\" } | \"FS\" { \"\\034\" } | \"GS\" { \"\\035\" } | \"RS\" { \"\\036\" } | \"US\" { \"\\037\" } | \"SP\" { \" \" } | \"NUL\" { \"\\000\" } | \"SOH\" { \"\\001\" } | \"STX\" { \"\\002\" } | \"ETX\" { \"\\003\" } | \"EOT\" { \"\\004\" } | \"ENQ\" { \"\\005\" } | \"ACK\" { \"\\006\" } | \"BEL\" { \"\\a\" } | \"DLE\" { \"\\020\" } | \"DC1\" { \"\\021\" } | \"DC2\" { \"\\022\" } | \"DC3\" { \"\\023\" } | \"DC4\" { \"\\024\" } | \"NAK\" { \"\\025\" } | \"SYN\" { \"\\026\" } | \"ETB\" { \"\\027\" } | \"CAN\" { \"\\030\" } | \"SUB\" { \"\\032\" } | \"ESC\" { \"\\e\" } | \"DEL\" { \"\\177\" } | < . > { \"\\\\\" + text })")
+  Rules[:_number_escapes] = rule_info("number_escapes", "(/[xX]/ < /[0-9a-fA-F]{1,5}/ > { [text.to_i(16)].pack(\"U\") } | < /\\d{1,6}/ > { [text.to_i].pack(\"U\") } | /[oO]/ < /[0-7]{1,7}/ > { [text.to_i(16)].pack(\"U\") } | /[uU]/ < /[0-9a-fA-F]{4}/ > { [text.to_i(16)].pack(\"U\") })")
   Rules[:_root] = rule_info("root", "- block(h)?:b - eof {b}")
   Rules[:_unit] = rule_info("unit", "- chain(h):c {c}")
   Rules[:_eof] = rule_info("eof", "!.")

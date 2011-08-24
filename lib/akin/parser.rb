@@ -83,8 +83,8 @@ module Akin
         sexp
       end
 
-      def with(name = nil, *args)
-        self.class.new pos, name || @name, *args
+      def with(name, *args)
+        self.class.new pos, name, *args
       end
 
       def shuffle

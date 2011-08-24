@@ -52,23 +52,25 @@ decimal = sign:s dec:d {(s+d).to_i(10)}
 
 str = (mstr | sstr | qstr)
 
-qstr = p:p "'" <( "\\'" | !&"'" .)*> "'" ~n(p, :text, text)
+qstr = p:p "'" <( "\\" escape |  "\\'" | !&"'" .)*> "'" ~n(p, :text, text)
 
 sstr = p:p quoted(:text, & "\""):b ~text_node(p, b)
 
 quoted(t,q) = q quoted_inner(t,q)*:b q {b}
 
 quoted_inner(t,q) = p:p "#{" - block(h)?:b - "}" {b}
-                  | p:p < ("\\" q | "\\#" | &!((q | "#{")) .)+ > ~n(p, t, text)
+                  | p:p < ("\\" escape | ("\\" q | "\\#" | &!((q | "#{")) .))+ > 
+                    ~n(p, t, text)
 
 mstr = p:p "\"\"\"" mstr_inner*:b "\"\"\"" ~text_node(p, b)
 
 mstr_inner = p:p "#{" - block(h)?:b - "}" {b}
-          | p:p < ("\\\"\"\"" | 
-             !&("\"\"\"" | "#{") . | . &("\"\"\""))+ > ~n(p, :text, text)
+           | p:p < ( "\\" escape | ("\\\"\"\"" | 
+                   !&("\"\"\"" | "#{") . | . &("\"\"\"")) )+ >
+            ~n(p, :text, text)
 
-opchr = /[\~\!@\#\$%\^\&\|\?\<\>*\/+-]/
-oper = < opchr (opchr | /[=]/)* > {text}
+opchr = /[\~\!@\#\$%\^\&\|\?\<\>*\/+=-]/
+oper = < opchr (opchr)* > {text}
 
 operator = p:p oper:o ~n(p, :oper, o)
 
@@ -140,6 +142,60 @@ chain_val(h) = cons(h) | expr(h)
 block(h) = chain(h):a sp* t - block(h):b
            ~n(a.pos, :block, a, *Array(b.name == :block && b.args || b))
          | chain(h)
+
+escape = number_escapes | escapes
+escapes = "n" { "\n" }
+                | "s" { " " }
+                | "r" { "\r" }
+                | "t" { "\t" }
+                | "v" { "\v" }
+                | "f" { "\f" }
+                | "b" { "\b" }
+                | "a" { "\a" }
+                | "e" { "\e" }
+                | "\\" { "\\" }
+                | "\"" { "\"" }
+                | "BS" { "\b" }
+                | "HT" { "\t" }
+                | "LF" { "\n" }
+                | "VT" { "\v" }
+                | "FF" { "\f" }
+                | "CR" { "\r" }
+                | "SO" { "\016" }
+                | "SI" { "\017" }
+                | "EM" { "\031" }
+                | "FS" { "\034" }
+                | "GS" { "\035" }
+                | "RS" { "\036" }
+                | "US" { "\037" }
+                | "SP" { " " }
+                | "NUL" { "\000" }
+                | "SOH" { "\001" }
+                | "STX" { "\002" }
+                | "ETX" { "\003" }
+                | "EOT" { "\004" }
+                | "ENQ" { "\005" }
+                | "ACK" { "\006" }
+                | "BEL" { "\a" }
+                | "DLE" { "\020" }
+                | "DC1" { "\021" }
+                | "DC2" { "\022" }
+                | "DC3" { "\023" }
+                | "DC4" { "\024" }
+                | "NAK" { "\025" }
+                | "SYN" { "\026" }
+                | "ETB" { "\027" }
+                | "CAN" { "\030" }
+                | "SUB" { "\032" }
+                | "ESC" { "\e" }
+                | "DEL" { "\177" }
+                | < . > { "\\" + text }
+
+number_escapes = /[xX]/ < /[0-9a-fA-F]{1,5}/ > { [text.to_i(16)].pack("U") }
+               | < /\d{1,6}/ > { [text.to_i].pack("U") }
+               | /[oO]/ < /[0-7]{1,7}/ > { [text.to_i(16)].pack("U") }
+               | /[uU]/ < /[0-9a-fA-F]{4}/ > { [text.to_i(16)].pack("U") }
+
 
 root = - block(h)?:b - eof {b}
 unit = - chain(h):c {c}
