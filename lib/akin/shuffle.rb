@@ -87,21 +87,19 @@ module Akin
           lhs = pre.reverse.take_while { |i| !oper?(i) }.reverse
           unless lhs.empty?
             pre = ary[0...ary.index(lhs.first)]
-            if lhs.size == 1
-              act.args.push lhs.first
-            else
-              act.args.push lhs.first.with(:chain, *lhs)
-            end
+            lhs = lhs.size == 1 && lhs.first || lhs.first.with(:chain, *lhs)
+            act.args.push lhs
           end
         end
         if rhs? && post
           rhs = post.take_while { |i| !oper?(i) }
           unless rhs.empty?
             post = ary[ary.index(rhs.last)+1..-1]
-            if rhs.size == 1
-              act.args.push rhs.first
+            if info.assoc > 1
+              act = rhs + [node.with(:act, oper, nil)]
             else
-              act.args.push rhs.first.with(:chain, *rhs)
+              rhs = rhs.size == 1 && rhs.first || rhs.first.with(:chain, *rhs)
+              act.args.push rhs
             end
           end
         end
@@ -126,6 +124,7 @@ module Akin
     end
 
     OPERATORS = {
+      "!" => Oper::Info.new(3, 2),
       "*" => Oper::Info.new(5),
       "+" => Oper::Info.new(6),
       "-" => Oper::Info.new(6),

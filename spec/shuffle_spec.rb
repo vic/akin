@@ -47,9 +47,41 @@ describe 'Akin operator shuffling' do
          [:chain, [:name, "b"],
           [:act, "+", nil, [:name, "c"]]]]
     end
-end
+  end
 
+  describe 'unary negation' do
+    it 'binds to right' do
+      n = c('!b')
+      n.shuffle.sexp.should ==
+        [:chain, [:name, "b"], [:act, "!", nil]]
+    end
     
+    it 'binds chain to right' do
+      n = c('!b c d')
+      n.shuffle.sexp.should ==
+        [:chain,
+         [:name, "b"], [:name, "c"], [:name, "d"],
+         [:act, "!", nil]]
+    end
+
+    it 'binds chain to right till oper' do
+      n = c('!b c + d')
+      n.shuffle.sexp.should ==
+        [:chain,
+         [:name, "b"], [:name, "c"],
+         [:act, "!", nil],
+         [:act, "+", nil, [:name, "d"]]]
+    end    
+
+    it 'binds chain to right till oper' do
+      n = c('b + ! c d')
+      n.shuffle.sexp.should ==
+        [:chain,
+         [:name, "b"], 
+         [:act, "+", nil,
+          [:chain, [:name, "c"], [:name, "d"], [:act, "!", nil]]]]
+    end    
+  end
 
 end
 
