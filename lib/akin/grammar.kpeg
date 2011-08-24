@@ -114,23 +114,11 @@ ph_comma(h) = expr(h):a w "," - ph_comma(h):b { b.unshift a ; b }
 
 expr(h) = value(h):e &{ e.pos.column > h.column } {e}
 
-chain(h) = chain(h):a w "." - chain(h):b ~n(a.pos, :chain, a, b)
+chain(h) = chain(h):a w "." - chain(h):b ~chain_cont(a, b)
          | operator:a !&brace o w chain(h):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
-         | chain_cont(h)
-         | chain_val(h):a sp* chain(a.pos):b
-           ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
+         | chain_val(h):a sp* chain(a.pos):b ~chain_cont(a, b)
          | chain_val(h)
-
-chain_cont(h) = chain_val(h):a {(h | a.pos || h()).incr}:i sp*
-                (comma(h) | (nl|sheebang) - block(i)):c
-              {
-                if a.name == :act
-                   a.args.push *Array(c); a
-                else
-                   n(a.pos, :act, a, nil, *Array(c))
-                end
-              }
 
 chain_val(h) = cons(h) | expr(h)
 

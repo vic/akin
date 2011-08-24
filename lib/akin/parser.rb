@@ -1,7 +1,7 @@
 module Akin
 
   module Parser
-    
+
     BRACES_ALIST = [
                     ['(', ')'],
                     ['{', '}'],
@@ -10,15 +10,15 @@ module Akin
                     ['\{', '\}'],
                     ['\[', '\]']
                    ]
-    
+
     def braces
       @braces ||= BRACES_ALIST.dup
     end
-    
+
     def brace(text)
       braces.assoc(text) || braces.rassoc(text)
     end
-    
+
     def node(*a, &b)
       Node.new(*a, &b)
     end
@@ -31,15 +31,15 @@ module Akin
 
     def h
       Position.new(0, 0)
-    end 
-    
+    end
+
     class Position
       attr_accessor :line, :column
-      
+
       def initialize(line = nil, column = nil)
         @line, @column = line, column
       end
-      
+
       def |(other)
         if @line.nil? || @line.zero?
           other
@@ -47,11 +47,11 @@ module Akin
           self
         end
       end
-      
+
       def incr(line = 0, column = 1)
         self.class.new @line + line, @column + column
       end
-      
+
       def at(line = 0, column = 0)
         self.class.new line, column
       end
@@ -105,7 +105,19 @@ module Akin
       end
       node(p, :chain, m, *ary.map { |a| [n(p, :oper, "++"), a] }.flatten)
     end
-    
+
+    def chain_cont(a, b)
+      if b.name == :chain
+        if a.name == :chain
+          a.args.push *b.args; a
+        else
+          n(a.pos, :chain, a, *b.args)
+        end
+      else
+        n(a.pos, :chain, a, b)
+      end
+    end
+
   end # Parser
-  
+
 end

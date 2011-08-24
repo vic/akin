@@ -4,7 +4,7 @@ require File.expand_path('../spec_helper', __FILE__)
 
 describe 'Akin grammar' do
   include_context 'grammar'
-  
+
   describe 'keyword' do
     it 'matches operator' do
       c('+:', :keyword).should == "+"
@@ -27,11 +27,11 @@ describe 'Akin grammar' do
     it 'starts with a semicolon char' do
       s(':foo', :symbol).should == [:symbol, [:name, "foo"]]
     end
-    
+
     it 'can be an string' do
       s(':"foo"', :symbol).should == [:symbol, [:text, "foo"]]
     end
-    
+
     it 'can be a number' do
       s(':22', :symbol).should == [:symbol, [:fixnum, 22]]
     end
@@ -40,18 +40,18 @@ describe 'Akin grammar' do
       s(':(a, b)', :symbol).should == [:symbol, [:act, nil, "()",
                                                  [:name, "a"],
                                                  [:name, "b"]]]
-    end    
+    end
   end
 
   describe 'cons' do
     it 'parses a cons of two values' do
       s('a :: b', :cons).should == [:cons, [:name, "a"], [:name, "b"]]
     end
-    
+
     it 'parses a cons of two values with no spaces in between' do
       s('a::b', :cons).should == [:cons, [:name, "a"], [:name, "b"]]
     end
-    
+
     it 'parses a cons of two values with no space at right side' do
       s('a:: b', :cons).should == [:cons, [:name, "a"], [:name, "b"]]
     end
@@ -60,7 +60,7 @@ describe 'Akin grammar' do
       s('a ::b:: c', :cons).should == [:cons, [:name, "a"],
                                      [:cons, [:name, "b"], [:name, "c"]]]
     end
-    
+
     it 'parses a cons of four values' do
       s('a ::b:: c :: d', :cons).should == [:cons, [:name, "a"],
                                          [:cons, [:name, "b"],
@@ -73,7 +73,7 @@ describe 'Akin grammar' do
     it 'parses two values' do
       s('a, b', :tuple).should == [:tuple, [:name, "a"], [:name, "b"]]
     end
-    
+
     it 'parses three values' do
       s('a, b, c', :tuple).should == [:tuple, [:name, "a"],
                                               [:name, "b"],
@@ -85,11 +85,11 @@ describe 'Akin grammar' do
     it 'parses empty args' do
       s('()', :args).should == ["()"]
     end
-    
+
     it 'parses one arg' do
       s('(foo)', :args).should == ["()", [:name, "foo"]]
     end
-    
+
     it 'parses two args' do
       s('(foo, bar)', :args).should == ["()", [:name, "foo"], [:name, "bar"]]
     end
@@ -99,24 +99,24 @@ describe 'Akin grammar' do
     it 'parses round' do
       s('foo()', :chain).should == [:act, [:name, "foo"], "()"]
     end
-    
+
     it 'parses curly' do
       s('foo{}', :chain).should == [:act, [:name, "foo"], "{}"]
     end
-    
+
     it 'parses square' do
       s('foo[]', :chain).should == [:act, [:name, "foo"], "[]"]
     end
-    
+
     it 'parses activation with arguments' do
       s('foo(bar)', :chain).should == [:act, [:name, "foo"], "()", [:name, "bar"]]
     end
-    
+
     it 'parses space act' do
       s('foo (bar)', :chain).should ==
         [:chain, [:name, "foo"],
          [:act, nil, "()", [:name, "bar"]]]
-    end        
+    end
 
     it 'parses chained activation' do
       s('foo[]()', :chain).should ==
@@ -142,7 +142,7 @@ describe 'Akin grammar' do
                                                  [:name, "bar"],
                                                  [:name, "baz"]]]
     end
-    
+
     it 'parses a part with args and head' do
       s('foo(bar): baz', :msg).should == [:msg, ["foo", "()",
                                                  [:name, "bar"],
@@ -167,21 +167,21 @@ describe 'Akin grammar' do
         [:msg, ["foo", nil],
                ["baz", nil, [:name, "bat"]]]
     end
-    
+
     it 'parses three empty parts' do
       s('foo: baz: bat:', :msg).should ==
         [:msg, ["foo", nil],
                ["baz", nil],
                ["bat", nil]]
     end
-        
+
     it 'parses three empty parts second having args' do
       s('foo: baz(a, b): bat:', :msg).should ==
         [:msg, ["foo", nil],
                ["baz", "()", [:name, "a"], [:name, "b"]],
                ["bat", nil]]
     end
-    
+
     it 'parses second arg having commas' do
       s('foo: baz: a, b bat: c', :msg).should ==
         [:msg, ["foo", nil],
@@ -207,7 +207,7 @@ describe 'Akin grammar' do
                [:name, "a"],
                [:name, "b"]]]
     end
-    
+
     it 'parses head on same line as a single argument' do
       code = "foo: a\n b"
       s(code, :msg).should ==
@@ -286,7 +286,7 @@ describe 'Akin grammar' do
       s(code, :block).should ==
         [:msg, ["foo", nil, [:name, "a"]],
                ["bar", nil, [:name, "b"]]]
-    end    
+    end
 
     it 'parses two parts on same column as single message' do
       code = "m foo: a\nbar: b"
@@ -317,7 +317,7 @@ describe 'Akin grammar' do
     it 'parses message until semicolon-colon is found' do
       code = "a b: c :; d"
       s(code, :block).should ==
-        [:block, 
+        [:block,
          [:chain, [:name, "a"],
           [:msg, ["b", nil, [:name, "c"]]]],
          [:name, "d"]]
@@ -328,7 +328,7 @@ describe 'Akin grammar' do
       s(code, :root).should ==
         [:chain, [:name, "a"],
          [:cons, [:msg, ["b", nil, [:name, "c"]]], [:name, "d"]]]
-    end        
+    end
   end
 
   describe 'text' do
@@ -354,7 +354,7 @@ describe 'Akin grammar' do
          [:oper, "++"], [:text, " hola "],
          [:oper, "++"], [:name, "mundo"]]
     end
-    
+
     it 'allows many interpolations from start' do
       s('"#{world} hola #{mundo} hi"', :literal).should ==
         [:chain, [:name, "world"],
@@ -446,7 +446,7 @@ describe 'Akin grammar' do
           ["e", nil, [:name, "f"],
            [:msg, ["g", nil, [:name, "h"]]]]]]
     end
-    
+
     it 'parses nested blocks until semicolon' do
       code = <<-CODE
       a b: u
@@ -460,7 +460,7 @@ describe 'Akin grammar' do
          [:msg, ["d", nil]]]
 
     end
-    
+
     it 'parses nested blocks until dot' do
       code = <<-CODE
       a b: u
@@ -474,7 +474,7 @@ describe 'Akin grammar' do
          [:msg, ["d", nil]]]
 
     end
-    
+
     it 'parses messages with args' do
       code = <<-CODE
       a b(
@@ -544,15 +544,15 @@ describe 'Akin grammar' do
          [:oper, "-"], [:name, "c"]]
     end
 
-    it 'can be indicated on next line' do
+    it 'doesnt takes nested chains as arguments' do
       code = <<-CODE
       a foo
         bar
       CODE
       s(code, :root).should ==
-        [:chain,
-         [:name, "a"],
-         [:act, [:name, "foo"], nil, [:name, "bar"]]]
+        [:block,
+          [:chain, [:name, "a"],[:name, "foo"]],
+         [:name, "bar"]]
     end
 
     it 'are not parsed if found dot terminator' do
@@ -566,7 +566,7 @@ describe 'Akin grammar' do
          [:name, "foo"],
          [:name, "bar"]]
     end
-    
+
     it 'are not parsed if found semicolon terminator' do
       code = <<-CODE
       a foo ;
@@ -578,71 +578,16 @@ describe 'Akin grammar' do
          [:name, "bar"]]
     end
 
-    it 'appends nested block to activation args' do
+    it 'doesnt include nested chain as argument' do
       code = <<-CODE
       a foo(baz)
         bar
       CODE
       s(code, :root).should ==
-        [:chain,
-         [:name, "a"],
-         [:act, [:name, "foo"], "()", [:name, "baz"], [:name, "bar"]]]
-    end
-
-    it 'takes last tuple as arguments' do
-      code = <<-CODE
-      a foo bar, baz
-      CODE
-      s(code, :root).should ==
-        [:chain,
-         [:name, "a"],
-         [:act, [:name, "foo"], nil, [:name, "bar"], [:name, "baz"]]]
-    end
-
-
-    it 'takes last one-tuple-ending-with-dot as argument' do
-      code = <<-CODE
-      a foo bar ,.
-      CODE
-      s(code, :root).should ==
-        [:chain,
-         [:name, "a"],
-         [:act, [:name, "foo"], nil, [:name, "bar"]]]
-    end
-
-    it 'allows args to have many lines' do
-      code = <<-CODE
-      a foo bar,
-        baz
-      CODE
-      s(code, :root).should ==
-        [:chain,
-         [:name, "a"],
-         [:act, [:name, "foo"], nil, [:name, "bar"], [:name, "baz"]]]
-    end
-
-    it 'allows args to have many lines ignoring white space between comma' do
-      code = <<-CODE
-      a foo bar
-      ,
-        baz
-      CODE
-      s(code, :root).should ==
-        [:chain,
-         [:name, "a"],
-         [:act, [:name, "foo"], nil, [:name, "bar"], [:name, "baz"]]]
-    end
-
-    it 'allows nested block with curly act' do
-      code = <<-CODE
-      a foo{} bar,
-        baz,
-        bat
-      CODE
-      s(code, :root).should ==
-        [:chain,
-         [:name, "a"],
-         [:act, [:name, "foo"], "{}", [:name, "bar"], [:name, "baz"], [:name, "bat"]]]
+        [:block,
+         [:chain,
+          [:name, "a"],
+          [:act, [:name, "foo"], "()", [:name, "baz"]]], [:name, "bar"]]
     end
 
     it 'doesnt confuse symbols with keyword messages' do
@@ -663,9 +608,24 @@ describe 'Akin grammar' do
         [:msg,
          ["foo", nil,
           [:symbol, [:name, "bar"]],
-          [:symbol, 
+          [:symbol,
            [:msg, ["baz", nil, [:symbol, [:name, "bat"]]]]]]]
     end
     
+    it 'flattens message chain' do
+      s('foo.bar.baz', :root).should == [:chain,
+                                         [:name, "foo"],
+                                         [:name, "bar"],
+                                         [:name, "baz"]]
+    end
+
+    it 'flattens message chain with oper' do
+      s('foo. + bar. baz', :root).should == [:chain,
+                                             [:name, "foo"],
+                                             [:oper, "+"],
+                                             [:name, "bar"],
+                                             [:name, "baz"]]
+    end
+
   end
 end
