@@ -58,7 +58,7 @@ sstr = p:p quoted(:text, & "\""):b ~text_node(p, b)
 
 quoted(t,q) = q quoted_inner(t,q)*:b q {b}
 
-quoted_inner(t,q) = p:p "#{" - block(h)?:b - "}" {b}
+quoted_inner(t,q) = p:p "#{" - block(ctx)?:b - "}" {b}
                   | p:p < ("\\" escape | ("\\" q | "\\#" | &!((q | "#{")) .))+ > 
                     ~n(p, t, text)
 
@@ -97,17 +97,17 @@ cons_left(h) = expr(h):a sp* "::" !&(":"|";"|".")  {a}
 
 cons(h) = cons_left(h):a - chain_val(h):b ~n(p, :cons, a, b)
 
-args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l)
+args = p:p left_brace:l - (comma(ctx) | block(ctx) | {[]}):a - right_brace(l)
        ~n(p, l.join, *Array(a))
 
 msg(h) = kmsg(h) | emsg(h)
 
 kmsg(h) = kmsg(h):a sp* (&("::") | ":" &(";"|".")) {a}
-        | part(h):a w kmsg(h | a.pos):m ~n(a.pos, :msg, a, *m.args)
+        | part(h):a w kmsg(h.at?(a.pos)):m ~n(a.pos, :msg, a, *m.args)
         | part(h):a ~n(a.pos, :msg, a)
 
-part(h) = part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
-        | part(h):p sp+ part_head(h | p.pos):e { p.args.push *Array(e) ; p }
+part(h) = part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p }
+        | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p }
         | p:p keyargs:k ~n(p, k.first, k.last.name, *k.last.args)
         | p:p keyword:k ~n(p, k, nil)
 
@@ -119,22 +119,22 @@ ph_comma(h) = expr(h):a w "," - ph_comma(h):b { b.unshift a ; b }
 emsg(h) = emsg(h):a sp* (&("::") | ":" &(";"|".")) {a}
         | (epart(h) | spart(h)):a ~n(a.pos, :msg, a)
 
-epart(h) = epart(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
-         | epart(h):p sp+ epart_head(h | p.pos):e { p.args.push *Array(e) ; p }
+epart(h) = epart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p }
+         | epart(h):p sp+ epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p }
          | args:a ":" !&":" ~n(a.pos, nil, a.name, *a.args)
 
-spart(h) = spart(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p }
-         | spart(h):p sp* epart_head(h | p.pos):e { p.args.push *Array(e) ; p }
+spart(h) = spart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p }
+         | spart(h):p sp* epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p }
          | p:p ":" (sp|nl|sheebang) ~n(p, nil, nil)
 
 epart_head(h) = ph_comma(h) | expr(h) | {[]}
 
-expr(h) = value(h):e &{ e.pos.column > h.column } {e}
+expr(h) = value(h):e &{ e.pos.column > h.pos.column } {e}
 
 chain(h) = chain(h):a w "." - chain(h):b ~chain_cont(a, b)
          | operator:a !&brace o w chain(h):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
-         | chain_val(h):a sp* chain(a.pos):b ~chain_cont(a, b)
+         | chain_val(h):a sp* chain(h.at(a.pos)):b ~chain_cont(a, b)
          | chain_val(h)
 
 chain_val(h) = cons(h) | expr(h)
@@ -197,6 +197,6 @@ number_escapes = /[xX]/ < /[0-9a-fA-F]{1,5}/ > { [text.to_i(16)].pack("U") }
                | /[uU]/ < /[0-9a-fA-F]{4}/ > { [text.to_i(16)].pack("U") }
 
 
-root = - block(h)?:b - eof {b}
-unit = - chain(h):c {c}
+root = - block(ctx)?:b - eof {b}
+unit = - chain(ctx):c {c}
 eof = !.

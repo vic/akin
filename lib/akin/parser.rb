@@ -29,17 +29,46 @@ module Akin
       Position.new(current_line(o), current_column(o))
     end
 
-    def h
-      Position.new(0, 0)
+    def ctx
+      Context.new Position.new(0, 0)
     end
 
-    class Position
-      attr_accessor :line, :column
+    class Context < Struct.new(:pos)
 
-      def initialize(line = nil, column = nil)
-        @line, @column = line, column
+      def self.attr(name, val = true)
+        attr_accessor name
+        module_eval "
+            #{"def"} #{name}?
+              !!(@#{name} ||= #{val})
+            end
+            #{"def"} #{name}!
+              @#{name} = !#{name}?
+            end
+            #{"def"} #{name}(val = #{val})
+              o = dup
+              o.#{name} = val
+              o
+            end
+        "
       end
 
+      def at?(pos)
+        o = dup
+        o.pos = @pos | pos
+        o
+      end
+
+      def at(pos)
+        o = dup
+        o.pos = pos
+        o
+      end
+
+      attr :keymsg
+      attr :comma
+    end
+
+    class Position < Struct.new(:line, :column)
       def |(other)
         if @line.nil? || @line.zero?
           other

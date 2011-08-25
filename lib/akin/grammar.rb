@@ -1490,7 +1490,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # quoted_inner = (p:p "#{" - block(h)?:b - "}" {b} | p:p < ("\\" escape | ("\\" q | "\\#" | &(!(q | "#{")) .))+ > {n(p, t, text)})
+  # quoted_inner = (p:p "#{" - block(ctx)?:b - "}" {b} | p:p < ("\\" escape | ("\\" q | "\\#" | &(!(q | "#{")) .))+ > {n(p, t, text)})
   def _quoted_inner(t,q)
 
     _save = self.pos
@@ -1515,7 +1515,7 @@ class Akin::Grammar
           break
         end
         _save2 = self.pos
-        _tmp = apply_with_args(:_block, h)
+        _tmp = apply_with_args(:_block, ctx)
         @result = nil unless _tmp
         unless _tmp
           _tmp = true
@@ -2909,7 +2909,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # args = p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}
+  # args = p:p left_brace:l - (comma(ctx) | block(ctx) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}
   def _args
 
     _save = self.pos
@@ -2934,10 +2934,10 @@ class Akin::Grammar
 
       _save1 = self.pos
       while true # choice
-        _tmp = apply_with_args(:_comma, h)
+        _tmp = apply_with_args(:_comma, ctx)
         break if _tmp
         self.pos = _save1
-        _tmp = apply_with_args(:_block, h)
+        _tmp = apply_with_args(:_block, ctx)
         break if _tmp
         self.pos = _save1
         @result = begin; []; end
@@ -2992,7 +2992,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # kmsg = (kmsg(h):a sp* (&"::" | ":" &(";" | ".")) {a} | part(h):a w kmsg(h | a.pos):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})
+  # kmsg = (kmsg(h):a sp* (&"::" | ":" &(";" | ".")) {a} | part(h):a w kmsg(h.at?(a.pos)):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})
   def _kmsg(h)
 
     _save = self.pos
@@ -3084,7 +3084,7 @@ class Akin::Grammar
           self.pos = _save8
           break
         end
-        _tmp = apply_with_args(:_kmsg, h | a.pos)
+        _tmp = apply_with_args(:_kmsg, h.at?(a.pos))
         m = @result
         unless _tmp
           self.pos = _save8
@@ -3126,7 +3126,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # part = (part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})
+  # part = (part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})
   def _part(h)
 
     _save = self.pos
@@ -3150,7 +3150,7 @@ class Akin::Grammar
           self.pos = _save1
           break
         end
-        _tmp = apply_with_args(:_block, h | p.pos)
+        _tmp = apply_with_args(:_block, h.at?(p.pos))
         e = @result
         unless _tmp
           self.pos = _save1
@@ -3190,7 +3190,7 @@ class Akin::Grammar
           self.pos = _save2
           break
         end
-        _tmp = apply_with_args(:_part_head, h | p.pos)
+        _tmp = apply_with_args(:_part_head, h.at?(p.pos))
         e = @result
         unless _tmp
           self.pos = _save2
@@ -3511,7 +3511,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # epart = (epart(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | epart(h):p sp+ epart_head(h | p.pos):e { p.args.push *Array(e) ; p } | args:a ":" !(&":") {n(a.pos, nil, a.name, *a.args)})
+  # epart = (epart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | epart(h):p sp+ epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | args:a ":" !(&":") {n(a.pos, nil, a.name, *a.args)})
   def _epart(h)
 
     _save = self.pos
@@ -3535,7 +3535,7 @@ class Akin::Grammar
           self.pos = _save1
           break
         end
-        _tmp = apply_with_args(:_block, h | p.pos)
+        _tmp = apply_with_args(:_block, h.at?(p.pos))
         e = @result
         unless _tmp
           self.pos = _save1
@@ -3575,7 +3575,7 @@ class Akin::Grammar
           self.pos = _save2
           break
         end
-        _tmp = apply_with_args(:_epart_head, h | p.pos)
+        _tmp = apply_with_args(:_epart_head, h.at?(p.pos))
         e = @result
         unless _tmp
           self.pos = _save2
@@ -3632,7 +3632,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # spart = (spart(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | spart(h):p sp* epart_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p ":" (sp | nl | sheebang) {n(p, nil, nil)})
+  # spart = (spart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | spart(h):p sp* epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p ":" (sp | nl | sheebang) {n(p, nil, nil)})
   def _spart(h)
 
     _save = self.pos
@@ -3656,7 +3656,7 @@ class Akin::Grammar
           self.pos = _save1
           break
         end
-        _tmp = apply_with_args(:_block, h | p.pos)
+        _tmp = apply_with_args(:_block, h.at?(p.pos))
         e = @result
         unless _tmp
           self.pos = _save1
@@ -3690,7 +3690,7 @@ class Akin::Grammar
           self.pos = _save2
           break
         end
-        _tmp = apply_with_args(:_epart_head, h | p.pos)
+        _tmp = apply_with_args(:_epart_head, h.at?(p.pos))
         e = @result
         unless _tmp
           self.pos = _save2
@@ -3778,7 +3778,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # expr = value(h):e &{ e.pos.column > h.column } {e}
+  # expr = value(h):e &{ e.pos.column > h.pos.column } {e}
   def _expr(h)
 
     _save = self.pos
@@ -3790,7 +3790,7 @@ class Akin::Grammar
         break
       end
       _save1 = self.pos
-      _tmp = begin;  e.pos.column > h.column ; end
+      _tmp = begin;  e.pos.column > h.pos.column ; end
       self.pos = _save1
       unless _tmp
         self.pos = _save
@@ -3808,7 +3808,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # chain = (chain(h):a w "." - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(a.pos):b {chain_cont(a, b)} | chain_val(h))
+  # chain = (chain(h):a w "." - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(h.at(a.pos)):b {chain_cont(a, b)} | chain_val(h))
   def _chain(h)
 
     _save = self.pos
@@ -3916,7 +3916,7 @@ class Akin::Grammar
           self.pos = _save5
           break
         end
-        _tmp = apply_with_args(:_chain, a.pos)
+        _tmp = apply_with_args(:_chain, h.at(a.pos))
         b = @result
         unless _tmp
           self.pos = _save5
@@ -4996,7 +4996,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # root = - block(h)?:b - eof {b}
+  # root = - block(ctx)?:b - eof {b}
   def _root
 
     _save = self.pos
@@ -5007,7 +5007,7 @@ class Akin::Grammar
         break
       end
       _save1 = self.pos
-      _tmp = apply_with_args(:_block, h)
+      _tmp = apply_with_args(:_block, ctx)
       @result = nil unless _tmp
       unless _tmp
         _tmp = true
@@ -5040,7 +5040,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # unit = - chain(h):c {c}
+  # unit = - chain(ctx):c {c}
   def _unit
 
     _save = self.pos
@@ -5050,7 +5050,7 @@ class Akin::Grammar
         self.pos = _save
         break
       end
-      _tmp = apply_with_args(:_chain, h)
+      _tmp = apply_with_args(:_chain, ctx)
       c = @result
       unless _tmp
         self.pos = _save
@@ -5110,7 +5110,7 @@ class Akin::Grammar
   Rules[:_qstr] = rule_info("qstr", "p:p \"'\" < (\"\\\\\" escape | \"\\\\'\" | !(&\"'\") .)* > \"'\" {n(p, :text, text)}")
   Rules[:_sstr] = rule_info("sstr", "p:p quoted(:text, &\"\\\"\"):b {text_node(p, b)}")
   Rules[:_quoted] = rule_info("quoted", "q quoted_inner(t, q)*:b q {b}")
-  Rules[:_quoted_inner] = rule_info("quoted_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\" escape | (\"\\\\\" q | \"\\\\\#\" | &(!(q | \"\#{\")) .))+ > {n(p, t, text)})")
+  Rules[:_quoted_inner] = rule_info("quoted_inner", "(p:p \"\#{\" - block(ctx)?:b - \"}\" {b} | p:p < (\"\\\\\" escape | (\"\\\\\" q | \"\\\\\#\" | &(!(q | \"\#{\")) .))+ > {n(p, t, text)})")
   Rules[:_mstr] = rule_info("mstr", "p:p \"\\\"\\\"\\\"\" mstr_inner*:b \"\\\"\\\"\\\"\" {text_node(p, b)}")
   Rules[:_mstr_inner] = rule_info("mstr_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\" escape | (\"\\\\\\\"\\\"\\\"\" | !(&(\"\\\"\\\"\\\"\" | \"\#{\")) . | . &\"\\\"\\\"\\\"\"))+ > {n(p, :text, text)})")
   Rules[:_opchr] = rule_info("opchr", "/[\\~\\!@\\\#\\$%\\^\\&\\|\\?\\<\\>*\\/+=-]/")
@@ -5126,24 +5126,24 @@ class Akin::Grammar
   Rules[:_tuple] = rule_info("tuple", "comma(h):c {n(p, :tuple, *c)}")
   Rules[:_cons_left] = rule_info("cons_left", "expr(h):a sp* \"::\" !(&(\":\" | \";\" | \".\")) {a}")
   Rules[:_cons] = rule_info("cons", "cons_left(h):a - chain_val(h):b {n(p, :cons, a, b)}")
-  Rules[:_args] = rule_info("args", "p:p left_brace:l - (comma(h) | block(h) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}")
+  Rules[:_args] = rule_info("args", "p:p left_brace:l - (comma(ctx) | block(ctx) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}")
   Rules[:_msg] = rule_info("msg", "(kmsg(h) | emsg(h))")
-  Rules[:_kmsg] = rule_info("kmsg", "(kmsg(h):a sp* (&\"::\" | \":\" &(\";\" | \".\")) {a} | part(h):a w kmsg(h | a.pos):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})")
-  Rules[:_part] = rule_info("part", "(part(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})")
+  Rules[:_kmsg] = rule_info("kmsg", "(kmsg(h):a sp* (&\"::\" | \":\" &(\";\" | \".\")) {a} | part(h):a w kmsg(h.at?(a.pos)):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})")
+  Rules[:_part] = rule_info("part", "(part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})")
   Rules[:_part_head] = rule_info("part_head", "!(&keypart) (ph_comma(h) | expr(h) | {[]})")
   Rules[:_ph_comma] = rule_info("ph_comma", "(expr(h):a w \",\" - ph_comma(h):b { b.unshift a ; b } | expr(h):a w \",\" - expr(h):b { [a,b] })")
   Rules[:_emsg] = rule_info("emsg", "(emsg(h):a sp* (&\"::\" | \":\" &(\";\" | \".\")) {a} | (epart(h) | spart(h)):a {n(a.pos, :msg, a)})")
-  Rules[:_epart] = rule_info("epart", "(epart(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | epart(h):p sp+ epart_head(h | p.pos):e { p.args.push *Array(e) ; p } | args:a \":\" !(&\":\") {n(a.pos, nil, a.name, *a.args)})")
-  Rules[:_spart] = rule_info("spart", "(spart(h):p o w block(h | p.pos):e { p.args.push *Array(e) ; p } | spart(h):p sp* epart_head(h | p.pos):e { p.args.push *Array(e) ; p } | p:p \":\" (sp | nl | sheebang) {n(p, nil, nil)})")
+  Rules[:_epart] = rule_info("epart", "(epart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | epart(h):p sp+ epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | args:a \":\" !(&\":\") {n(a.pos, nil, a.name, *a.args)})")
+  Rules[:_spart] = rule_info("spart", "(spart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | spart(h):p sp* epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p \":\" (sp | nl | sheebang) {n(p, nil, nil)})")
   Rules[:_epart_head] = rule_info("epart_head", "(ph_comma(h) | expr(h) | {[]})")
-  Rules[:_expr] = rule_info("expr", "value(h):e &{ e.pos.column > h.column } {e}")
-  Rules[:_chain] = rule_info("chain", "(chain(h):a w \".\" - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(a.pos):b {chain_cont(a, b)} | chain_val(h))")
+  Rules[:_expr] = rule_info("expr", "value(h):e &{ e.pos.column > h.pos.column } {e}")
+  Rules[:_chain] = rule_info("chain", "(chain(h):a w \".\" - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(h.at(a.pos)):b {chain_cont(a, b)} | chain_val(h))")
   Rules[:_chain_val] = rule_info("chain_val", "(cons(h) | expr(h))")
   Rules[:_block] = rule_info("block", "(chain(h):a sp* t - block(h):b {n(a.pos, :block, a, *Array(b.name == :block && b.args || b))} | chain(h))")
   Rules[:_escape] = rule_info("escape", "(number_escapes | escapes)")
   Rules[:_escapes] = rule_info("escapes", "(\"n\" { \"\\n\" } | \"s\" { \" \" } | \"r\" { \"\\r\" } | \"t\" { \"\\t\" } | \"v\" { \"\\v\" } | \"f\" { \"\\f\" } | \"b\" { \"\\b\" } | \"a\" { \"\\a\" } | \"e\" { \"\\e\" } | \"\\\\\" { \"\\\\\" } | \"\\\"\" { \"\\\"\" } | \"BS\" { \"\\b\" } | \"HT\" { \"\\t\" } | \"LF\" { \"\\n\" } | \"VT\" { \"\\v\" } | \"FF\" { \"\\f\" } | \"CR\" { \"\\r\" } | \"SO\" { \"\\016\" } | \"SI\" { \"\\017\" } | \"EM\" { \"\\031\" } | \"FS\" { \"\\034\" } | \"GS\" { \"\\035\" } | \"RS\" { \"\\036\" } | \"US\" { \"\\037\" } | \"SP\" { \" \" } | \"NUL\" { \"\\000\" } | \"SOH\" { \"\\001\" } | \"STX\" { \"\\002\" } | \"ETX\" { \"\\003\" } | \"EOT\" { \"\\004\" } | \"ENQ\" { \"\\005\" } | \"ACK\" { \"\\006\" } | \"BEL\" { \"\\a\" } | \"DLE\" { \"\\020\" } | \"DC1\" { \"\\021\" } | \"DC2\" { \"\\022\" } | \"DC3\" { \"\\023\" } | \"DC4\" { \"\\024\" } | \"NAK\" { \"\\025\" } | \"SYN\" { \"\\026\" } | \"ETB\" { \"\\027\" } | \"CAN\" { \"\\030\" } | \"SUB\" { \"\\032\" } | \"ESC\" { \"\\e\" } | \"DEL\" { \"\\177\" } | < . > { \"\\\\\" + text })")
   Rules[:_number_escapes] = rule_info("number_escapes", "(/[xX]/ < /[0-9a-fA-F]{1,5}/ > { [text.to_i(16)].pack(\"U\") } | < /\\d{1,6}/ > { [text.to_i].pack(\"U\") } | /[oO]/ < /[0-7]{1,7}/ > { [text.to_i(16)].pack(\"U\") } | /[uU]/ < /[0-9a-fA-F]{4}/ > { [text.to_i(16)].pack(\"U\") })")
-  Rules[:_root] = rule_info("root", "- block(h)?:b - eof {b}")
-  Rules[:_unit] = rule_info("unit", "- chain(h):c {c}")
+  Rules[:_root] = rule_info("root", "- block(ctx)?:b - eof {b}")
+  Rules[:_unit] = rule_info("unit", "- chain(ctx):c {c}")
   Rules[:_eof] = rule_info("eof", "!.")
 end
