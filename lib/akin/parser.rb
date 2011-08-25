@@ -86,10 +86,6 @@ module Akin
       def with(name, *args)
         self.class.new pos, name, *args
       end
-
-      def shuffle
-        Shuffle.shuffle(self)
-      end
     end
 
     def text_node(p, parts)

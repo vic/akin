@@ -1,15 +1,44 @@
+# -*- coding: utf-8 -*-
 require File.expand_path('../spec_helper', __FILE__)
 
-describe 'Akin operator shuffling' do
+describe Akin::Shuffle do
   include_context 'grammar'
 
-  describe 'name' do
-    it 'should return same node' do
-      n = c('hi')
-      n.shuffle.should be(n)
+  describe '#operators returns an ary' do
+    it 'non empty if found operators in chain' do
+      subject.operators(c('+ * -').args).should_not be_empty
     end
+
+    it 'including only operators' do
+      subject.operators(c('+ b * c -').args).size.should == 3
+    end
+    
+    it 'with operators sorted by precedence' do
+      subject.operators(c('+ *').args).map(&:name).should == ["*", "+"]
+    end
+
+    it 'with +,- operators sorted by fixity' do
+      subject.operators(c('+ - +').args).map(&:name).should == ["+", "-", "+"]
+    end
+    
+    it 'with +,-,* operators sorted by fixity' do
+      subject.operators(c('+ - * +').args).map(&:name).should == ["*", "+", "-", "+"]
+    end
+
+    it 'with +,-,*,/ operators sorted by fixity' do
+      subject.operators(c('+ - * + /').args).map(&:name).should ==
+        ["/", "*", "+", "-", "+"]
+    end
+
+    it 'detects and as an operator' do
+      subject.operators(c('you and me').args).size.should == 1
+    end
+
+    it 'detects ∈ as an operator' do
+      subject.operators(c('a ∈ b').args).size.should == 1
+    end    
   end
-  
+
   describe 'basic math opers' do
     it 'associates correctly + and *' do
       n('a + b * c - d').should ==
@@ -43,37 +72,165 @@ describe 'Akin operator shuffling' do
          [:chain, [:name, "b"],
           [:act, "+", nil, [:name, "c"]]]]
     end
+
+    it 'is right associative' do
+      n('a = b = c').should ==
+        [:act, "=", nil, [:name, "a"], [:act, "=", nil, [:name, "b"], [:name, "c"]]]
+    end
+
+    it 'is parsed correctly with &&' do
+      n('a && b = c').should ==
+        [:chain, [:name, "a"],
+         [:act, "&&", nil, [:act, "=", nil, [:name, "b"], [:name, "c"]]]]
+    end
+
+    it 'is parsed correctly with and' do
+      n('a and b = c').should ==
+        [:chain, [:name, "a"],
+         [:act, "and", nil, [:act, "=", nil, [:name, "b"], [:name, "c"]]]]
+    end
+
+    it 'shuffles correctly with or' do
+      n('a = b = c or d').should ==
+        [:chain, [:act, "=", nil,
+                  [:name, "a"],
+                  [:act, "=", nil, [:name, "b"], [:name, "c"]]],
+         [:act, "or", nil, [:name, "d"]]]
+    end
   end
 
   describe 'unary negation' do
     it 'binds to right' do
       n('!b').should ==
-        [:chain, [:name, "b"], [:act, "!", nil]]
+        [:act, "!", nil, [:name, "b"]]
     end
     
     it 'binds chain to right' do
       n('!b c d').should ==
-        [:chain,
-         [:name, "b"], [:name, "c"], [:name, "d"],
-         [:act, "!", nil]]
+        [:act, "!", nil, 
+         [:chain, [:name, "b"], [:name, "c"], [:name, "d"]]]
     end
 
     it 'binds chain to right till oper' do
       n('!b c + d').should ==
         [:chain,
-         [:name, "b"], [:name, "c"],
-         [:act, "!", nil],
+         [:act, "!", nil, [:chain, [:name, "b"], [:name, "c"]]],
          [:act, "+", nil, [:name, "d"]]]
     end    
 
-    it 'binds chain to right till oper' do
+    it 'binds chain to right till end' do
       n('b + ! c d').should ==
         [:chain,
          [:name, "b"], 
          [:act, "+", nil,
-          [:chain, [:name, "c"], [:name, "d"], [:act, "!", nil]]]]
-    end    
+           [:act, "!", nil,
+            [:chain, [:name, "c"], [:name, "d"]]]]]
+    end
+
+    it 'shuffles correctly with logical opers' do
+      n('a = !c || b && d').should == 
+        [:chain, 
+
+         [:act, "=", nil, 
+          [:name, "a"], 
+          [:act, "!", nil, [:name, "c"]]], 
+
+         [:act, "||", nil, 
+          [:chain, [:name, "b"], 
+           [:act, "&&", nil, [:name, "d"]]]]]
+    end
+  end
+  
+  describe 'logical operator &&' do
+    it 'associates correctly with logical opers' do
+      n('a = b && c || d').should ==
+        [:chain,
+         [:act, "=", nil,
+          [:name, "a"],
+          [:name, "b"]],
+         [:act, "&&", nil, [:name, "c"]],
+         [:act, "||", nil, [:name, "d"]]]
+    end
+
+    it 'can be chained' do
+      n('a && b && c').should ==
+        [:chain, [:name, "a"],
+         [:act, "&&", nil, [:name, "b"]], [:act, "&&", nil, [:name, "c"]]]
+    end
   end
 
-end
+  describe 'decrement operator --' do
+    it 'binds left expression' do
+      n('a --').should ==
+        [:act, "--", nil, [:name, "a"]]
+    end
 
+    it 'doesnt takes right chain' do
+      n('a -- b').should ==
+        [:chain, [:act, "--", nil, [:name, "a"]], [:name, "b"]]
+    end
+  end
+
+  describe '∈ operator' do
+    it 'invers its lhs and rhs' do
+      n('a ∈ b').should ==
+        [:chain,
+         [:name, "b"],
+         [:act, "∈", nil, [:name, "a"]]]
+    end
+
+    it 'can be chained with other inverted operator and is right associative' do
+      n('a ∈ b ∉ c').should ==
+        [:chain,
+         [:name, "b"],
+         [:act, "∈", nil,
+          [:chain,
+           [:name, "c"],
+           [:act, "∉", nil, [:name, "a"]]]]]
+    end
+  end
+
+  describe '? operator' do
+    it 'takes its left expr and rest of rhs including other operators' do
+      n('a b ? c + d').should ==
+        [:chain,
+         [:name, "a"],
+         [:act, "?", nil, [:name, "b"],
+          [:chain,
+           [:name, "c"],
+           [:act, "+", nil, [:name, "d"]]]]]
+    end
+  end
+
+  describe 'on message sends' do
+    it 'shuffles chain inside activation' do
+      n('a(b + c)').should ==
+        [:act, [:name, "a"], "()",
+         [:chain, [:name, "b"],
+          [:act, "+", nil, [:name, "c"]]]]
+    end
+
+    it 'shuffles chain inside args' do
+      n('(b + c)').should ==
+        [:act, nil, "()",
+         [:chain, [:name, "b"],
+          [:act, "+", nil, [:name, "c"]]]]
+    end
+  end
+
+  describe 'on keyword messages' do
+    it 'shuffles chain inside args' do
+      n('a(b + c):').should ==
+        [:msg, ["a", "()", 
+                [:chain, [:name, "b"],
+                 [:act, "+", nil, [:name, "c"]]]]]
+    end
+
+    it 'shuffles chain inside keyword arg', :pending => true do
+      n('a: b + c').should ==
+        [:msg, ["a", "()", 
+                [:chain, [:name, "b"],
+                 [:act, "+", nil, [:name, "c"]]]]]
+    end
+  end
+end
