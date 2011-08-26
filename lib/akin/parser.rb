@@ -36,13 +36,15 @@ module Akin
     class Context < Struct.new(:pos)
 
       def self.attr(name, val = true)
-        attr_accessor name
         module_eval "
             #{"def"} #{name}?
               !!(@#{name} ||= #{val})
             end
             #{"def"} #{name}!
               @#{name} = !#{name}?
+            end
+            #{"def"} #{name}=(val)
+              @#{name} = val
             end
             #{"def"} #{name}(val = #{val})
               o = dup
