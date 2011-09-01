@@ -327,7 +327,8 @@ describe 'Akin grammar' do
       code = "a b: c :: d"
       s(code, :root).should ==
         [:chain, [:name, "a"],
-         [:cons, [:msg, ["b", nil, [:name, "c"]]], [:name, "d"]]]
+         [:msg, ["b", nil,
+                 [:cons, [:name, "c"], [:name, "d"]]]]]
     end
   end
 
@@ -607,9 +608,9 @@ describe 'Akin grammar' do
       s(code, :root).should ==
         [:msg,
          ["foo", nil,
-          [:symbol, [:name, "bar"]],
-          [:symbol,
-           [:msg, ["baz", nil, [:symbol, [:name, "bat"]]]]]]]
+          [:chain, [:symbol, [:name, "bar"]],
+           [:symbol,
+            [:msg, ["baz", nil, [:symbol, [:name, "bat"]]]]]]]]
     end
     
     it 'flattens message chain' do
@@ -646,8 +647,8 @@ describe 'Akin grammar' do
         [:chain,
          [:name, "foo"],
          [:msg, [nil, nil,
-                 [:name, "bar"],
-                 [:msg, [nil, nil, [:name, "baz"]]]]]]
+                 [:chain, [:name, "bar"],
+                  [:msg, [nil, nil, [:name, "baz"]]]]]]]
     end
 
     it 'parses an empty keyword message' do
@@ -655,8 +656,8 @@ describe 'Akin grammar' do
         [:chain,
          [:name, "foo"],
          [:msg, [nil, nil,
-                 [:name, "bar"],
-                 [:msg, ["baz", nil, [:name, "bat"]]]]]]
+                 [:chain, [:name, "bar"],
+                  [:msg, ["baz", nil, [:name, "bat"]]]]]]]
     end
 
     it 'parses an empty keyword message' do

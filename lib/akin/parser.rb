@@ -38,7 +38,8 @@ module Akin
       def self.attr(name, val = true)
         module_eval "
             #{"def"} #{name}?
-              !!(@#{name} ||= #{val})
+              @#{name} = #{val} if @#{name}.nil?
+              @#{name}
             end
             #{"def"} #{name}!
               @#{name} = !#{name}?

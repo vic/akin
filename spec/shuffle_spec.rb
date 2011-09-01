@@ -191,9 +191,9 @@ describe 'Akin operator shuffle' do
                  [:act, "+", nil, [:name, "c"]]]]]
     end
 
-    it 'shuffles chain inside keyword arg', :pending => true do
+    it 'shuffles chain inside keyword arg' do
       n('a: b + c').should ==
-        [:msg, ["a", "()", 
+        [:msg, ["a", nil, 
                 [:chain, [:name, "b"],
                  [:act, "+", nil, [:name, "c"]]]]]
     end
