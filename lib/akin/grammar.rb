@@ -2554,7 +2554,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # value = (msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | symbol(h) | &{h.keymsg?} name | &{!h.keymsg?} name &(!":") | &{h.keymsg?} operator | &{!h.keymsg?} operator &(!":"))
+  # value = (msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | symbol(h) | &{!h.keymsg?} (operator | name) &(!":") | &{h.keymsg?} (operator | name))
   def _value(h)
 
     _save = self.pos
@@ -2616,13 +2616,34 @@ class Akin::Grammar
       _save3 = self.pos
       while true # sequence
         _save4 = self.pos
-        _tmp = begin; h.keymsg?; end
+        _tmp = begin; !h.keymsg?; end
         self.pos = _save4
         unless _tmp
           self.pos = _save3
           break
         end
-        _tmp = apply(:_name)
+
+        _save5 = self.pos
+        while true # choice
+          _tmp = apply(:_operator)
+          break if _tmp
+          self.pos = _save5
+          _tmp = apply(:_name)
+          break if _tmp
+          self.pos = _save5
+          break
+        end # end choice
+
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        _save6 = self.pos
+        _save7 = self.pos
+        _tmp = match_string(":")
+        _tmp = _tmp ? nil : true
+        self.pos = _save7
+        self.pos = _save6
         unless _tmp
           self.pos = _save3
         end
@@ -2632,76 +2653,29 @@ class Akin::Grammar
       break if _tmp
       self.pos = _save
 
-      _save5 = self.pos
+      _save8 = self.pos
       while true # sequence
-        _save6 = self.pos
-        _tmp = begin; !h.keymsg?; end
-        self.pos = _save6
-        unless _tmp
-          self.pos = _save5
-          break
-        end
-        _tmp = apply(:_name)
-        unless _tmp
-          self.pos = _save5
-          break
-        end
-        _save7 = self.pos
-        _save8 = self.pos
-        _tmp = match_string(":")
-        _tmp = _tmp ? nil : true
-        self.pos = _save8
-        self.pos = _save7
-        unless _tmp
-          self.pos = _save5
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save9 = self.pos
-      while true # sequence
-        _save10 = self.pos
+        _save9 = self.pos
         _tmp = begin; h.keymsg?; end
-        self.pos = _save10
+        self.pos = _save9
         unless _tmp
-          self.pos = _save9
+          self.pos = _save8
           break
         end
-        _tmp = apply(:_operator)
-        unless _tmp
-          self.pos = _save9
-        end
-        break
-      end # end sequence
 
-      break if _tmp
-      self.pos = _save
+        _save10 = self.pos
+        while true # choice
+          _tmp = apply(:_operator)
+          break if _tmp
+          self.pos = _save10
+          _tmp = apply(:_name)
+          break if _tmp
+          self.pos = _save10
+          break
+        end # end choice
 
-      _save11 = self.pos
-      while true # sequence
-        _save12 = self.pos
-        _tmp = begin; !h.keymsg?; end
-        self.pos = _save12
         unless _tmp
-          self.pos = _save11
-          break
-        end
-        _tmp = apply(:_operator)
-        unless _tmp
-          self.pos = _save11
-          break
-        end
-        _save13 = self.pos
-        _save14 = self.pos
-        _tmp = match_string(":")
-        _tmp = _tmp ? nil : true
-        self.pos = _save14
-        self.pos = _save13
-        unless _tmp
-          self.pos = _save11
+          self.pos = _save8
         end
         break
       end # end sequence
@@ -3232,7 +3206,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # part = (part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})
+  # part = (part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p keyword:k sp* "." w chain(h.at?(p)):c {n(p, k, nil, c)} | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})
   def _part(h)
 
     _save = self.pos
@@ -3321,13 +3295,38 @@ class Akin::Grammar
           self.pos = _save4
           break
         end
-        _tmp = apply(:_keyargs)
+        _tmp = apply(:_keyword)
         k = @result
         unless _tmp
           self.pos = _save4
           break
         end
-        @result = begin; n(p, k.first, k.last.name, *k.last.args); end
+        while true
+          _tmp = apply(:_sp)
+          break unless _tmp
+        end
+        _tmp = true
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        _tmp = match_string(".")
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        _tmp = apply(:_w)
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        _tmp = apply_with_args(:_chain, h.at?(p))
+        c = @result
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        @result = begin; n(p, k, nil, c); end
         _tmp = true
         unless _tmp
           self.pos = _save4
@@ -3338,24 +3337,49 @@ class Akin::Grammar
       break if _tmp
       self.pos = _save
 
-      _save5 = self.pos
+      _save6 = self.pos
       while true # sequence
         _tmp = apply(:_p)
         p = @result
         unless _tmp
-          self.pos = _save5
+          self.pos = _save6
+          break
+        end
+        _tmp = apply(:_keyargs)
+        k = @result
+        unless _tmp
+          self.pos = _save6
+          break
+        end
+        @result = begin; n(p, k.first, k.last.name, *k.last.args); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save6
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save7 = self.pos
+      while true # sequence
+        _tmp = apply(:_p)
+        p = @result
+        unless _tmp
+          self.pos = _save7
           break
         end
         _tmp = apply(:_keyword)
         k = @result
         unless _tmp
-          self.pos = _save5
+          self.pos = _save7
           break
         end
         @result = begin; n(p, k, nil); end
         _tmp = true
         unless _tmp
-          self.pos = _save5
+          self.pos = _save7
         end
         break
       end # end sequence
@@ -3369,14 +3393,25 @@ class Akin::Grammar
     return _tmp
   end
 
-  # part_head = !(&keypart) (ph_comma(h.keymsg(false)) | chain(h.keymsg(false)) | {[]})
+  # part_head = !(&(keypart | ".")) (ph_comma(h.keymsg(false)) | chain(h.keymsg(false)) | {[]})
   def _part_head(h)
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
       _save2 = self.pos
-      _tmp = apply(:_keypart)
+
+      _save3 = self.pos
+      while true # choice
+        _tmp = apply(:_keypart)
+        break if _tmp
+        self.pos = _save3
+        _tmp = match_string(".")
+        break if _tmp
+        self.pos = _save3
+        break
+      end # end choice
+
       self.pos = _save2
       _tmp = _tmp ? nil : true
       self.pos = _save1
@@ -3385,18 +3420,18 @@ class Akin::Grammar
         break
       end
 
-      _save3 = self.pos
+      _save4 = self.pos
       while true # choice
         _tmp = apply_with_args(:_ph_comma, h.keymsg(false))
         break if _tmp
-        self.pos = _save3
+        self.pos = _save4
         _tmp = apply_with_args(:_chain, h.keymsg(false))
         break if _tmp
-        self.pos = _save3
+        self.pos = _save4
         @result = begin; []; end
         _tmp = true
         break if _tmp
-        self.pos = _save3
+        self.pos = _save4
         break
       end # end choice
 
@@ -3914,7 +3949,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # chain = (chain(h):a w "." - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(h.at(a.pos)):b {chain_cont(a, b)} | chain_val(h))
+  # chain = (chain(h):a w &{h.keymsg?} "." - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(h.at(a.pos)):b {chain_cont(a, b)} | chain_val(h))
   def _chain(h)
 
     _save = self.pos
@@ -3929,6 +3964,13 @@ class Akin::Grammar
           break
         end
         _tmp = apply(:_w)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _save2 = self.pos
+        _tmp = begin; h.keymsg?; end
+        self.pos = _save2
         unless _tmp
           self.pos = _save1
           break
@@ -3960,44 +4002,44 @@ class Akin::Grammar
       break if _tmp
       self.pos = _save
 
-      _save2 = self.pos
+      _save3 = self.pos
       while true # sequence
         _tmp = apply(:_operator)
         a = @result
         unless _tmp
-          self.pos = _save2
+          self.pos = _save3
           break
         end
-        _save3 = self.pos
         _save4 = self.pos
+        _save5 = self.pos
         _tmp = apply(:_brace)
-        self.pos = _save4
+        self.pos = _save5
         _tmp = _tmp ? nil : true
-        self.pos = _save3
+        self.pos = _save4
         unless _tmp
-          self.pos = _save2
+          self.pos = _save3
           break
         end
         _tmp = apply(:_o)
         unless _tmp
-          self.pos = _save2
+          self.pos = _save3
           break
         end
         _tmp = apply(:_w)
         unless _tmp
-          self.pos = _save2
+          self.pos = _save3
           break
         end
         _tmp = apply_with_args(:_chain, h)
         b = @result
         unless _tmp
-          self.pos = _save2
+          self.pos = _save3
           break
         end
         @result = begin; n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b)); end
         _tmp = true
         unless _tmp
-          self.pos = _save2
+          self.pos = _save3
         end
         break
       end # end sequence
@@ -4005,12 +4047,12 @@ class Akin::Grammar
       break if _tmp
       self.pos = _save
 
-      _save5 = self.pos
+      _save6 = self.pos
       while true # sequence
         _tmp = apply_with_args(:_chain_val, h)
         a = @result
         unless _tmp
-          self.pos = _save5
+          self.pos = _save6
           break
         end
         while true
@@ -4019,19 +4061,19 @@ class Akin::Grammar
         end
         _tmp = true
         unless _tmp
-          self.pos = _save5
+          self.pos = _save6
           break
         end
         _tmp = apply_with_args(:_chain, h.at(a.pos))
         b = @result
         unless _tmp
-          self.pos = _save5
+          self.pos = _save6
           break
         end
         @result = begin; chain_cont(a, b); end
         _tmp = true
         unless _tmp
-          self.pos = _save5
+          self.pos = _save6
         end
         break
       end # end sequence
@@ -5226,7 +5268,7 @@ class Akin::Grammar
   Rules[:_keyword] = rule_info("keyword", "< (!(&(n | \":\" | brace)) .)+ > \":\" !(&(\":\" | \";\" | \".\")) {text}")
   Rules[:_keyargs] = rule_info("keyargs", "< (!(&(n | \":\" | brace)) .)+ > args:a \":\" {[text, a]}")
   Rules[:_keypart] = rule_info("keypart", "(keyword | keyargs)")
-  Rules[:_value] = rule_info("value", "(msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | symbol(h) | &{h.keymsg?} name | &{!h.keymsg?} name &(!\":\") | &{h.keymsg?} operator | &{!h.keymsg?} operator &(!\":\"))")
+  Rules[:_value] = rule_info("value", "(msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | symbol(h) | &{!h.keymsg?} (operator | name) &(!\":\") | &{h.keymsg?} (operator | name))")
   Rules[:_comma_left] = rule_info("comma_left", "block(h):a w \",\" {a}")
   Rules[:_comma] = rule_info("comma", "(comma_left(h):a w comma(h):b { b.unshift a ; b } | comma_left(h):a w block(h):b { [a,b] } | comma_left(h):a &(sp* (\".\" | \",\" | t | brace)) {[a]})")
   Rules[:_tuple] = rule_info("tuple", "comma(h):c {n(p, :tuple, *c)}")
@@ -5235,15 +5277,15 @@ class Akin::Grammar
   Rules[:_args] = rule_info("args", "p:p left_brace:l - (comma(ctx) | block(ctx) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}")
   Rules[:_msg] = rule_info("msg", "(&{h.keymsg?} kmsg(h) | emsg(h))")
   Rules[:_kmsg] = rule_info("kmsg", "(kmsg(h):a sp* (&\"::\" | \":\" &(\";\" | \".\")) {a} | part(h):a w kmsg(h.at?(a.pos)):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})")
-  Rules[:_part] = rule_info("part", "(part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})")
-  Rules[:_part_head] = rule_info("part_head", "!(&keypart) (ph_comma(h.keymsg(false)) | chain(h.keymsg(false)) | {[]})")
+  Rules[:_part] = rule_info("part", "(part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p keyword:k sp* \".\" w chain(h.at?(p)):c {n(p, k, nil, c)} | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})")
+  Rules[:_part_head] = rule_info("part_head", "!(&(keypart | \".\")) (ph_comma(h.keymsg(false)) | chain(h.keymsg(false)) | {[]})")
   Rules[:_ph_comma] = rule_info("ph_comma", "(chain(h):a w \",\" - ph_comma(h):b { b.unshift a ; b } | chain(h):a w \",\" - chain(h):b { [a,b] })")
   Rules[:_emsg] = rule_info("emsg", "(emsg(h):a sp* (&\"::\" | \":\" &(\";\" | \".\")) {a} | (epart(h) | spart(h)):a {n(a.pos, :msg, a)})")
   Rules[:_epart] = rule_info("epart", "(epart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | epart(h):p sp+ epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | args:a \":\" !(&\":\") {n(a.pos, nil, a.name, *a.args)})")
   Rules[:_spart] = rule_info("spart", "(spart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | spart(h):p sp* epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p \":\" (sp | nl | sheebang) {n(p, nil, nil)})")
   Rules[:_epart_head] = rule_info("epart_head", "(ph_comma(h) | chain(h.keymsg(false)) | {[]})")
   Rules[:_expr] = rule_info("expr", "value(h):e &{ e.pos.column > h.pos.column } {e}")
-  Rules[:_chain] = rule_info("chain", "(chain(h):a w \".\" - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(h.at(a.pos)):b {chain_cont(a, b)} | chain_val(h))")
+  Rules[:_chain] = rule_info("chain", "(chain(h):a w &{h.keymsg?} \".\" - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(h.at(a.pos)):b {chain_cont(a, b)} | chain_val(h))")
   Rules[:_chain_val] = rule_info("chain_val", "(cons(h) | expr(h))")
   Rules[:_block] = rule_info("block", "(chain(h):a sp* t - block(h):b {n(a.pos, :block, a, *Array(b.name == :block && b.args || b))} | chain(h))")
   Rules[:_escape] = rule_info("escape", "(number_escapes | escapes)")

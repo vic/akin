@@ -684,5 +684,19 @@ describe 'Akin grammar' do
                 [:msg, [nil, "()", [:name, "a"], [:name, "b"]]]]]
     end
 
+    it 'parses msg before sign oper' do
+      s('foo: a, b .= a + b', :root).should ==
+        [:chain,
+         [:msg, ["foo", nil, [:name, "a"], [:name, "b"]]],
+         [:oper, "="], [:name, "a"], [:oper, "+"], [:name, "b"]]
+    end
+    
+    it 'has dot after kewyord message takes everything thereafter as arg' do
+      s('a b: . c d: e', :root).should ==
+        [:chain, [:name, "a"],
+         [:msg, ["b", nil,
+                 [:chain, [:name, "c"], [:msg, ["d", nil, [:name, "e"]]]]]]]
+    end
+    
   end
 end

@@ -84,8 +84,8 @@ value(h) = msg(h)
          | value(h):v args:a ~n(v.pos, :act, v, a.name, *a.args)
          | args:a ~n(a.pos, :act, nil, a.name, *a.args)
          | literal | symbol(h)
-         | &{h.keymsg?} name | &{!h.keymsg?} name &!(":")
-         | &{h.keymsg?} operator | &{!h.keymsg?} operator &!(":")
+         | &{!h.keymsg?} (operator | name) &!":"
+         | &{h.keymsg?} (operator | name)
 
 comma_left(h) = block(h):a w "," {a}
 
@@ -110,10 +110,12 @@ kmsg(h) = kmsg(h):a sp* (&("::") | ":" &(";"|".")) {a}
 
 part(h) = part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p }
         | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p }
+        | p:p keyword:k sp* "." w chain(h.at?(p)):c ~n(p, k, nil, c)
         | p:p keyargs:k ~n(p, k.first, k.last.name, *k.last.args)
         | p:p keyword:k ~n(p, k, nil)
 
-part_head(h) = !&keypart (ph_comma(h.keymsg(false)) | chain(h.keymsg(false)) | {[]})
+part_head(h) = !&(keypart|".")
+               (ph_comma(h.keymsg(false)) | chain(h.keymsg(false)) | {[]})
 
 ph_comma(h) = chain(h):a w "," - ph_comma(h):b { b.unshift a ; b }
             | chain(h):a w "," - chain(h):b { [a,b] }
@@ -133,7 +135,7 @@ epart_head(h) = ph_comma(h) | chain(h.keymsg(false)) | {[]}
 
 expr(h) = value(h):e &{ e.pos.column > h.pos.column } {e}
 
-chain(h) = chain(h):a w "." - chain(h):b ~chain_cont(a, b)
+chain(h) = chain(h):a w &{h.keymsg?} "." - chain(h):b ~chain_cont(a, b)
          | operator:a !&brace o w chain(h):b
            ~n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))
          | chain_val(h):a sp* chain(h.at(a.pos)):b ~chain_cont(a, b)
