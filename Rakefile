@@ -22,6 +22,10 @@ file _('lib/akin/grammar.rb') => file(_('lib/akin/grammar.kpeg')) do |t|
   sh *cmd
 end
 
+task :clean do
+  rm_f FileList[_("**/*.rbc")]
+end
+
 task :grammar => _('lib/akin/grammar.rb')
 
 task :default => [:grammar, :spec ]
