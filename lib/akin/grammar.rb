@@ -363,6 +363,67 @@ class Akin::Grammar
 
   def setup_foreign_grammar; end
 
+  # root = - block(ctx)?:b - eof {b}
+  def _root
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:__hyphen_)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save1 = self.pos
+      _tmp = apply_with_args(:_block, ctx)
+      @result = nil unless _tmp
+      unless _tmp
+        _tmp = true
+        self.pos = _save1
+      end
+      b = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:__hyphen_)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_eof)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; b; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_root unless _tmp
+    return _tmp
+  end
+
+  # eof = !.
+  def _eof
+    _save = self.pos
+    _tmp = get_byte
+    _tmp = _tmp ? nil : true
+    self.pos = _save
+    set_failed_rule :_eof unless _tmp
+    return _tmp
+  end
+
+  # comment = /#!.*?$/
+  def _comment
+    _tmp = scan(/\A(?-mix:#!.*?$)/)
+    set_failed_rule :_comment unless _tmp
+    return _tmp
+  end
+
   # nl = ("\n" | "\n")
   def _nl
 
@@ -381,8 +442,8 @@ class Akin::Grammar
     return _tmp
   end
 
-  # sp = (" " | "\t" | "\\" nl)
-  def _sp
+  # ws = (" " | "\t")
+  def _ws
 
     _save = self.pos
     while true # choice
@@ -392,27 +453,17 @@ class Akin::Grammar
       _tmp = match_string("\t")
       break if _tmp
       self.pos = _save
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = match_string("\\")
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_nl)
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
       break
     end # end choice
 
-    set_failed_rule :_sp unless _tmp
+    set_failed_rule :_ws unless _tmp
+    return _tmp
+  end
+
+  # op = /[\~\!@\#\$%\^\&\|\?\<\>*\/+=:-]/
+  def _op
+    _tmp = scan(/\A(?-mix:[\~\!@\#\$%\^\&\|\?\<\>*\/+=:-])/)
+    set_failed_rule :_op unless _tmp
     return _tmp
   end
 
@@ -440,134 +491,24 @@ class Akin::Grammar
     return _tmp
   end
 
-  # sheebang = "#!" /.*?$/
-  def _sheebang
-
-    _save = self.pos
-    while true # sequence
-      _tmp = match_string("#!")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = scan(/\A(?-mix:.*?$)/)
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_sheebang unless _tmp
-    return _tmp
-  end
-
-  # w = (sp | sheebang | nl)*
-  def _w
+  # - = (ws | nl | comment)*
+  def __hyphen_
     while true
 
       _save1 = self.pos
       while true # choice
-        _tmp = apply(:_sp)
-        break if _tmp
-        self.pos = _save1
-        _tmp = apply(:_sheebang)
+        _tmp = apply(:_ws)
         break if _tmp
         self.pos = _save1
         _tmp = apply(:_nl)
         break if _tmp
         self.pos = _save1
+        _tmp = apply(:_comment)
+        break if _tmp
+        self.pos = _save1
         break
       end # end choice
 
-      break unless _tmp
-    end
-    _tmp = true
-    set_failed_rule :_w unless _tmp
-    return _tmp
-  end
-
-  # o = sp* (sheebang | nl)
-  def _o
-
-    _save = self.pos
-    while true # sequence
-      while true
-        _tmp = apply(:_sp)
-        break unless _tmp
-      end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-        break
-      end
-
-      _save2 = self.pos
-      while true # choice
-        _tmp = apply(:_sheebang)
-        break if _tmp
-        self.pos = _save2
-        _tmp = apply(:_nl)
-        break if _tmp
-        self.pos = _save2
-        break
-      end # end choice
-
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_o unless _tmp
-    return _tmp
-  end
-
-  # t = (";" | sheebang | nl)
-  def _t
-
-    _save = self.pos
-    while true # choice
-      _tmp = match_string(";")
-      break if _tmp
-      self.pos = _save
-      _tmp = apply(:_sheebang)
-      break if _tmp
-      self.pos = _save
-      _tmp = apply(:_nl)
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_t unless _tmp
-    return _tmp
-  end
-
-  # n = (t | sp | ".")
-  def _n
-
-    _save = self.pos
-    while true # choice
-      _tmp = apply(:_t)
-      break if _tmp
-      self.pos = _save
-      _tmp = apply(:_sp)
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string(".")
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_n unless _tmp
-    return _tmp
-  end
-
-  # - = n*
-  def __hyphen_
-    while true
-      _tmp = apply(:_n)
       break unless _tmp
     end
     _tmp = true
@@ -575,91 +516,68 @@ class Akin::Grammar
     return _tmp
   end
 
-  # brace = (< . . > &{ brace(text) } { brace(text) } | < . > &{ brace(text) } { brace(text) })
+  # s = (ws | nl | comment | ";")*
+  def _s
+    while true
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = apply(:_ws)
+        break if _tmp
+        self.pos = _save1
+        _tmp = apply(:_nl)
+        break if _tmp
+        self.pos = _save1
+        _tmp = apply(:_comment)
+        break if _tmp
+        self.pos = _save1
+        _tmp = match_string(";")
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      break unless _tmp
+    end
+    _tmp = true
+    set_failed_rule :_s unless _tmp
+    return _tmp
+  end
+
+  # brace = < . > &{brace(text)} {brace(text)}
   def _brace
 
     _save = self.pos
-    while true # choice
-
+    while true # sequence
+      _text_start = self.pos
+      _tmp = get_byte
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
       _save1 = self.pos
-      while true # sequence
-        _text_start = self.pos
-
-        _save2 = self.pos
-        while true # sequence
-          _tmp = get_byte
-          unless _tmp
-            self.pos = _save2
-            break
-          end
-          _tmp = get_byte
-          unless _tmp
-            self.pos = _save2
-          end
-          break
-        end # end sequence
-
-        if _tmp
-          text = get_text(_text_start)
-        end
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _save3 = self.pos
-        _tmp = begin;  brace(text) ; end
-        self.pos = _save3
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin;  brace(text) ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
+      _tmp = begin; brace(text); end
+      self.pos = _save1
+      unless _tmp
+        self.pos = _save
         break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save4 = self.pos
-      while true # sequence
-        _text_start = self.pos
-        _tmp = get_byte
-        if _tmp
-          text = get_text(_text_start)
-        end
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        _save5 = self.pos
-        _tmp = begin;  brace(text) ; end
-        self.pos = _save5
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        @result = begin;  brace(text) ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save4
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
+      end
+      @result = begin; brace(text); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
       break
-    end # end choice
+    end # end sequence
 
     set_failed_rule :_brace unless _tmp
     return _tmp
   end
 
-  # left_brace = < brace:b > &{ text == b.first} { b }
+  # left_brace = < brace:b > &{ text == b.first} {b}
   def _left_brace
 
     _save = self.pos
@@ -681,7 +599,7 @@ class Akin::Grammar
         self.pos = _save
         break
       end
-      @result = begin;  b ; end
+      @result = begin; b; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -693,7 +611,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # right_brace = < brace:b > &{ text == l.last } { l }
+  # right_brace = < brace:b > &{ text == l.last } {l}
   def _right_brace(l)
 
     _save = self.pos
@@ -715,7 +633,7 @@ class Akin::Grammar
         self.pos = _save
         break
       end
-      @result = begin;  l ; end
+      @result = begin; l; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -727,21 +645,1624 @@ class Akin::Grammar
     return _tmp
   end
 
-  # literal = (float | fixnum | str | regexp)
-  def _literal
+  # braced = left_brace:l - (braced_(ctx) | {nil}):a - right_brace(l) {[l] + Array(a)}
+  def _braced
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_left_brace)
+      l = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:__hyphen_)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = apply_with_args(:_braced_, ctx)
+        break if _tmp
+        self.pos = _save1
+        @result = begin; nil; end
+        _tmp = true
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:__hyphen_)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply_with_args(:_right_brace, l)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; [l] + Array(a); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_braced unless _tmp
+    return _tmp
+  end
+
+  # braced_ = (braced_(x):a - "," - block(x):b {a + Array(b)} | block(x):b {Array(b)})
+  def _braced_(x)
 
     _save = self.pos
     while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_braced_, x)
+        a = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = match_string(",")
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply_with_args(:_block, x)
+        b = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; a + Array(b); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save2 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_block, x)
+        b = @result
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        @result = begin; Array(b); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_braced_ unless _tmp
+    return _tmp
+  end
+
+  # block = (block(x):a ws* nl - block(x):b &{a.pos.column < b.pos.column} {n(a.pos, :on, a, b)} | block_(x):b {b.size > 1 && n(b.first.pos, :block, *b) || b.first})
+  def _block(x)
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_block, x)
+        a = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        while true
+          _tmp = apply(:_ws)
+          break unless _tmp
+        end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:_nl)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply_with_args(:_block, x)
+        b = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _save3 = self.pos
+        _tmp = begin; a.pos.column < b.pos.column; end
+        self.pos = _save3
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; n(a.pos, :on, a, b); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save4 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_block_, x)
+        b = @result
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        @result = begin; b.size > 1 && n(b.first.pos, :block, *b) || b.first; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save4
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_block unless _tmp
+    return _tmp
+  end
+
+  # block_ = (block_(x):b - ";" s chain(x):c {Array(c)}:a {b + a} | block_(x):b s chain(x):c {Array(c)}:a &{b.first.pos.column == a.first.pos.column} {b + a} | chain(x):c {Array(c)})
+  def _block_(x)
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_block_, x)
+        b = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = match_string(";")
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:_s)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply_with_args(:_chain, x)
+        c = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; Array(c); end
+        _tmp = true
+        a = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; b + a; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save2 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_block_, x)
+        b = @result
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _tmp = apply(:_s)
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _tmp = apply_with_args(:_chain, x)
+        c = @result
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        @result = begin; Array(c); end
+        _tmp = true
+        a = @result
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _save3 = self.pos
+        _tmp = begin; b.first.pos.column == a.first.pos.column; end
+        self.pos = _save3
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        @result = begin; b + a; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save4 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_chain, x)
+        c = @result
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        @result = begin; Array(c); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save4
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_block_ unless _tmp
+    return _tmp
+  end
+
+  # chain = chain_(x):c {c.size > 1 && n(c.first.pos, :chain, *c) || c.first}
+  def _chain(x)
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply_with_args(:_chain_, x)
+      c = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; c.size > 1 && n(c.first.pos, :chain, *c) || c.first; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_chain unless _tmp
+    return _tmp
+  end
+
+  # chain_ = (chain_(x):c - "." &{x.kmsg?} - chain_(x):v {c + v} | chain_(x):c &{c.last.name == :oper} (ws* nl -)? value(x.at(c.first.pos)):v {c + v} | chain_(x):c oper:o {c + [o]} | chain_(x):c ws+ value(x.at(c.first.pos)):v {c + v} | value(x))
+  def _chain_(x)
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_chain_, x)
+        c = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = match_string(".")
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _save2 = self.pos
+        _tmp = begin; x.kmsg?; end
+        self.pos = _save2
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply_with_args(:_chain_, x)
+        v = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; c + v; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save3 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_chain_, x)
+        c = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        _save4 = self.pos
+        _tmp = begin; c.last.name == :oper; end
+        self.pos = _save4
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        _save5 = self.pos
+
+        _save6 = self.pos
+        while true # sequence
+          while true
+            _tmp = apply(:_ws)
+            break unless _tmp
+          end
+          _tmp = true
+          unless _tmp
+            self.pos = _save6
+            break
+          end
+          _tmp = apply(:_nl)
+          unless _tmp
+            self.pos = _save6
+            break
+          end
+          _tmp = apply(:__hyphen_)
+          unless _tmp
+            self.pos = _save6
+          end
+          break
+        end # end sequence
+
+        unless _tmp
+          _tmp = true
+          self.pos = _save5
+        end
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        _tmp = apply_with_args(:_value, x.at(c.first.pos))
+        v = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        @result = begin; c + v; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save3
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save8 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_chain_, x)
+        c = @result
+        unless _tmp
+          self.pos = _save8
+          break
+        end
+        _tmp = apply(:_oper)
+        o = @result
+        unless _tmp
+          self.pos = _save8
+          break
+        end
+        @result = begin; c + [o]; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save8
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save9 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_chain_, x)
+        c = @result
+        unless _tmp
+          self.pos = _save9
+          break
+        end
+        _save10 = self.pos
+        _tmp = apply(:_ws)
+        if _tmp
+          while true
+            _tmp = apply(:_ws)
+            break unless _tmp
+          end
+          _tmp = true
+        else
+          self.pos = _save10
+        end
+        unless _tmp
+          self.pos = _save9
+          break
+        end
+        _tmp = apply_with_args(:_value, x.at(c.first.pos))
+        v = @result
+        unless _tmp
+          self.pos = _save9
+          break
+        end
+        @result = begin; c + v; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save9
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      _tmp = apply_with_args(:_value, x)
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_chain_ unless _tmp
+    return _tmp
+  end
+
+  # value = value_(x):v {Array(v)}:a &{a.first.pos.column > x.pos.column} {a}
+  def _value(x)
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply_with_args(:_value_, x)
+      v = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; Array(v); end
+      _tmp = true
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save1 = self.pos
+      _tmp = begin; a.first.pos.column > x.pos.column; end
+      self.pos = _save1
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; a; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_value unless _tmp
+    return _tmp
+  end
+
+  # value_ = (&{x.kmsg?} kmsg(x) | value_(x):v p:p braced:b !(&":") {Array(v) + [n(p, :send, *b)]} | empty(x) | space | literal(x):a (&{x.kmsg?} | !(&":")) {a})
+  def _value_(x)
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _save2 = self.pos
+        _tmp = begin; x.kmsg?; end
+        self.pos = _save2
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply_with_args(:_kmsg, x)
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save3 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_value_, x)
+        v = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        _tmp = apply(:_p)
+        p = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        _tmp = apply(:_braced)
+        b = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        _save4 = self.pos
+        _save5 = self.pos
+        _tmp = match_string(":")
+        self.pos = _save5
+        _tmp = _tmp ? nil : true
+        self.pos = _save4
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        @result = begin; Array(v) + [n(p, :send, *b)]; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save3
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      _tmp = apply_with_args(:_empty, x)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply(:_space)
+      break if _tmp
+      self.pos = _save
+
+      _save6 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_literal, x)
+        a = @result
+        unless _tmp
+          self.pos = _save6
+          break
+        end
+
+        _save7 = self.pos
+        while true # choice
+          _save8 = self.pos
+          _tmp = begin; x.kmsg?; end
+          self.pos = _save8
+          break if _tmp
+          self.pos = _save7
+          _save9 = self.pos
+          _save10 = self.pos
+          _tmp = match_string(":")
+          self.pos = _save10
+          _tmp = _tmp ? nil : true
+          self.pos = _save9
+          break if _tmp
+          self.pos = _save7
+          break
+        end # end choice
+
+        unless _tmp
+          self.pos = _save6
+          break
+        end
+        @result = begin; a; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save6
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_value_ unless _tmp
+    return _tmp
+  end
+
+  # space = p:p braced:a {n(p, :space, *a)}
+  def _space
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_braced)
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :space, *a); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_space unless _tmp
+    return _tmp
+  end
+
+  # empty = p:p braced:a ":" ws* empty_(x):b {n(p, :empty, *(a+b))}
+  def _empty(x)
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_braced)
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(":")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      while true
+        _tmp = apply(:_ws)
+        break unless _tmp
+      end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply_with_args(:_empty_, x)
+      b = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :empty, *(a+b)); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_empty unless _tmp
+    return _tmp
+  end
+
+  # empty_ = (braced_(x) | {nil}):a (ws* nl - block(x) | {nil}):b {Array(a) + Array(b)}
+  def _empty_(x)
+
+    _save = self.pos
+    while true # sequence
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = apply_with_args(:_braced_, x)
+        break if _tmp
+        self.pos = _save1
+        @result = begin; nil; end
+        _tmp = true
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+
+      _save2 = self.pos
+      while true # choice
+
+        _save3 = self.pos
+        while true # sequence
+          while true
+            _tmp = apply(:_ws)
+            break unless _tmp
+          end
+          _tmp = true
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply(:_nl)
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply(:__hyphen_)
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply_with_args(:_block, x)
+          unless _tmp
+            self.pos = _save3
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save2
+        @result = begin; nil; end
+        _tmp = true
+        break if _tmp
+        self.pos = _save2
+        break
+      end # end choice
+
+      b = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; Array(a) + Array(b); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_empty_ unless _tmp
+    return _tmp
+  end
+
+  # name = p:p < (!(&(ws | nl | brace | op | ":" | ";" | "," | ".")) .)+ > {n(p, :name, text)}
+  def _name
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _text_start = self.pos
+      _save1 = self.pos
+
+      _save2 = self.pos
+      while true # sequence
+        _save3 = self.pos
+        _save4 = self.pos
+
+        _save5 = self.pos
+        while true # choice
+          _tmp = apply(:_ws)
+          break if _tmp
+          self.pos = _save5
+          _tmp = apply(:_nl)
+          break if _tmp
+          self.pos = _save5
+          _tmp = apply(:_brace)
+          break if _tmp
+          self.pos = _save5
+          _tmp = apply(:_op)
+          break if _tmp
+          self.pos = _save5
+          _tmp = match_string(":")
+          break if _tmp
+          self.pos = _save5
+          _tmp = match_string(";")
+          break if _tmp
+          self.pos = _save5
+          _tmp = match_string(",")
+          break if _tmp
+          self.pos = _save5
+          _tmp = match_string(".")
+          break if _tmp
+          self.pos = _save5
+          break
+        end # end choice
+
+        self.pos = _save4
+        _tmp = _tmp ? nil : true
+        self.pos = _save3
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _tmp = get_byte
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      if _tmp
+        while true
+
+          _save6 = self.pos
+          while true # sequence
+            _save7 = self.pos
+            _save8 = self.pos
+
+            _save9 = self.pos
+            while true # choice
+              _tmp = apply(:_ws)
+              break if _tmp
+              self.pos = _save9
+              _tmp = apply(:_nl)
+              break if _tmp
+              self.pos = _save9
+              _tmp = apply(:_brace)
+              break if _tmp
+              self.pos = _save9
+              _tmp = apply(:_op)
+              break if _tmp
+              self.pos = _save9
+              _tmp = match_string(":")
+              break if _tmp
+              self.pos = _save9
+              _tmp = match_string(";")
+              break if _tmp
+              self.pos = _save9
+              _tmp = match_string(",")
+              break if _tmp
+              self.pos = _save9
+              _tmp = match_string(".")
+              break if _tmp
+              self.pos = _save9
+              break
+            end # end choice
+
+            self.pos = _save8
+            _tmp = _tmp ? nil : true
+            self.pos = _save7
+            unless _tmp
+              self.pos = _save6
+              break
+            end
+            _tmp = get_byte
+            unless _tmp
+              self.pos = _save6
+            end
+            break
+          end # end sequence
+
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save1
+      end
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :name, text); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_name unless _tmp
+    return _tmp
+  end
+
+  # oper = p:p < (".." (op | ".")* | op op*) > {n(p, :oper, text)}
+  def _oper
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # choice
+
+        _save2 = self.pos
+        while true # sequence
+          _tmp = match_string("..")
+          unless _tmp
+            self.pos = _save2
+            break
+          end
+          while true
+
+            _save4 = self.pos
+            while true # choice
+              _tmp = apply(:_op)
+              break if _tmp
+              self.pos = _save4
+              _tmp = match_string(".")
+              break if _tmp
+              self.pos = _save4
+              break
+            end # end choice
+
+            break unless _tmp
+          end
+          _tmp = true
+          unless _tmp
+            self.pos = _save2
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save1
+
+        _save5 = self.pos
+        while true # sequence
+          _tmp = apply(:_op)
+          unless _tmp
+            self.pos = _save5
+            break
+          end
+          while true
+            _tmp = apply(:_op)
+            break unless _tmp
+          end
+          _tmp = true
+          unless _tmp
+            self.pos = _save5
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :oper, text); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_oper unless _tmp
+    return _tmp
+  end
+
+  # keyargs = (keyargs_(x.kmsg!) | {nil}):a (ws* nl - braced_(x) | {nil}):b {Array(a) + Array(b)}
+  def _keyargs(x)
+
+    _save = self.pos
+    while true # sequence
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = apply_with_args(:_keyargs_, x.kmsg!)
+        break if _tmp
+        self.pos = _save1
+        @result = begin; nil; end
+        _tmp = true
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+
+      _save2 = self.pos
+      while true # choice
+
+        _save3 = self.pos
+        while true # sequence
+          while true
+            _tmp = apply(:_ws)
+            break unless _tmp
+          end
+          _tmp = true
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply(:_nl)
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply(:__hyphen_)
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply_with_args(:_braced_, x)
+          unless _tmp
+            self.pos = _save3
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save2
+        @result = begin; nil; end
+        _tmp = true
+        break if _tmp
+        self.pos = _save2
+        break
+      end # end choice
+
+      b = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; Array(a) + Array(b); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_keyargs unless _tmp
+    return _tmp
+  end
+
+  # keyargs_ = (keyargs_(x):a ws* "," ws* chain(x):c {a + Array(c)} | chain(x):c {Array(c)})
+  def _keyargs_(x)
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_keyargs_, x)
+        a = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        while true
+          _tmp = apply(:_ws)
+          break unless _tmp
+        end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = match_string(",")
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        while true
+          _tmp = apply(:_ws)
+          break unless _tmp
+        end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply_with_args(:_chain, x)
+        c = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; a + Array(c); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save4 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_chain, x)
+        c = @result
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        @result = begin; Array(c); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save4
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_keyargs_ unless _tmp
+    return _tmp
+  end
+
+  # keyw = < (name | oper) > ":" {[text, nil]}
+  def _keyw(x)
+
+    _save = self.pos
+    while true # sequence
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = apply(:_name)
+        break if _tmp
+        self.pos = _save1
+        _tmp = apply(:_oper)
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(":")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; [text, nil]; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_keyw unless _tmp
+    return _tmp
+  end
+
+  # keya = < (name | oper) > braced:a ":" {[text] + a}
+  def _keya(x)
+
+    _save = self.pos
+    while true # sequence
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = apply(:_name)
+        break if _tmp
+        self.pos = _save1
+        _tmp = apply(:_oper)
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_braced)
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(":")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; [text] + a; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_keya unless _tmp
+    return _tmp
+  end
+
+  # keyword = (keyw(x) | keya(x))
+  def _keyword(x)
+
+    _save = self.pos
+    while true # choice
+      _tmp = apply_with_args(:_keyw, x)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply_with_args(:_keya, x)
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_keyword unless _tmp
+    return _tmp
+  end
+
+  # part = (p:p keyword(x):a &(ws* keyword(x)) {n(p, :part, *a)} | p:p keyword(x):a ws* "." - empty_(x):b {n(p, :part, *(a+b))} | p:p keyword(x):a ws* keyargs(x.in(x.pos.minor(p))):b {n(p, :part, *(a+b))})
+  def _part(x)
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply(:_p)
+        p = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply_with_args(:_keyword, x)
+        a = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _save2 = self.pos
+
+        _save3 = self.pos
+        while true # sequence
+          while true
+            _tmp = apply(:_ws)
+            break unless _tmp
+          end
+          _tmp = true
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply_with_args(:_keyword, x)
+          unless _tmp
+            self.pos = _save3
+          end
+          break
+        end # end sequence
+
+        self.pos = _save2
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; n(p, :part, *a); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save5 = self.pos
+      while true # sequence
+        _tmp = apply(:_p)
+        p = @result
+        unless _tmp
+          self.pos = _save5
+          break
+        end
+        _tmp = apply_with_args(:_keyword, x)
+        a = @result
+        unless _tmp
+          self.pos = _save5
+          break
+        end
+        while true
+          _tmp = apply(:_ws)
+          break unless _tmp
+        end
+        _tmp = true
+        unless _tmp
+          self.pos = _save5
+          break
+        end
+        _tmp = match_string(".")
+        unless _tmp
+          self.pos = _save5
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save5
+          break
+        end
+        _tmp = apply_with_args(:_empty_, x)
+        b = @result
+        unless _tmp
+          self.pos = _save5
+          break
+        end
+        @result = begin; n(p, :part, *(a+b)); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save5
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save7 = self.pos
+      while true # sequence
+        _tmp = apply(:_p)
+        p = @result
+        unless _tmp
+          self.pos = _save7
+          break
+        end
+        _tmp = apply_with_args(:_keyword, x)
+        a = @result
+        unless _tmp
+          self.pos = _save7
+          break
+        end
+        while true
+          _tmp = apply(:_ws)
+          break unless _tmp
+        end
+        _tmp = true
+        unless _tmp
+          self.pos = _save7
+          break
+        end
+        _tmp = apply_with_args(:_keyargs, x.in(x.pos.minor(p)))
+        b = @result
+        unless _tmp
+          self.pos = _save7
+          break
+        end
+        @result = begin; n(p, :part, *(a+b)); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save7
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_part unless _tmp
+    return _tmp
+  end
+
+  # parts = (parts(x):a - part(x):b {a + [b]} | part(x):a {[a]})
+  def _parts(x)
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_parts, x)
+        a = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply(:__hyphen_)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _tmp = apply_with_args(:_part, x)
+        b = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; a + [b]; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+
+      _save2 = self.pos
+      while true # sequence
+        _tmp = apply_with_args(:_part, x)
+        a = @result
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        @result = begin; [a]; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_parts unless _tmp
+    return _tmp
+  end
+
+  # kmsg = parts(x):a {n(a.first.pos, :kmsg, *a)}
+  def _kmsg(x)
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply_with_args(:_parts, x)
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(a.first.pos, :kmsg, *a); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_kmsg unless _tmp
+    return _tmp
+  end
+
+  # literal = (symbol(x) | str | float | fixnum | regexp | name | oper)
+  def _literal(x)
+
+    _save = self.pos
+    while true # choice
+      _tmp = apply_with_args(:_symbol, x)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply(:_str)
+      break if _tmp
+      self.pos = _save
       _tmp = apply(:_float)
       break if _tmp
       self.pos = _save
       _tmp = apply(:_fixnum)
       break if _tmp
       self.pos = _save
-      _tmp = apply(:_str)
+      _tmp = apply(:_regexp)
       break if _tmp
       self.pos = _save
-      _tmp = apply(:_regexp)
+      _tmp = apply(:_name)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply(:_oper)
       break if _tmp
       self.pos = _save
       break
@@ -751,8 +2272,8 @@ class Akin::Grammar
     return _tmp
   end
 
-  # symbol = p:p ":" !(&":") value(h.keymsg(true)):v {n(p, :symbol, v)}
-  def _symbol(h)
+  # symbol = p:p ":" !(&":") value(x.kmsg):v {n(p, :symbol, v.first)}
+  def _symbol(x)
 
     _save = self.pos
     while true # sequence
@@ -777,13 +2298,13 @@ class Akin::Grammar
         self.pos = _save
         break
       end
-      _tmp = apply_with_args(:_value, h.keymsg(true))
+      _tmp = apply_with_args(:_value, x.kmsg)
       v = @result
       unless _tmp
         self.pos = _save
         break
       end
-      @result = begin; n(p, :symbol, v); end
+      @result = begin; n(p, :symbol, v.first); end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -2074,2099 +3595,6 @@ class Akin::Grammar
     return _tmp
   end
 
-  # opchr = /[\~\!@\#\$%\^\&\|\?\<\>*\/+=-]/
-  def _opchr
-    _tmp = scan(/\A(?-mix:[\~\!@\#\$%\^\&\|\?\<\>*\/+=-])/)
-    set_failed_rule :_opchr unless _tmp
-    return _tmp
-  end
-
-  # oper = < opchr opchr* > {text}
-  def _oper
-
-    _save = self.pos
-    while true # sequence
-      _text_start = self.pos
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply(:_opchr)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        while true
-          _tmp = apply(:_opchr)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      if _tmp
-        text = get_text(_text_start)
-      end
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; text; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_oper unless _tmp
-    return _tmp
-  end
-
-  # operator = p:p oper:o {n(p, :oper, o)}
-  def _operator
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply(:_p)
-      p = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_oper)
-      o = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; n(p, :oper, o); end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_operator unless _tmp
-    return _tmp
-  end
-
-  # name = p:p < (&(!(sp | nl | brace | opchr | ":" | ";" | "," | ".")) .)+ > {n(p, :name, text)}
-  def _name
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply(:_p)
-      p = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _text_start = self.pos
-      _save1 = self.pos
-
-      _save2 = self.pos
-      while true # sequence
-        _save3 = self.pos
-        _save4 = self.pos
-
-        _save5 = self.pos
-        while true # choice
-          _tmp = apply(:_sp)
-          break if _tmp
-          self.pos = _save5
-          _tmp = apply(:_nl)
-          break if _tmp
-          self.pos = _save5
-          _tmp = apply(:_brace)
-          break if _tmp
-          self.pos = _save5
-          _tmp = apply(:_opchr)
-          break if _tmp
-          self.pos = _save5
-          _tmp = match_string(":")
-          break if _tmp
-          self.pos = _save5
-          _tmp = match_string(";")
-          break if _tmp
-          self.pos = _save5
-          _tmp = match_string(",")
-          break if _tmp
-          self.pos = _save5
-          _tmp = match_string(".")
-          break if _tmp
-          self.pos = _save5
-          break
-        end # end choice
-
-        _tmp = _tmp ? nil : true
-        self.pos = _save4
-        self.pos = _save3
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = get_byte
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      if _tmp
-        while true
-
-          _save6 = self.pos
-          while true # sequence
-            _save7 = self.pos
-            _save8 = self.pos
-
-            _save9 = self.pos
-            while true # choice
-              _tmp = apply(:_sp)
-              break if _tmp
-              self.pos = _save9
-              _tmp = apply(:_nl)
-              break if _tmp
-              self.pos = _save9
-              _tmp = apply(:_brace)
-              break if _tmp
-              self.pos = _save9
-              _tmp = apply(:_opchr)
-              break if _tmp
-              self.pos = _save9
-              _tmp = match_string(":")
-              break if _tmp
-              self.pos = _save9
-              _tmp = match_string(";")
-              break if _tmp
-              self.pos = _save9
-              _tmp = match_string(",")
-              break if _tmp
-              self.pos = _save9
-              _tmp = match_string(".")
-              break if _tmp
-              self.pos = _save9
-              break
-            end # end choice
-
-            _tmp = _tmp ? nil : true
-            self.pos = _save8
-            self.pos = _save7
-            unless _tmp
-              self.pos = _save6
-              break
-            end
-            _tmp = get_byte
-            unless _tmp
-              self.pos = _save6
-            end
-            break
-          end # end sequence
-
-          break unless _tmp
-        end
-        _tmp = true
-      else
-        self.pos = _save1
-      end
-      if _tmp
-        text = get_text(_text_start)
-      end
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; n(p, :name, text); end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_name unless _tmp
-    return _tmp
-  end
-
-  # keyword = < (!(&(n | ":" | brace)) .)+ > ":" !(&(":" | ";" | ".")) {text}
-  def _keyword
-
-    _save = self.pos
-    while true # sequence
-      _text_start = self.pos
-      _save1 = self.pos
-
-      _save2 = self.pos
-      while true # sequence
-        _save3 = self.pos
-        _save4 = self.pos
-
-        _save5 = self.pos
-        while true # choice
-          _tmp = apply(:_n)
-          break if _tmp
-          self.pos = _save5
-          _tmp = match_string(":")
-          break if _tmp
-          self.pos = _save5
-          _tmp = apply(:_brace)
-          break if _tmp
-          self.pos = _save5
-          break
-        end # end choice
-
-        self.pos = _save4
-        _tmp = _tmp ? nil : true
-        self.pos = _save3
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = get_byte
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      if _tmp
-        while true
-
-          _save6 = self.pos
-          while true # sequence
-            _save7 = self.pos
-            _save8 = self.pos
-
-            _save9 = self.pos
-            while true # choice
-              _tmp = apply(:_n)
-              break if _tmp
-              self.pos = _save9
-              _tmp = match_string(":")
-              break if _tmp
-              self.pos = _save9
-              _tmp = apply(:_brace)
-              break if _tmp
-              self.pos = _save9
-              break
-            end # end choice
-
-            self.pos = _save8
-            _tmp = _tmp ? nil : true
-            self.pos = _save7
-            unless _tmp
-              self.pos = _save6
-              break
-            end
-            _tmp = get_byte
-            unless _tmp
-              self.pos = _save6
-            end
-            break
-          end # end sequence
-
-          break unless _tmp
-        end
-        _tmp = true
-      else
-        self.pos = _save1
-      end
-      if _tmp
-        text = get_text(_text_start)
-      end
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string(":")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save10 = self.pos
-      _save11 = self.pos
-
-      _save12 = self.pos
-      while true # choice
-        _tmp = match_string(":")
-        break if _tmp
-        self.pos = _save12
-        _tmp = match_string(";")
-        break if _tmp
-        self.pos = _save12
-        _tmp = match_string(".")
-        break if _tmp
-        self.pos = _save12
-        break
-      end # end choice
-
-      self.pos = _save11
-      _tmp = _tmp ? nil : true
-      self.pos = _save10
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; text; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_keyword unless _tmp
-    return _tmp
-  end
-
-  # keyargs = < (!(&(n | ":" | brace)) .)+ > args:a ":" {[text, a]}
-  def _keyargs
-
-    _save = self.pos
-    while true # sequence
-      _text_start = self.pos
-      _save1 = self.pos
-
-      _save2 = self.pos
-      while true # sequence
-        _save3 = self.pos
-        _save4 = self.pos
-
-        _save5 = self.pos
-        while true # choice
-          _tmp = apply(:_n)
-          break if _tmp
-          self.pos = _save5
-          _tmp = match_string(":")
-          break if _tmp
-          self.pos = _save5
-          _tmp = apply(:_brace)
-          break if _tmp
-          self.pos = _save5
-          break
-        end # end choice
-
-        self.pos = _save4
-        _tmp = _tmp ? nil : true
-        self.pos = _save3
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = get_byte
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      if _tmp
-        while true
-
-          _save6 = self.pos
-          while true # sequence
-            _save7 = self.pos
-            _save8 = self.pos
-
-            _save9 = self.pos
-            while true # choice
-              _tmp = apply(:_n)
-              break if _tmp
-              self.pos = _save9
-              _tmp = match_string(":")
-              break if _tmp
-              self.pos = _save9
-              _tmp = apply(:_brace)
-              break if _tmp
-              self.pos = _save9
-              break
-            end # end choice
-
-            self.pos = _save8
-            _tmp = _tmp ? nil : true
-            self.pos = _save7
-            unless _tmp
-              self.pos = _save6
-              break
-            end
-            _tmp = get_byte
-            unless _tmp
-              self.pos = _save6
-            end
-            break
-          end # end sequence
-
-          break unless _tmp
-        end
-        _tmp = true
-      else
-        self.pos = _save1
-      end
-      if _tmp
-        text = get_text(_text_start)
-      end
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_args)
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string(":")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; [text, a]; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_keyargs unless _tmp
-    return _tmp
-  end
-
-  # keypart = (keyword | keyargs)
-  def _keypart
-
-    _save = self.pos
-    while true # choice
-      _tmp = apply(:_keyword)
-      break if _tmp
-      self.pos = _save
-      _tmp = apply(:_keyargs)
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_keypart unless _tmp
-    return _tmp
-  end
-
-  # value = (msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | symbol(h) | &{!h.keymsg?} (operator | name) &(!":") | &{h.keymsg?} (operator | name))
-  def _value(h)
-
-    _save = self.pos
-    while true # choice
-      _tmp = apply_with_args(:_msg, h)
-      break if _tmp
-      self.pos = _save
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_value, h)
-        v = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_args)
-        a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin; n(v.pos, :act, v, a.name, *a.args); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save2 = self.pos
-      while true # sequence
-        _tmp = apply(:_args)
-        a = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        @result = begin; n(a.pos, :act, nil, a.name, *a.args); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      _tmp = apply(:_literal)
-      break if _tmp
-      self.pos = _save
-      _tmp = apply_with_args(:_symbol, h)
-      break if _tmp
-      self.pos = _save
-
-      _save3 = self.pos
-      while true # sequence
-        _save4 = self.pos
-        _tmp = begin; !h.keymsg?; end
-        self.pos = _save4
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-
-        _save5 = self.pos
-        while true # choice
-          _tmp = apply(:_operator)
-          break if _tmp
-          self.pos = _save5
-          _tmp = apply(:_name)
-          break if _tmp
-          self.pos = _save5
-          break
-        end # end choice
-
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        _save6 = self.pos
-        _save7 = self.pos
-        _tmp = match_string(":")
-        _tmp = _tmp ? nil : true
-        self.pos = _save7
-        self.pos = _save6
-        unless _tmp
-          self.pos = _save3
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save8 = self.pos
-      while true # sequence
-        _save9 = self.pos
-        _tmp = begin; h.keymsg?; end
-        self.pos = _save9
-        unless _tmp
-          self.pos = _save8
-          break
-        end
-
-        _save10 = self.pos
-        while true # choice
-          _tmp = apply(:_operator)
-          break if _tmp
-          self.pos = _save10
-          _tmp = apply(:_name)
-          break if _tmp
-          self.pos = _save10
-          break
-        end # end choice
-
-        unless _tmp
-          self.pos = _save8
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_value unless _tmp
-    return _tmp
-  end
-
-  # comma_left = block(h):a w "," {a}
-  def _comma_left(h)
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply_with_args(:_block, h)
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_w)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string(",")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; a; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_comma_left unless _tmp
-    return _tmp
-  end
-
-  # comma = (comma_left(h):a w comma(h):b { b.unshift a ; b } | comma_left(h):a w block(h):b { [a,b] } | comma_left(h):a &(sp* ("." | "," | t | brace)) {[a]})
-  def _comma(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_comma_left, h)
-        a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_comma, h)
-        b = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin;  b.unshift a ; b ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save2 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_comma_left, h)
-        a = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply_with_args(:_block, h)
-        b = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        @result = begin;  [a,b] ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save3 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_comma_left, h)
-        a = @result
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        _save4 = self.pos
-
-        _save5 = self.pos
-        while true # sequence
-          while true
-            _tmp = apply(:_sp)
-            break unless _tmp
-          end
-          _tmp = true
-          unless _tmp
-            self.pos = _save5
-            break
-          end
-
-          _save7 = self.pos
-          while true # choice
-            _tmp = match_string(".")
-            break if _tmp
-            self.pos = _save7
-            _tmp = match_string(",")
-            break if _tmp
-            self.pos = _save7
-            _tmp = apply(:_t)
-            break if _tmp
-            self.pos = _save7
-            _tmp = apply(:_brace)
-            break if _tmp
-            self.pos = _save7
-            break
-          end # end choice
-
-          unless _tmp
-            self.pos = _save5
-          end
-          break
-        end # end sequence
-
-        self.pos = _save4
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        @result = begin; [a]; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save3
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_comma unless _tmp
-    return _tmp
-  end
-
-  # tuple = comma(h):c {n(p, :tuple, *c)}
-  def _tuple(h)
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply_with_args(:_comma, h)
-      c = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; n(p, :tuple, *c); end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_tuple unless _tmp
-    return _tmp
-  end
-
-  # cons_left = expr(h):a sp* "::" !(&(":" | ";" | ".")) {a}
-  def _cons_left(h)
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply_with_args(:_expr, h)
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      while true
-        _tmp = apply(:_sp)
-        break unless _tmp
-      end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("::")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
-      _save3 = self.pos
-
-      _save4 = self.pos
-      while true # choice
-        _tmp = match_string(":")
-        break if _tmp
-        self.pos = _save4
-        _tmp = match_string(";")
-        break if _tmp
-        self.pos = _save4
-        _tmp = match_string(".")
-        break if _tmp
-        self.pos = _save4
-        break
-      end # end choice
-
-      self.pos = _save3
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; a; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_cons_left unless _tmp
-    return _tmp
-  end
-
-  # cons = cons_left(h):a - chain_val(h):b {n(p, :cons, a, b)}
-  def _cons(h)
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply_with_args(:_cons_left, h)
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:__hyphen_)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply_with_args(:_chain_val, h)
-      b = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; n(p, :cons, a, b); end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_cons unless _tmp
-    return _tmp
-  end
-
-  # args = p:p left_brace:l - (comma(ctx) | block(ctx) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}
-  def _args
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply(:_p)
-      p = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_left_brace)
-      l = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:__hyphen_)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-
-      _save1 = self.pos
-      while true # choice
-        _tmp = apply_with_args(:_comma, ctx)
-        break if _tmp
-        self.pos = _save1
-        _tmp = apply_with_args(:_block, ctx)
-        break if _tmp
-        self.pos = _save1
-        @result = begin; []; end
-        _tmp = true
-        break if _tmp
-        self.pos = _save1
-        break
-      end # end choice
-
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:__hyphen_)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply_with_args(:_right_brace, l)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; n(p, l.join, *Array(a)); end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_args unless _tmp
-    return _tmp
-  end
-
-  # msg = (&{h.keymsg?} kmsg(h) | emsg(h))
-  def _msg(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _save2 = self.pos
-        _tmp = begin; h.keymsg?; end
-        self.pos = _save2
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_kmsg, h)
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      _tmp = apply_with_args(:_emsg, h)
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_msg unless _tmp
-    return _tmp
-  end
-
-  # kmsg = (kmsg(h):a sp* (&"::" | ":" &(";" | ".")) {a} | part(h):a w kmsg(h.at?(a.pos)):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})
-  def _kmsg(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_kmsg, h)
-        a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-
-        _save3 = self.pos
-        while true # choice
-          _save4 = self.pos
-          _tmp = match_string("::")
-          self.pos = _save4
-          break if _tmp
-          self.pos = _save3
-
-          _save5 = self.pos
-          while true # sequence
-            _tmp = match_string(":")
-            unless _tmp
-              self.pos = _save5
-              break
-            end
-            _save6 = self.pos
-
-            _save7 = self.pos
-            while true # choice
-              _tmp = match_string(";")
-              break if _tmp
-              self.pos = _save7
-              _tmp = match_string(".")
-              break if _tmp
-              self.pos = _save7
-              break
-            end # end choice
-
-            self.pos = _save6
-            unless _tmp
-              self.pos = _save5
-            end
-            break
-          end # end sequence
-
-          break if _tmp
-          self.pos = _save3
-          break
-        end # end choice
-
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin; a; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save8 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_part, h)
-        a = @result
-        unless _tmp
-          self.pos = _save8
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save8
-          break
-        end
-        _tmp = apply_with_args(:_kmsg, h.at?(a.pos))
-        m = @result
-        unless _tmp
-          self.pos = _save8
-          break
-        end
-        @result = begin; n(a.pos, :msg, a, *m.args); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save8
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save9 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_part, h)
-        a = @result
-        unless _tmp
-          self.pos = _save9
-          break
-        end
-        @result = begin; n(a.pos, :msg, a); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save9
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_kmsg unless _tmp
-    return _tmp
-  end
-
-  # part = (part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p keyword:k sp* "." w chain(h.at?(p)):c {n(p, k, nil, c)} | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})
-  def _part(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_part, h)
-        p = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_o)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_block, h.at?(p.pos))
-        e = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin;  p.args.push *Array(e) ; p ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save2 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_part, h)
-        p = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _save3 = self.pos
-        _tmp = apply(:_sp)
-        if _tmp
-          while true
-            _tmp = apply(:_sp)
-            break unless _tmp
-          end
-          _tmp = true
-        else
-          self.pos = _save3
-        end
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply_with_args(:_part_head, h.at?(p.pos))
-        e = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        @result = begin;  p.args.push *Array(e) ; p ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save4 = self.pos
-      while true # sequence
-        _tmp = apply(:_p)
-        p = @result
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        _tmp = apply(:_keyword)
-        k = @result
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        _tmp = match_string(".")
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        _tmp = apply_with_args(:_chain, h.at?(p))
-        c = @result
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        @result = begin; n(p, k, nil, c); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save4
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save6 = self.pos
-      while true # sequence
-        _tmp = apply(:_p)
-        p = @result
-        unless _tmp
-          self.pos = _save6
-          break
-        end
-        _tmp = apply(:_keyargs)
-        k = @result
-        unless _tmp
-          self.pos = _save6
-          break
-        end
-        @result = begin; n(p, k.first, k.last.name, *k.last.args); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save6
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save7 = self.pos
-      while true # sequence
-        _tmp = apply(:_p)
-        p = @result
-        unless _tmp
-          self.pos = _save7
-          break
-        end
-        _tmp = apply(:_keyword)
-        k = @result
-        unless _tmp
-          self.pos = _save7
-          break
-        end
-        @result = begin; n(p, k, nil); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save7
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_part unless _tmp
-    return _tmp
-  end
-
-  # part_head = !(&(keypart | ".")) (ph_comma(h.keymsg(false)) | chain(h.keymsg(false)) | {[]})
-  def _part_head(h)
-
-    _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _save2 = self.pos
-
-      _save3 = self.pos
-      while true # choice
-        _tmp = apply(:_keypart)
-        break if _tmp
-        self.pos = _save3
-        _tmp = match_string(".")
-        break if _tmp
-        self.pos = _save3
-        break
-      end # end choice
-
-      self.pos = _save2
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-
-      _save4 = self.pos
-      while true # choice
-        _tmp = apply_with_args(:_ph_comma, h.keymsg(false))
-        break if _tmp
-        self.pos = _save4
-        _tmp = apply_with_args(:_chain, h.keymsg(false))
-        break if _tmp
-        self.pos = _save4
-        @result = begin; []; end
-        _tmp = true
-        break if _tmp
-        self.pos = _save4
-        break
-      end # end choice
-
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_part_head unless _tmp
-    return _tmp
-  end
-
-  # ph_comma = (chain(h):a w "," - ph_comma(h):b { b.unshift a ; b } | chain(h):a w "," - chain(h):b { [a,b] })
-  def _ph_comma(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_chain, h)
-        a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = match_string(",")
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:__hyphen_)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_ph_comma, h)
-        b = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin;  b.unshift a ; b ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save2 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_chain, h)
-        a = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = match_string(",")
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply(:__hyphen_)
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply_with_args(:_chain, h)
-        b = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        @result = begin;  [a,b] ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_ph_comma unless _tmp
-    return _tmp
-  end
-
-  # emsg = (emsg(h):a sp* (&"::" | ":" &(";" | ".")) {a} | (epart(h) | spart(h)):a {n(a.pos, :msg, a)})
-  def _emsg(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_emsg, h)
-        a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-
-        _save3 = self.pos
-        while true # choice
-          _save4 = self.pos
-          _tmp = match_string("::")
-          self.pos = _save4
-          break if _tmp
-          self.pos = _save3
-
-          _save5 = self.pos
-          while true # sequence
-            _tmp = match_string(":")
-            unless _tmp
-              self.pos = _save5
-              break
-            end
-            _save6 = self.pos
-
-            _save7 = self.pos
-            while true # choice
-              _tmp = match_string(";")
-              break if _tmp
-              self.pos = _save7
-              _tmp = match_string(".")
-              break if _tmp
-              self.pos = _save7
-              break
-            end # end choice
-
-            self.pos = _save6
-            unless _tmp
-              self.pos = _save5
-            end
-            break
-          end # end sequence
-
-          break if _tmp
-          self.pos = _save3
-          break
-        end # end choice
-
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin; a; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save8 = self.pos
-      while true # sequence
-
-        _save9 = self.pos
-        while true # choice
-          _tmp = apply_with_args(:_epart, h)
-          break if _tmp
-          self.pos = _save9
-          _tmp = apply_with_args(:_spart, h)
-          break if _tmp
-          self.pos = _save9
-          break
-        end # end choice
-
-        a = @result
-        unless _tmp
-          self.pos = _save8
-          break
-        end
-        @result = begin; n(a.pos, :msg, a); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save8
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_emsg unless _tmp
-    return _tmp
-  end
-
-  # epart = (epart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | epart(h):p sp+ epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | args:a ":" !(&":") {n(a.pos, nil, a.name, *a.args)})
-  def _epart(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_epart, h)
-        p = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_o)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_block, h.at?(p.pos))
-        e = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin;  p.args.push *Array(e) ; p ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save2 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_epart, h)
-        p = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _save3 = self.pos
-        _tmp = apply(:_sp)
-        if _tmp
-          while true
-            _tmp = apply(:_sp)
-            break unless _tmp
-          end
-          _tmp = true
-        else
-          self.pos = _save3
-        end
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply_with_args(:_epart_head, h.at?(p.pos))
-        e = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        @result = begin;  p.args.push *Array(e) ; p ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save4 = self.pos
-      while true # sequence
-        _tmp = apply(:_args)
-        a = @result
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        _tmp = match_string(":")
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        _save5 = self.pos
-        _save6 = self.pos
-        _tmp = match_string(":")
-        self.pos = _save6
-        _tmp = _tmp ? nil : true
-        self.pos = _save5
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        @result = begin; n(a.pos, nil, a.name, *a.args); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save4
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_epart unless _tmp
-    return _tmp
-  end
-
-  # spart = (spart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | spart(h):p sp* epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p ":" (sp | nl | sheebang) {n(p, nil, nil)})
-  def _spart(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_spart, h)
-        p = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_o)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_block, h.at?(p.pos))
-        e = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin;  p.args.push *Array(e) ; p ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save2 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_spart, h)
-        p = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = apply_with_args(:_epart_head, h.at?(p.pos))
-        e = @result
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        @result = begin;  p.args.push *Array(e) ; p ; end
-        _tmp = true
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save4 = self.pos
-      while true # sequence
-        _tmp = apply(:_p)
-        p = @result
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        _tmp = match_string(":")
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-
-        _save5 = self.pos
-        while true # choice
-          _tmp = apply(:_sp)
-          break if _tmp
-          self.pos = _save5
-          _tmp = apply(:_nl)
-          break if _tmp
-          self.pos = _save5
-          _tmp = apply(:_sheebang)
-          break if _tmp
-          self.pos = _save5
-          break
-        end # end choice
-
-        unless _tmp
-          self.pos = _save4
-          break
-        end
-        @result = begin; n(p, nil, nil); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save4
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_spart unless _tmp
-    return _tmp
-  end
-
-  # epart_head = (ph_comma(h) | chain(h.keymsg(false)) | {[]})
-  def _epart_head(h)
-
-    _save = self.pos
-    while true # choice
-      _tmp = apply_with_args(:_ph_comma, h)
-      break if _tmp
-      self.pos = _save
-      _tmp = apply_with_args(:_chain, h.keymsg(false))
-      break if _tmp
-      self.pos = _save
-      @result = begin; []; end
-      _tmp = true
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_epart_head unless _tmp
-    return _tmp
-  end
-
-  # expr = value(h):e &{ e.pos.column > h.pos.column } {e}
-  def _expr(h)
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply_with_args(:_value, h)
-      e = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save1 = self.pos
-      _tmp = begin;  e.pos.column > h.pos.column ; end
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; e; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_expr unless _tmp
-    return _tmp
-  end
-
-  # chain = (chain(h):a w &{h.keymsg?} "." - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(h.at(a.pos)):b {chain_cont(a, b)} | chain_val(h))
-  def _chain(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_chain, h)
-        a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _save2 = self.pos
-        _tmp = begin; h.keymsg?; end
-        self.pos = _save2
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = match_string(".")
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:__hyphen_)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_chain, h)
-        b = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin; chain_cont(a, b); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save3 = self.pos
-      while true # sequence
-        _tmp = apply(:_operator)
-        a = @result
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        _save4 = self.pos
-        _save5 = self.pos
-        _tmp = apply(:_brace)
-        self.pos = _save5
-        _tmp = _tmp ? nil : true
-        self.pos = _save4
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        _tmp = apply(:_o)
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        _tmp = apply(:_w)
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        _tmp = apply_with_args(:_chain, h)
-        b = @result
-        unless _tmp
-          self.pos = _save3
-          break
-        end
-        @result = begin; n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b)); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save3
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-
-      _save6 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_chain_val, h)
-        a = @result
-        unless _tmp
-          self.pos = _save6
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save6
-          break
-        end
-        _tmp = apply_with_args(:_chain, h.at(a.pos))
-        b = @result
-        unless _tmp
-          self.pos = _save6
-          break
-        end
-        @result = begin; chain_cont(a, b); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save6
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      _tmp = apply_with_args(:_chain_val, h)
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_chain unless _tmp
-    return _tmp
-  end
-
-  # chain_val = (cons(h) | expr(h))
-  def _chain_val(h)
-
-    _save = self.pos
-    while true # choice
-      _tmp = apply_with_args(:_cons, h)
-      break if _tmp
-      self.pos = _save
-      _tmp = apply_with_args(:_expr, h)
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_chain_val unless _tmp
-    return _tmp
-  end
-
-  # block = (chain(h):a sp* t - block(h):b {n(a.pos, :block, a, *Array(b.name == :block && b.args || b))} | chain(h))
-  def _block(h)
-
-    _save = self.pos
-    while true # choice
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = apply_with_args(:_chain, h)
-        a = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        while true
-          _tmp = apply(:_sp)
-          break unless _tmp
-        end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_t)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:__hyphen_)
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply_with_args(:_block, h)
-        b = @result
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        @result = begin; n(a.pos, :block, a, *Array(b.name == :block && b.args || b)); end
-        _tmp = true
-        unless _tmp
-          self.pos = _save1
-        end
-        break
-      end # end sequence
-
-      break if _tmp
-      self.pos = _save
-      _tmp = apply_with_args(:_chain, h)
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
-    set_failed_rule :_block unless _tmp
-    return _tmp
-  end
-
   # escape = (number_escapes | escapes)
   def _escape
 
@@ -5144,103 +4572,42 @@ class Akin::Grammar
     return _tmp
   end
 
-  # root = - block(ctx)?:b - eof {b}
-  def _root
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply(:__hyphen_)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save1 = self.pos
-      _tmp = apply_with_args(:_block, ctx)
-      @result = nil unless _tmp
-      unless _tmp
-        _tmp = true
-        self.pos = _save1
-      end
-      b = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:__hyphen_)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_eof)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; b; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_root unless _tmp
-    return _tmp
-  end
-
-  # unit = - chain(ctx):c {c}
-  def _unit
-
-    _save = self.pos
-    while true # sequence
-      _tmp = apply(:__hyphen_)
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply_with_args(:_chain, ctx)
-      c = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin; c; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_unit unless _tmp
-    return _tmp
-  end
-
-  # eof = !.
-  def _eof
-    _save = self.pos
-    _tmp = get_byte
-    _tmp = _tmp ? nil : true
-    self.pos = _save
-    set_failed_rule :_eof unless _tmp
-    return _tmp
-  end
-
   Rules = {}
+  Rules[:_root] = rule_info("root", "- block(ctx)?:b - eof {b}")
+  Rules[:_eof] = rule_info("eof", "!.")
+  Rules[:_comment] = rule_info("comment", "/\#!.*?$/")
   Rules[:_nl] = rule_info("nl", "(\"\\n\" | \"\\n\")")
-  Rules[:_sp] = rule_info("sp", "(\" \" | \"\\t\" | \"\\\\\" nl)")
+  Rules[:_ws] = rule_info("ws", "(\" \" | \"\\t\")")
+  Rules[:_op] = rule_info("op", "/[\\~\\!@\\\#\\$%\\^\\&\\|\\?\\<\\>*\\/+=:-]/")
   Rules[:_p] = rule_info("p", "&. {current_position}")
-  Rules[:_sheebang] = rule_info("sheebang", "\"\#!\" /.*?$/")
-  Rules[:_w] = rule_info("w", "(sp | sheebang | nl)*")
-  Rules[:_o] = rule_info("o", "sp* (sheebang | nl)")
-  Rules[:_t] = rule_info("t", "(\";\" | sheebang | nl)")
-  Rules[:_n] = rule_info("n", "(t | sp | \".\")")
-  Rules[:__hyphen_] = rule_info("-", "n*")
-  Rules[:_brace] = rule_info("brace", "(< . . > &{ brace(text) } { brace(text) } | < . > &{ brace(text) } { brace(text) })")
-  Rules[:_left_brace] = rule_info("left_brace", "< brace:b > &{ text == b.first} { b }")
-  Rules[:_right_brace] = rule_info("right_brace", "< brace:b > &{ text == l.last } { l }")
-  Rules[:_literal] = rule_info("literal", "(float | fixnum | str | regexp)")
-  Rules[:_symbol] = rule_info("symbol", "p:p \":\" !(&\":\") value(h.keymsg(true)):v {n(p, :symbol, v)}")
+  Rules[:__hyphen_] = rule_info("-", "(ws | nl | comment)*")
+  Rules[:_s] = rule_info("s", "(ws | nl | comment | \";\")*")
+  Rules[:_brace] = rule_info("brace", "< . > &{brace(text)} {brace(text)}")
+  Rules[:_left_brace] = rule_info("left_brace", "< brace:b > &{ text == b.first} {b}")
+  Rules[:_right_brace] = rule_info("right_brace", "< brace:b > &{ text == l.last } {l}")
+  Rules[:_braced] = rule_info("braced", "left_brace:l - (braced_(ctx) | {nil}):a - right_brace(l) {[l] + Array(a)}")
+  Rules[:_braced_] = rule_info("braced_", "(braced_(x):a - \",\" - block(x):b {a + Array(b)} | block(x):b {Array(b)})")
+  Rules[:_block] = rule_info("block", "(block(x):a ws* nl - block(x):b &{a.pos.column < b.pos.column} {n(a.pos, :on, a, b)} | block_(x):b {b.size > 1 && n(b.first.pos, :block, *b) || b.first})")
+  Rules[:_block_] = rule_info("block_", "(block_(x):b - \";\" s chain(x):c {Array(c)}:a {b + a} | block_(x):b s chain(x):c {Array(c)}:a &{b.first.pos.column == a.first.pos.column} {b + a} | chain(x):c {Array(c)})")
+  Rules[:_chain] = rule_info("chain", "chain_(x):c {c.size > 1 && n(c.first.pos, :chain, *c) || c.first}")
+  Rules[:_chain_] = rule_info("chain_", "(chain_(x):c - \".\" &{x.kmsg?} - chain_(x):v {c + v} | chain_(x):c &{c.last.name == :oper} (ws* nl -)? value(x.at(c.first.pos)):v {c + v} | chain_(x):c oper:o {c + [o]} | chain_(x):c ws+ value(x.at(c.first.pos)):v {c + v} | value(x))")
+  Rules[:_value] = rule_info("value", "value_(x):v {Array(v)}:a &{a.first.pos.column > x.pos.column} {a}")
+  Rules[:_value_] = rule_info("value_", "(&{x.kmsg?} kmsg(x) | value_(x):v p:p braced:b !(&\":\") {Array(v) + [n(p, :send, *b)]} | empty(x) | space | literal(x):a (&{x.kmsg?} | !(&\":\")) {a})")
+  Rules[:_space] = rule_info("space", "p:p braced:a {n(p, :space, *a)}")
+  Rules[:_empty] = rule_info("empty", "p:p braced:a \":\" ws* empty_(x):b {n(p, :empty, *(a+b))}")
+  Rules[:_empty_] = rule_info("empty_", "(braced_(x) | {nil}):a (ws* nl - block(x) | {nil}):b {Array(a) + Array(b)}")
+  Rules[:_name] = rule_info("name", "p:p < (!(&(ws | nl | brace | op | \":\" | \";\" | \",\" | \".\")) .)+ > {n(p, :name, text)}")
+  Rules[:_oper] = rule_info("oper", "p:p < (\"..\" (op | \".\")* | op op*) > {n(p, :oper, text)}")
+  Rules[:_keyargs] = rule_info("keyargs", "(keyargs_(x.kmsg!) | {nil}):a (ws* nl - braced_(x) | {nil}):b {Array(a) + Array(b)}")
+  Rules[:_keyargs_] = rule_info("keyargs_", "(keyargs_(x):a ws* \",\" ws* chain(x):c {a + Array(c)} | chain(x):c {Array(c)})")
+  Rules[:_keyw] = rule_info("keyw", "< (name | oper) > \":\" {[text, nil]}")
+  Rules[:_keya] = rule_info("keya", "< (name | oper) > braced:a \":\" {[text] + a}")
+  Rules[:_keyword] = rule_info("keyword", "(keyw(x) | keya(x))")
+  Rules[:_part] = rule_info("part", "(p:p keyword(x):a &(ws* keyword(x)) {n(p, :part, *a)} | p:p keyword(x):a ws* \".\" - empty_(x):b {n(p, :part, *(a+b))} | p:p keyword(x):a ws* keyargs(x.in(x.pos.minor(p))):b {n(p, :part, *(a+b))})")
+  Rules[:_parts] = rule_info("parts", "(parts(x):a - part(x):b {a + [b]} | part(x):a {[a]})")
+  Rules[:_kmsg] = rule_info("kmsg", "parts(x):a {n(a.first.pos, :kmsg, *a)}")
+  Rules[:_literal] = rule_info("literal", "(symbol(x) | str | float | fixnum | regexp | name | oper)")
+  Rules[:_symbol] = rule_info("symbol", "p:p \":\" !(&\":\") value(x.kmsg):v {n(p, :symbol, v.first)}")
   Rules[:_regexp] = rule_info("regexp", "p:p quoted(:text, &\"/\"):b {n(p, :regexp, text_node(p, b))}")
   Rules[:_float] = rule_info("float", "p:p sign:s dec:n \".\" dec:f {n(p, :float, (s+n+\".\"+f).to_f)}")
   Rules[:_fixnum] = rule_info("fixnum", "p:p (hexadec | binary | octal | decimal):n {n(p, :fixnum, n)}")
@@ -5261,37 +4628,7 @@ class Akin::Grammar
   Rules[:_quoted_inner] = rule_info("quoted_inner", "(p:p \"\#{\" - block(ctx)?:b - \"}\" {b} | p:p < (\"\\\\\" escape | (\"\\\\\" q | \"\\\\\#\" | &(!(q | \"\#{\")) .))+ > {n(p, t, text)})")
   Rules[:_mstr] = rule_info("mstr", "p:p \"\\\"\\\"\\\"\" mstr_inner*:b \"\\\"\\\"\\\"\" {text_node(p, b)}")
   Rules[:_mstr_inner] = rule_info("mstr_inner", "(p:p \"\#{\" - block(h)?:b - \"}\" {b} | p:p < (\"\\\\\" escape | (\"\\\\\\\"\\\"\\\"\" | !(&(\"\\\"\\\"\\\"\" | \"\#{\")) . | . &\"\\\"\\\"\\\"\"))+ > {n(p, :text, text)})")
-  Rules[:_opchr] = rule_info("opchr", "/[\\~\\!@\\\#\\$%\\^\\&\\|\\?\\<\\>*\\/+=-]/")
-  Rules[:_oper] = rule_info("oper", "< opchr opchr* > {text}")
-  Rules[:_operator] = rule_info("operator", "p:p oper:o {n(p, :oper, o)}")
-  Rules[:_name] = rule_info("name", "p:p < (&(!(sp | nl | brace | opchr | \":\" | \";\" | \",\" | \".\")) .)+ > {n(p, :name, text)}")
-  Rules[:_keyword] = rule_info("keyword", "< (!(&(n | \":\" | brace)) .)+ > \":\" !(&(\":\" | \";\" | \".\")) {text}")
-  Rules[:_keyargs] = rule_info("keyargs", "< (!(&(n | \":\" | brace)) .)+ > args:a \":\" {[text, a]}")
-  Rules[:_keypart] = rule_info("keypart", "(keyword | keyargs)")
-  Rules[:_value] = rule_info("value", "(msg(h) | value(h):v args:a {n(v.pos, :act, v, a.name, *a.args)} | args:a {n(a.pos, :act, nil, a.name, *a.args)} | literal | symbol(h) | &{!h.keymsg?} (operator | name) &(!\":\") | &{h.keymsg?} (operator | name))")
-  Rules[:_comma_left] = rule_info("comma_left", "block(h):a w \",\" {a}")
-  Rules[:_comma] = rule_info("comma", "(comma_left(h):a w comma(h):b { b.unshift a ; b } | comma_left(h):a w block(h):b { [a,b] } | comma_left(h):a &(sp* (\".\" | \",\" | t | brace)) {[a]})")
-  Rules[:_tuple] = rule_info("tuple", "comma(h):c {n(p, :tuple, *c)}")
-  Rules[:_cons_left] = rule_info("cons_left", "expr(h):a sp* \"::\" !(&(\":\" | \";\" | \".\")) {a}")
-  Rules[:_cons] = rule_info("cons", "cons_left(h):a - chain_val(h):b {n(p, :cons, a, b)}")
-  Rules[:_args] = rule_info("args", "p:p left_brace:l - (comma(ctx) | block(ctx) | {[]}):a - right_brace(l) {n(p, l.join, *Array(a))}")
-  Rules[:_msg] = rule_info("msg", "(&{h.keymsg?} kmsg(h) | emsg(h))")
-  Rules[:_kmsg] = rule_info("kmsg", "(kmsg(h):a sp* (&\"::\" | \":\" &(\";\" | \".\")) {a} | part(h):a w kmsg(h.at?(a.pos)):m {n(a.pos, :msg, a, *m.args)} | part(h):a {n(a.pos, :msg, a)})")
-  Rules[:_part] = rule_info("part", "(part(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | part(h):p sp+ part_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p keyword:k sp* \".\" w chain(h.at?(p)):c {n(p, k, nil, c)} | p:p keyargs:k {n(p, k.first, k.last.name, *k.last.args)} | p:p keyword:k {n(p, k, nil)})")
-  Rules[:_part_head] = rule_info("part_head", "!(&(keypart | \".\")) (ph_comma(h.keymsg(false)) | chain(h.keymsg(false)) | {[]})")
-  Rules[:_ph_comma] = rule_info("ph_comma", "(chain(h):a w \",\" - ph_comma(h):b { b.unshift a ; b } | chain(h):a w \",\" - chain(h):b { [a,b] })")
-  Rules[:_emsg] = rule_info("emsg", "(emsg(h):a sp* (&\"::\" | \":\" &(\";\" | \".\")) {a} | (epart(h) | spart(h)):a {n(a.pos, :msg, a)})")
-  Rules[:_epart] = rule_info("epart", "(epart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | epart(h):p sp+ epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | args:a \":\" !(&\":\") {n(a.pos, nil, a.name, *a.args)})")
-  Rules[:_spart] = rule_info("spart", "(spart(h):p o w block(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | spart(h):p sp* epart_head(h.at?(p.pos)):e { p.args.push *Array(e) ; p } | p:p \":\" (sp | nl | sheebang) {n(p, nil, nil)})")
-  Rules[:_epart_head] = rule_info("epart_head", "(ph_comma(h) | chain(h.keymsg(false)) | {[]})")
-  Rules[:_expr] = rule_info("expr", "value(h):e &{ e.pos.column > h.pos.column } {e}")
-  Rules[:_chain] = rule_info("chain", "(chain(h):a w &{h.keymsg?} \".\" - chain(h):b {chain_cont(a, b)} | operator:a !(&brace) o w chain(h):b {n(a.pos, :chain, a, *Array(b.name == :chain && b.args || b))} | chain_val(h):a sp* chain(h.at(a.pos)):b {chain_cont(a, b)} | chain_val(h))")
-  Rules[:_chain_val] = rule_info("chain_val", "(cons(h) | expr(h))")
-  Rules[:_block] = rule_info("block", "(chain(h):a sp* t - block(h):b {n(a.pos, :block, a, *Array(b.name == :block && b.args || b))} | chain(h))")
   Rules[:_escape] = rule_info("escape", "(number_escapes | escapes)")
   Rules[:_escapes] = rule_info("escapes", "(\"n\" { \"\\n\" } | \"s\" { \" \" } | \"r\" { \"\\r\" } | \"t\" { \"\\t\" } | \"v\" { \"\\v\" } | \"f\" { \"\\f\" } | \"b\" { \"\\b\" } | \"a\" { \"\\a\" } | \"e\" { \"\\e\" } | \"\\\\\" { \"\\\\\" } | \"\\\"\" { \"\\\"\" } | \"BS\" { \"\\b\" } | \"HT\" { \"\\t\" } | \"LF\" { \"\\n\" } | \"VT\" { \"\\v\" } | \"FF\" { \"\\f\" } | \"CR\" { \"\\r\" } | \"SO\" { \"\\016\" } | \"SI\" { \"\\017\" } | \"EM\" { \"\\031\" } | \"FS\" { \"\\034\" } | \"GS\" { \"\\035\" } | \"RS\" { \"\\036\" } | \"US\" { \"\\037\" } | \"SP\" { \" \" } | \"NUL\" { \"\\000\" } | \"SOH\" { \"\\001\" } | \"STX\" { \"\\002\" } | \"ETX\" { \"\\003\" } | \"EOT\" { \"\\004\" } | \"ENQ\" { \"\\005\" } | \"ACK\" { \"\\006\" } | \"BEL\" { \"\\a\" } | \"DLE\" { \"\\020\" } | \"DC1\" { \"\\021\" } | \"DC2\" { \"\\022\" } | \"DC3\" { \"\\023\" } | \"DC4\" { \"\\024\" } | \"NAK\" { \"\\025\" } | \"SYN\" { \"\\026\" } | \"ETB\" { \"\\027\" } | \"CAN\" { \"\\030\" } | \"SUB\" { \"\\032\" } | \"ESC\" { \"\\e\" } | \"DEL\" { \"\\177\" } | < . > { \"\\\\\" + text })")
   Rules[:_number_escapes] = rule_info("number_escapes", "(/[xX]/ < /[0-9a-fA-F]{1,5}/ > { [text.to_i(16)].pack(\"U\") } | < /\\d{1,6}/ > { [text.to_i].pack(\"U\") } | /[oO]/ < /[0-7]{1,7}/ > { [text.to_i(16)].pack(\"U\") } | /[uU]/ < /[0-9a-fA-F]{4}/ > { [text.to_i(16)].pack(\"U\") })")
-  Rules[:_root] = rule_info("root", "- block(ctx)?:b - eof {b}")
-  Rules[:_unit] = rule_info("unit", "- chain(ctx):c {c}")
-  Rules[:_eof] = rule_info("eof", "!.")
 end

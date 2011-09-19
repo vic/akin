@@ -8,13 +8,17 @@ module Akin
 
     def <=>(o)
       prec = precedence <=> o.precedence
-      if prec.zero? && idx && assoc > 0
-        o.idx <=> idx
+      if prec.zero? && idx
+        if assoc > 0 # right associative
+          o.idx <=> idx
+        else # left associative
+          idx <=> o.idx
+        end
       else
         prec
       end
     end
-    
+
     def at(node, idx)
       self.class.new name, precedence, assoc, arity_l, arity_r, node, idx, inverted
     end
@@ -31,11 +35,11 @@ module Akin
       def initialize(operators = OPERATORS, prefix = PREFIX, default = DEFAULT)
         @operators, @prefix, @default = operators, prefix, default
       end
-      
+
       def operator?(node)
         !operator(node,0).nil?
       end
-      
+
       def operator(node, idx)
         if [:oper, :name].include?(node.name) && @operators.key?(node.args.first)
           @operators[node.args.first].at(node, idx)
@@ -48,7 +52,7 @@ module Akin
         end
       end
     end
-    
+
     # OPER    PRECED  ASOC    ARY_L  ARY_R
     DEFAULT = [10,     0,     0.0,     0.1]
     OPERATORS = Operator.build %w'
@@ -190,6 +194,6 @@ module Akin
     %w[ $ ].each { |i| o = OPERATORS[i]; o.arity_l, o.arity_r = 0, -1 }
 
     %w[ ∈ ∉ ::: ].each { |i| o = OPERATORS[i]; o.inverted = o.assoc = 1 }
-    
+
   end
 end

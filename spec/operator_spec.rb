@@ -14,7 +14,7 @@ describe Akin::Shuffle do
     it 'including only operators' do
       subject.operators(c('+ b * c -').args).size.should == 3
     end
-    
+
     it 'with operators sorted by precedence' do
       subject.operators(c('+ *').args).map(&:name).should == ["*", "+"]
     end
@@ -22,7 +22,7 @@ describe Akin::Shuffle do
     it 'with +,- operators sorted by fixity' do
       subject.operators(c('+ - +').args).map(&:name).should == ["+", "-", "+"]
     end
-    
+
     it 'with +,-,* operators sorted by fixity' do
       subject.operators(c('+ - * +').args).map(&:name).should == ["*", "+", "-", "+"]
     end
@@ -38,7 +38,7 @@ describe Akin::Shuffle do
 
     it 'detects ∈ as an operator' do
       subject.operators(c('a ∈ b').args).size.should == 1
-    end    
+    end
   end
 end
 

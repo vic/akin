@@ -37,15 +37,15 @@ module Akin
 
       def self.attr(name, val = true)
         module_eval "
+            attr_writer :#{name}
             #{"def"} #{name}?
               @#{name} = #{val} if @#{name}.nil?
               @#{name}
             end
             #{"def"} #{name}!
-              @#{name} = !#{name}?
-            end
-            #{"def"} #{name}=(val)
-              @#{name} = val
+              o = dup
+              o.#{name} = !#{val}
+              o
             end
             #{"def"} #{name}(val = #{val})
               o = dup
@@ -55,24 +55,28 @@ module Akin
         "
       end
 
-      def at?(pos)
+      def at(pos)
         o = dup
-        o.pos = @pos | pos
+        if @pos.nil?
+          o.pos = pos
+        else
+          o.pos = @pos.minor(pos)
+        end
         o
       end
 
-      def at(pos)
+      def in(pos)
         o = dup
         o.pos = pos
         o
       end
 
-      attr :keymsg
+      attr :kmsg
       attr :comma
     end
 
     class Position < Struct.new(:line, :column)
-      def |(other)
+      def minor(other)
         if @line.nil? || @line.zero?
           other
         else

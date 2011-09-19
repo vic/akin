@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 module Akin
-  
+
   class Shuffle
 
     def initialize(operators)
@@ -107,7 +107,7 @@ module Akin
 
       Array(left) + Array(now) + Array(right)
     end
-    
+
   end
 
 end
