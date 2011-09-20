@@ -43,9 +43,23 @@ module Akin
       node.with(:send, a[0], *shuffle(a[1..-1]))
     end
 
-    def shuffle_msg(node)
-      a = node.args.map { |n| n.with(n.name, n.args.first, *shuffle(n.args[1..-1])) }
-      node.with(:msg, *a)
+    def shuffle_space(node)
+      a = node.args
+      node.with(:space, a[0], *shuffle(a[1..-1]))
+    end
+
+    def shuffle_empty(node)
+      a = node.args
+      node.with(:empty, a[0], *shuffle(a[1..-1]))
+    end
+
+    def shuffle_kmsg(node)
+      node.with(:kmsg, *shuffle(node.args))
+    end
+
+    def shuffle_part(node)
+      a = node.args
+      node.with(:part, a[0], a[1], *shuffle(a[2..-1]))
     end
 
     def shuffle_chain(node)
