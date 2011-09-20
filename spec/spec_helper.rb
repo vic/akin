@@ -20,6 +20,10 @@ shared_context 'grammar' do
 
   def n(code, rule = :root, *args)
     n = c(code, rule, true, *args)
-    Akin::Shuffle.new(Akin::Operator::Table.new).shuffle(n).sexp if n
+    shuffler.shuffle(n).sexp if n
+  end
+
+  def shuffler
+    Akin::Shuffle.new(Akin::Operator::Table.new)
   end
 end

@@ -16,19 +16,19 @@ describe Akin::Shuffle do
     end
 
     it 'with operators sorted by precedence' do
-      subject.operators(c('+ *').args).map(&:name).should == ["*", "+"]
+      subject.operators(c('+ *').args).sort.map(&:name).should == ["*", "+"]
     end
 
     it 'with +,- operators sorted by fixity' do
-      subject.operators(c('+ - +').args).map(&:name).should == ["+", "-", "+"]
+      subject.operators(c('+ - +').args).sort.map(&:name).should == ["+", "-", "+"]
     end
 
     it 'with +,-,* operators sorted by fixity' do
-      subject.operators(c('+ - * +').args).map(&:name).should == ["*", "+", "-", "+"]
+      subject.operators(c('+ - * +').args).sort.map(&:name).should == ["*", "+", "-", "+"]
     end
 
     it 'with +,-,*,/ operators sorted by fixity' do
-      subject.operators(c('+ - * + /').args).map(&:name).should ==
+      subject.operators(c('+ - * + /').args).sort.map(&:name).should ==
         ["/", "*", "+", "-", "+"]
     end
 

@@ -224,7 +224,7 @@ describe 'Akin grammar' do
        man
     CODE
     s(code).should ==
-      [:on, [:chain, [:name, "foo"], [:name, "bar"]],
+      [:chain, [:name, "foo"], [:name, "bar"],
        [:block, [:kmsg, [:part, "baz", nil, [:name, "bat"]]], [:name, "man"]]]
 
   end
@@ -236,8 +236,8 @@ describe 'Akin grammar' do
        man
     CODE
     s(code).should ==
-      [:on, [:block, [:chain, [:name, "foo"], [:name, "bar"]],
-             [:kmsg, [:part, "baz", nil, [:name, "bat"]]]],
+      [:chain, [:block, [:chain, [:name, "foo"], [:name, "bar"]],
+                [:kmsg, [:part, "baz", nil, [:name, "bat"]]]],
        [:name, "man"]]
   end
 

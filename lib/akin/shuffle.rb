@@ -11,9 +11,9 @@ module Akin
       ops = []
       ary.each_with_index do |node, idx|
         op = @operators.operator(node, idx)
-        ops << op if op
+        ops << op if op && !(ary[idx+1] && ary[idx+1].name == :send)
       end
-      ops.sort
+      ops
     end
 
     def shuffle(node)
@@ -32,18 +32,15 @@ module Akin
     alias_method :shuffle_text, :nothing
     alias_method :shuffle_fixnum, :nothing
     alias_method :shuffle_float, :nothing
+    alias_method :shuffle_oper, :nothing
 
     def shuffle_block(node)
       node.with(:block, *shuffle(node.args))
     end
 
-    def shuffle_oper(node)
-      node.with(:name, *node.args)
-    end
-
-    def shuffle_act(node)
+    def shuffle_send(node)
       a = node.args
-      node.with(:act, a[0], a[1], *shuffle(a[2..-1]))
+      node.with(:send, a[0], *shuffle(a[1..-1]))
     end
 
     def shuffle_msg(node)
@@ -52,17 +49,20 @@ module Akin
     end
 
     def shuffle_chain(node)
-      ops = operators node.args
       chain = node.args
-      until ops.empty?
-        chain = shuffle_op(ops.first, chain)
-        ops.shift
+      ops = operators chain # sorted by position
+      ord = ops.sort # sorted by precedence
+      until ord.empty?
+        op = ord.first
+        chain = shuffle_op(op, chain, ops)
+        ord.shift
+        ops.delete op
       end
       chain = shuffle(chain)
       chain.size == 1 && chain.first || node.with(:chain, *chain)
     end
 
-    def shuffle_op(op, chain)
+    def shuffle_op(op, chain, ops)
       return chain if chain.empty? || chain == [op.node]
       return chain unless idx = chain.index(op.node)
 
@@ -75,10 +75,12 @@ module Akin
           lhs, left = left, []
         elsif op.arity_l >= 1
           lhs = left.pop(op.arity_l)
+        elsif ops.first == op
+          lhs, left = left, []
         else
-          left.reverse!
-          lhs = left.take_while { |n| !@operators.operator?(n) }.reverse
-          left = left[lhs.size..-1].reverse
+          bwd = ops[ops.index(op) - 1]
+          from = left.index(bwd.node) + 1
+          lhs, left = left[from..-1], left[0...from]
         end
       end
 
@@ -87,22 +89,20 @@ module Akin
           rhs, right = right, []
         elsif op.arity_r >= 1
           rhs = right.shift(op.arity_r)
+        elsif ops.last == op
+          rhs, right = right, []
         else
-          rhs = right.take_while { |n| !@operators.operator?(n) }
-          right = right[rhs.size..-1]
+          fwd = ops[ops.index(op) + 1]
+          to = right.index(fwd.node)
+          rhs, right = right[0...to], right[to..-1]
         end
       end
 
       if lhs || rhs
-        now = op.node.with(:act, op.name, nil)
-        if lhs
-          lhs = lhs.size == 1 && lhs.first || lhs.first.with(:chain, *lhs)
-          now.args.push lhs
-        end
-        if rhs
-          rhs = rhs.size == 1 && rhs.first || rhs.first.with(:chain, *rhs)
-          now.args.push rhs
-        end
+        lhs = lhs.size == 1 && lhs.first || lhs.first.with(:chain, *lhs) if lhs
+        rhs = rhs.size == 1 && rhs.first || rhs.first.with(:chain, *rhs) if rhs
+        now = [op.node.with(:oper, *op.node.args), 
+               op.node.with(:send, nil, *(Array(lhs) + Array(rhs)))]
       end
 
       Array(left) + Array(now) + Array(right)
