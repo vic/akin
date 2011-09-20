@@ -772,7 +772,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # block = (block(x):a ws* nl - block(x):b &{a.pos.column < b.pos.column} {n(a.pos, :on, a, b)} | block_(x):b {b.size > 1 && n(b.first.pos, :block, *b) || b.first})
+  # block = (block(x):a ws* nl - block(x):b &{a.pos.column < b.pos.column} { a.name == :chain && (a.args.push(b);a) || a.with(:chain, a, b) } | block_(x):b {b.size > 1 && n(b.first.pos, :block, *b) || b.first})
   def _block(x)
 
     _save = self.pos
@@ -818,7 +818,7 @@ class Akin::Grammar
           self.pos = _save1
           break
         end
-        @result = begin; n(a.pos, :on, a, b); end
+        @result = begin;  a.name == :chain && (a.args.push(b);a) || a.with(:chain, a, b) ; end
         _tmp = true
         unless _tmp
           self.pos = _save1
@@ -4587,7 +4587,7 @@ class Akin::Grammar
   Rules[:_right_brace] = rule_info("right_brace", "< brace:b > &{ text == l.last } {l}")
   Rules[:_braced] = rule_info("braced", "left_brace:l - (braced_(ctx) | {nil}):a - right_brace(l) {[l] + Array(a)}")
   Rules[:_braced_] = rule_info("braced_", "(braced_(x):a - \",\" - block(x):b {a + Array(b)} | block(x):b {Array(b)})")
-  Rules[:_block] = rule_info("block", "(block(x):a ws* nl - block(x):b &{a.pos.column < b.pos.column} {n(a.pos, :on, a, b)} | block_(x):b {b.size > 1 && n(b.first.pos, :block, *b) || b.first})")
+  Rules[:_block] = rule_info("block", "(block(x):a ws* nl - block(x):b &{a.pos.column < b.pos.column} { a.name == :chain && (a.args.push(b);a) || a.with(:chain, a, b) } | block_(x):b {b.size > 1 && n(b.first.pos, :block, *b) || b.first})")
   Rules[:_block_] = rule_info("block_", "(block_(x):b - \";\" s chain(x):c {Array(c)}:a {b + a} | block_(x):b s chain(x):c {Array(c)}:a &{b.first.pos.column == a.first.pos.column} {b + a} | chain(x):c {Array(c)})")
   Rules[:_chain] = rule_info("chain", "chain_(x):c {c.size > 1 && n(c.first.pos, :chain, *c) || c.first}")
   Rules[:_chain_] = rule_info("chain_", "(chain_(x):c - \".\" &{x.kmsg?} - chain_(x):v {c + v} | chain_(x):c &{c.last.name == :oper} (ws* nl -)? value(x.at(c.first.pos)):v {c + v} | chain_(x):c oper:o {c + [o]} | chain_(x):c ws+ value(x.at(c.first.pos)):v {c + v} | value(x))")

@@ -27,7 +27,7 @@ braced_(x) = braced_(x):a - "," - block(x):b {a + Array(b)}
            | block(x):b ~Array(b)
 
 block(x) = block(x):a ws* nl - block(x):b &{a.pos.column < b.pos.column}
-           ~n(a.pos, :on, a, b)
+           { a.name == :chain && (a.args.push(b);a) || a.with(:chain, a, b) }
          | block_(x):b {b.size > 1 && n(b.first.pos, :block, *b) || b.first}
 block_(x) = block_(x):b - ";" s chain(x):c {Array(c)}:a {b + a}
           | block_(x):b s chain(x):c {Array(c)}:a
