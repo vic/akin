@@ -231,4 +231,23 @@ describe 'Akin operator shuffle' do
     end
   end
 
+  describe 'named infix operator' do
+    
+    it 'shuffles chain with binary infix operator' do
+      n('a #b# c').should ==
+        [:chain, [:oper, "b"], [:send, nil, [:name, "a"], [:name, "c"]]]
+    end
+
+    it 'shuffles chain with left unary infix operator' do
+      n('a #b c').should ==
+        [:chain, [:oper, "b"], [:send, nil, [:name, "a"]], [:name, "c"]]
+    end
+
+    it 'shuffles chain with right unary infix operator' do
+      n('a b# c').should ==
+        [:chain, [:name, "a"], [:oper, "b"], [:send, nil, [:name, "c"]]]
+    end
+    
+  end
+
 end

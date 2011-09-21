@@ -2239,12 +2239,15 @@ class Akin::Grammar
     return _tmp
   end
 
-  # literal = (symbol(x) | str | float | fixnum | regexp | name | oper)
+  # literal = (symbol(x) | infix | str | float | fixnum | regexp | name | oper)
   def _literal(x)
 
     _save = self.pos
     while true # choice
       _tmp = apply_with_args(:_symbol, x)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply(:_infix)
       break if _tmp
       self.pos = _save
       _tmp = apply(:_str)
@@ -2313,6 +2316,137 @@ class Akin::Grammar
     end # end sequence
 
     set_failed_rule :_symbol unless _tmp
+    return _tmp
+  end
+
+  # infix_ = (< "#"+ > !(&(brace | "!")) {text.size} | {0})
+  def _infix_
+
+    _save = self.pos
+    while true # choice
+
+      _save1 = self.pos
+      while true # sequence
+        _text_start = self.pos
+        _save2 = self.pos
+        _tmp = match_string("#")
+        if _tmp
+          while true
+            _tmp = match_string("#")
+            break unless _tmp
+          end
+          _tmp = true
+        else
+          self.pos = _save2
+        end
+        if _tmp
+          text = get_text(_text_start)
+        end
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        _save3 = self.pos
+        _save4 = self.pos
+
+        _save5 = self.pos
+        while true # choice
+          _tmp = apply(:_brace)
+          break if _tmp
+          self.pos = _save5
+          _tmp = match_string("!")
+          break if _tmp
+          self.pos = _save5
+          break
+        end # end choice
+
+        self.pos = _save4
+        _tmp = _tmp ? nil : true
+        self.pos = _save3
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; text.size; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      break if _tmp
+      self.pos = _save
+      @result = begin; 0; end
+      _tmp = true
+      break if _tmp
+      self.pos = _save
+      break
+    end # end choice
+
+    set_failed_rule :_infix_ unless _tmp
+    return _tmp
+  end
+
+  # infix = p:p infix_:l < (name | oper) > infix_:r &{ l+r > 0 } {n(p, :infix, text, l, r)}
+  def _infix
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_infix_)
+      l = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = apply(:_name)
+        break if _tmp
+        self.pos = _save1
+        _tmp = apply(:_oper)
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_infix_)
+      r = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save2 = self.pos
+      _tmp = begin;  l+r > 0 ; end
+      self.pos = _save2
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :infix, text, l, r); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_infix unless _tmp
     return _tmp
   end
 
@@ -4606,8 +4740,10 @@ class Akin::Grammar
   Rules[:_part] = rule_info("part", "(p:p keyword(x):a &(ws* keyword(x)) {n(p, :part, *a)} | p:p keyword(x):a ws* \".\" - empty_(x):b {n(p, :part, *(a+b))} | p:p keyword(x):a ws* keyargs(x.in(x.pos.minor(p))):b {n(p, :part, *(a+b))})")
   Rules[:_parts] = rule_info("parts", "(parts(x):a - part(x):b {a + [b]} | part(x):a {[a]})")
   Rules[:_kmsg] = rule_info("kmsg", "parts(x):a {n(a.first.pos, :kmsg, *a)}")
-  Rules[:_literal] = rule_info("literal", "(symbol(x) | str | float | fixnum | regexp | name | oper)")
+  Rules[:_literal] = rule_info("literal", "(symbol(x) | infix | str | float | fixnum | regexp | name | oper)")
   Rules[:_symbol] = rule_info("symbol", "p:p \":\" !(&\":\") value(x.kmsg):v {n(p, :symbol, v.first)}")
+  Rules[:_infix_] = rule_info("infix_", "(< \"\#\"+ > !(&(brace | \"!\")) {text.size} | {0})")
+  Rules[:_infix] = rule_info("infix", "p:p infix_:l < (name | oper) > infix_:r &{ l+r > 0 } {n(p, :infix, text, l, r)}")
   Rules[:_regexp] = rule_info("regexp", "p:p quoted(:text, &\"/\"):b {n(p, :regexp, text_node(p, b))}")
   Rules[:_float] = rule_info("float", "p:p sign:s dec:n \".\" dec:f {n(p, :float, (s+n+\".\"+f).to_f)}")
   Rules[:_fixnum] = rule_info("fixnum", "p:p (hexadec | binary | octal | decimal):n {n(p, :fixnum, n)}")

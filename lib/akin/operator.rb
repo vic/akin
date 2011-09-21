@@ -41,7 +41,11 @@ module Akin
       end
 
       def operator(node, idx)
-        if [:oper, :name].include?(node.name) && @operators.key?(node.args.first)
+        if :infix == node.name
+          Operator.new(node.args[0],
+                       @default[0], @default[1],
+                       node.args[1], node.args[2]).at(node, idx)
+        elsif [:oper, :name].include?(node.name) && @operators.key?(node.args.first)
           @operators[node.args.first].at(node, idx)
         elsif :oper == node.name && @prefix.key?(node.args.first[0,1])
           op = @prefix[node.args.first[0,1]].at(node, idx)

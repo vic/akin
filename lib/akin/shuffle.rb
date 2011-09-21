@@ -62,6 +62,10 @@ module Akin
       node.with(:part, a[0], a[1], *shuffle(a[2..-1]))
     end
 
+    def shuffle_infix(node)
+      node.with(:oper, node.args.first)
+    end
+
     def shuffle_chain(node)
       chain = node.args
       ops = operators chain # sorted by position
@@ -115,7 +119,7 @@ module Akin
       if lhs || rhs
         lhs = lhs.size == 1 && lhs.first || lhs.first.with(:chain, *lhs) if lhs
         rhs = rhs.size == 1 && rhs.first || rhs.first.with(:chain, *rhs) if rhs
-        now = [op.node.with(:oper, *op.node.args), 
+        now = [op.node.with(:oper, op.node.args.first),
                op.node.with(:send, nil, *(Array(lhs) + Array(rhs)))]
       end
 

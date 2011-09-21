@@ -241,7 +241,7 @@ describe 'Akin grammar' do
        [:name, "man"]]
   end
 
-    it 'lets semicolon continue the block' do
+  it 'lets semicolon continue the block' do
     code = <<-CODE
     foo bar ;
        baz: bat ;
@@ -291,7 +291,7 @@ describe 'Akin grammar' do
     end
   end
 
-    describe 'text' do
+  describe 'text' do
     it 'is parsed by literal rule' do
       s('"hi"').should ==
         [:text, "hi"]
@@ -331,6 +331,23 @@ describe 'Akin grammar' do
     it 'parses simple string' do
       s("'foo \#{bar}'").should ==
         [:text, 'foo #{bar}']
+    end
+  end
+
+  describe 'infix' do
+    it 'allows any name to be an infix-binary operator' do
+      s("a #mod# c").should ==
+        [:chain, [:name, "a"], [:infix, "mod", 1, 1], [:name, "c"]]
+    end
+
+    it 'allows any name to be an left-unary operator' do
+      s("a #mod c").should ==
+        [:chain, [:name, "a"], [:infix, "mod", 1, 0], [:name, "c"]]
+    end
+
+    it 'allows any name to be an right-unary operator' do
+      s("a mod# c").should ==
+        [:chain, [:name, "a"], [:infix, "mod", 0, 1], [:name, "c"]]
     end
   end
 
