@@ -36,19 +36,19 @@ describe 'Akin grammar' do
 
   it 'allows operator to have arguments' do
     s("a +(b, c)").should == [:chain,
-     [:name, "a"], [:oper, "+"], [:send, ["(", ")"], [:name, "b"], [:name, "c"]]]
+     [:name, "a"], [:cell, "+"], [:send, ["(", ")"], [:name, "b"], [:name, "c"]]]
   end
 
   it 'parses args' do
     s('a(b, c)').should ==
-     [:chain, [:name, "a"],
+     [:chain, [:cell, "a"],
               [:send, ["(", ")"],
                [:name, "b"], [:name, "c"]]]
   end
 
   it 'parses chained args' do
     s('a(b, c)[d]').should ==
-     [:chain, [:name, "a"],
+     [:chain, [:cell, "a"],
               [:send, ["(", ")"],
                 [:name, "b"], [:name, "c"]],
               [:send, ["[", "]"],

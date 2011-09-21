@@ -1228,7 +1228,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # value_ = (&{x.kmsg?} kmsg(x) | value_(x):v p:p braced:b !(&":") {Array(v) + [n(p, :send, *b)]} | empty(x) | space | literal(x):a (&{x.kmsg?} | !(&":")) {a})
+  # value_ = (&{x.kmsg?} kmsg(x) | value_(x):v p:p braced:b !(&":") {Array(v)}:a {a.first}:f { a = [f.with(:cell, *f.args)] if a.size == 1 &&                 f.name == :name || f.name == :oper             a + [n(p, :send, *b)] } | empty(x) | space | literal(x):a (&{x.kmsg?} | !(&":")) {a})
   def _value_(x)
 
     _save = self.pos
@@ -1283,7 +1283,23 @@ class Akin::Grammar
           self.pos = _save3
           break
         end
-        @result = begin; Array(v) + [n(p, :send, *b)]; end
+        @result = begin; Array(v); end
+        _tmp = true
+        a = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        @result = begin; a.first; end
+        _tmp = true
+        f = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        @result = begin;  a = [f.with(:cell, *f.args)] if a.size == 1 &&
+                f.name == :name || f.name == :oper
+            a + [n(p, :send, *b)] ; end
         _tmp = true
         unless _tmp
           self.pos = _save3
@@ -4777,7 +4793,7 @@ class Akin::Grammar
   Rules[:_chain] = rule_info("chain", "chain_(x):c {c.size > 1 && n(c.first.pos, :chain, *c) || c.first}")
   Rules[:_chain_] = rule_info("chain_", "(chain_(x):c - \".\" &{x.kmsg?} - chain_(x):v {c + v} | chain_(x):c &{c.last.name == :oper} (ws* nl -)? value(x.at(c.first.pos)):v {c + v} | chain_(x):c oper:o {c + [o]} | chain_(x):c ws+ value(x.at(c.first.pos)):v {c + v} | value(x))")
   Rules[:_value] = rule_info("value", "value_(x):v {Array(v)}:a &{a.first.pos.column > x.pos.column} {a}")
-  Rules[:_value_] = rule_info("value_", "(&{x.kmsg?} kmsg(x) | value_(x):v p:p braced:b !(&\":\") {Array(v) + [n(p, :send, *b)]} | empty(x) | space | literal(x):a (&{x.kmsg?} | !(&\":\")) {a})")
+  Rules[:_value_] = rule_info("value_", "(&{x.kmsg?} kmsg(x) | value_(x):v p:p braced:b !(&\":\") {Array(v)}:a {a.first}:f { a = [f.with(:cell, *f.args)] if a.size == 1 &&                 f.name == :name || f.name == :oper             a + [n(p, :send, *b)] } | empty(x) | space | literal(x):a (&{x.kmsg?} | !(&\":\")) {a})")
   Rules[:_space] = rule_info("space", "p:p braced:a {n(p, :space, *a)}")
   Rules[:_empty] = rule_info("empty", "p:p braced:a \":\" ws* empty_(x):b {n(p, :empty, *(a+b))}")
   Rules[:_empty_] = rule_info("empty_", "(braced_(x) | {nil}):a (ws* nl - block(x) | {nil}):b {Array(a) + Array(b)}")

@@ -46,7 +46,10 @@ chain_(x) = chain_(x):c - "." &{x.kmsg?} - chain_(x):v {c + v}
 value(x) = value_(x):v {Array(v)}:a &{a.first.pos.column > x.pos.column} ~a
 
 value_(x) = &{x.kmsg?} kmsg(x)
-          | value_(x):v p:p braced:b !&":" {Array(v) + [n(p, :send, *b)]}
+          | value_(x):v p:p braced:b !&":" {Array(v)}:a {a.first}:f 
+          { a = [f.with(:cell, *f.args)] if a.size == 1 &&
+                f.name == :name || f.name == :oper
+            a + [n(p, :send, *b)] }
           | empty(x) | space
           | literal(x):a (&{x.kmsg?} | !&":") ~a
 
