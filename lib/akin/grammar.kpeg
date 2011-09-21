@@ -76,13 +76,15 @@ parts(x) = parts(x):a - part(x):b {a + [b]}
 
 kmsg(x) = parts(x):a ~n(a.first.pos, :kmsg, *a)
 
-literal(x) = symbol(x) | infix | str | float | fixnum | regexp | name | oper
+literal(x) = symbol(x) | infix | cell | str | float | fixnum | regexp | name | oper
 
 symbol(x) = p:p ":" !&":" value(x.kmsg):v ~n(p, :symbol, v.first)
 
 infix_ = <"#"+> !&(brace|"!") {text.size} | {0}
 infix = p:p infix_:l <name|oper> infix_:r &{ l+r > 0 }
-            ~n(p, :infix, text, l, r)
+        ~n(p, :infix, text, l, r)
+
+cell = p:p "\\" <name|oper> ~n(p, :cell, text)
 
 regexp = p:p quoted(:text, & "/"):b ~n(p, :regexp, text_node(p, b))
 

@@ -33,6 +33,7 @@ module Akin
     alias_method :shuffle_fixnum, :nothing
     alias_method :shuffle_float, :nothing
     alias_method :shuffle_oper, :nothing
+    alias_method :shuffle_cell, :nothing
 
     def shuffle_block(node)
       node.with(:block, *shuffle(node.args))

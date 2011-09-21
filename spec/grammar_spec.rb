@@ -351,4 +351,11 @@ describe 'Akin grammar' do
     end
   end
 
+  describe 'cell' do
+    it 'allows any name to be referenced as cell' do
+      s('a \mod c').should ==
+        [:chain, [:name, "a"], [:cell, "mod"], [:name, "c"]]
+    end
+  end
+
 end

@@ -2239,7 +2239,7 @@ class Akin::Grammar
     return _tmp
   end
 
-  # literal = (symbol(x) | infix | str | float | fixnum | regexp | name | oper)
+  # literal = (symbol(x) | infix | cell | str | float | fixnum | regexp | name | oper)
   def _literal(x)
 
     _save = self.pos
@@ -2248,6 +2248,9 @@ class Akin::Grammar
       break if _tmp
       self.pos = _save
       _tmp = apply(:_infix)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply(:_cell)
       break if _tmp
       self.pos = _save
       _tmp = apply(:_str)
@@ -2447,6 +2450,54 @@ class Akin::Grammar
     end # end sequence
 
     set_failed_rule :_infix unless _tmp
+    return _tmp
+  end
+
+  # cell = p:p "\\" < (name | oper) > {n(p, :cell, text)}
+  def _cell
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_p)
+      p = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("\\")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = apply(:_name)
+        break if _tmp
+        self.pos = _save1
+        _tmp = apply(:_oper)
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; n(p, :cell, text); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_cell unless _tmp
     return _tmp
   end
 
@@ -4740,10 +4791,11 @@ class Akin::Grammar
   Rules[:_part] = rule_info("part", "(p:p keyword(x):a &(ws* keyword(x)) {n(p, :part, *a)} | p:p keyword(x):a ws* \".\" - empty_(x):b {n(p, :part, *(a+b))} | p:p keyword(x):a ws* keyargs(x.in(x.pos.minor(p))):b {n(p, :part, *(a+b))})")
   Rules[:_parts] = rule_info("parts", "(parts(x):a - part(x):b {a + [b]} | part(x):a {[a]})")
   Rules[:_kmsg] = rule_info("kmsg", "parts(x):a {n(a.first.pos, :kmsg, *a)}")
-  Rules[:_literal] = rule_info("literal", "(symbol(x) | infix | str | float | fixnum | regexp | name | oper)")
+  Rules[:_literal] = rule_info("literal", "(symbol(x) | infix | cell | str | float | fixnum | regexp | name | oper)")
   Rules[:_symbol] = rule_info("symbol", "p:p \":\" !(&\":\") value(x.kmsg):v {n(p, :symbol, v.first)}")
   Rules[:_infix_] = rule_info("infix_", "(< \"\#\"+ > !(&(brace | \"!\")) {text.size} | {0})")
   Rules[:_infix] = rule_info("infix", "p:p infix_:l < (name | oper) > infix_:r &{ l+r > 0 } {n(p, :infix, text, l, r)}")
+  Rules[:_cell] = rule_info("cell", "p:p \"\\\\\" < (name | oper) > {n(p, :cell, text)}")
   Rules[:_regexp] = rule_info("regexp", "p:p quoted(:text, &\"/\"):b {n(p, :regexp, text_node(p, b))}")
   Rules[:_float] = rule_info("float", "p:p sign:s dec:n \".\" dec:f {n(p, :float, (s+n+\".\"+f).to_f)}")
   Rules[:_fixnum] = rule_info("fixnum", "p:p (hexadec | binary | octal | decimal):n {n(p, :fixnum, n)}")
