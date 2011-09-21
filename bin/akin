@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require File.expand_path '../../lib/akin', __FILE__
+require File.expand_path '../../lib/akin/command', __FILE__
+Akin::Command.run(ARGV)
